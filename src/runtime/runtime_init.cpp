@@ -13,6 +13,10 @@
 #include "ivit/runtime/openvino_runtime.hpp"
 #endif
 
+#ifdef IVIT_HAS_QNN
+#include "ivit/runtime/qnn_runtime.hpp"
+#endif
+
 
 namespace ivit {
 
@@ -43,6 +47,17 @@ public:
             }
         } catch (...) {
             // OpenVINO not available, skip
+        }
+#endif
+
+#ifdef IVIT_HAS_QNN
+        try {
+            auto qnn = std::make_shared<QNNRuntime>();
+            if (qnn->is_available()) {
+                factory.register_runtime(qnn);
+            }
+        } catch (...) {
+            // QNN not available, skip
         }
 #endif
 

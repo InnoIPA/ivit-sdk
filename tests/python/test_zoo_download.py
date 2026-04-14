@@ -79,12 +79,12 @@ class TestModelInfoOnnxUrl:
             )
 
     def test_all_nine_models_accounted_for(self):
-        """Exactly 9 models should have onnx_url."""
+        """All expected models with onnx_url should be accounted for (updated for MambaVision)."""
         models_with_url = [
             name for name, info in MODEL_REGISTRY.items()
             if info.onnx_url is not None
         ]
-        assert len(models_with_url) == 9
+        assert len(models_with_url) == 14
 
 
 class TestDownloadRouting:

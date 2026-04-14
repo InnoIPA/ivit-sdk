@@ -15,7 +15,7 @@
 #include <vector>
 #include <string>
 #include <mutex>
-
+using namespace std;
 namespace ivit {
 
 /**
@@ -24,9 +24,9 @@ namespace ivit {
 struct OpenVINOModel {
     ov::CompiledModel compiled_model;
     ov::InferRequest infer_request;
-    std::vector<TensorInfo> input_infos;
-    std::vector<TensorInfo> output_infos;
-    std::string device;
+    vector<TensorInfo> input_infos;
+    vector<TensorInfo> output_infos;
+    string device;
 };
 
 /**
@@ -39,29 +39,29 @@ public:
 
     // IRuntime interface
     BackendType type() const override { return BackendType::OpenVINO; }
-    std::string name() const override { return "OpenVINO"; }
+    string name() const override { return "OpenVINO"; }
     bool is_available() const override;
-    std::vector<std::string> supported_formats() const override;
-    std::vector<DeviceInfo> get_devices() const override;
+    vector<string> supported_formats() const override;
+    vector<DeviceInfo> get_devices() const override;
 
     void* load_model(
-        const std::string& path,
+        const string& path,
         const RuntimeConfig& config
     ) override;
 
     void unload_model(void* handle) override;
 
-    std::vector<TensorInfo> get_input_info(void* handle) const override;
-    std::vector<TensorInfo> get_output_info(void* handle) const override;
+    vector<TensorInfo> get_input_info(void* handle) const override;
+    vector<TensorInfo> get_output_info(void* handle) const override;
 
-    std::map<std::string, Tensor> infer(
+    map<string, Tensor> infer(
         void* handle,
-        const std::map<std::string, Tensor>& inputs
+        const map<string, Tensor>& inputs
     ) override;
 
     void convert_model(
-        const std::string& src_path,
-        const std::string& dst_path,
+        const string& src_path,
+        const string& dst_path,
         const RuntimeConfig& config
     ) override;
 
@@ -75,17 +75,17 @@ public:
     /**
      * @brief Map device string to OpenVINO device name
      */
-    std::string map_device_name(const std::string& device) const;
+    string map_device_name(const string& device) const;
 
     /**
      * @brief Get OpenVINO version
      */
-    std::string get_version() const;
+    string get_version() const;
 
     /**
      * @brief Set cache directory for compiled models
      */
-    void set_cache_dir(const std::string& path);
+    void set_cache_dir(const string& path);
 
     /**
      * @brief Enable/disable async inference
@@ -101,10 +101,10 @@ private:
     TensorInfo extract_tensor_info(const ov::Output<ov::Node>& port);
 
     ov::Core core_;
-    std::mutex mutex_;
+    mutex mutex_;
     bool initialized_ = false;
     bool use_async_ = false;
-    std::string cache_dir_;
+    string cache_dir_;
 };
 
 /**

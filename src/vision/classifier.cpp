@@ -43,15 +43,17 @@ Classifier::Classifier(
     // Load model
     model_ = ModelManager::instance().load(model_path, load_config);
 
-    // Get input size from model
+    // Get input size from model (guard against dynamic dims: -1)
     auto input_info = model_->input_info();
     if (!input_info.empty()) {
         const auto& shape = input_info[0].shape;
         if (shape.size() >= 4) {
             // NCHW format
+            int w = static_cast<int>(shape[3]);
+            int h = static_cast<int>(shape[2]);
             input_size_ = cv::Size(
-                static_cast<int>(shape[3]),  // width
-                static_cast<int>(shape[2])   // height
+                w > 0 ? w : 224,
+                h > 0 ? h : 224
             );
         } else {
             input_size_ = cv::Size(224, 224);  // Default
@@ -102,14 +104,16 @@ Classifier::Classifier(
 Classifier::Classifier(std::shared_ptr<Model> model)
     : model_(model)
 {
-    // Get input size from model
+    // Get input size from model (guard against dynamic dims: -1)
     auto input_info = model_->input_info();
     if (!input_info.empty()) {
         const auto& shape = input_info[0].shape;
         if (shape.size() >= 4) {
+            int w = static_cast<int>(shape[3]);
+            int h = static_cast<int>(shape[2]);
             input_size_ = cv::Size(
-                static_cast<int>(shape[3]),
-                static_cast<int>(shape[2])
+                w > 0 ? w : 224,
+                h > 0 ? h : 224
             );
         } else {
             input_size_ = cv::Size(224, 224);
@@ -139,7 +143,10 @@ Results Classifier::predict(const cv::Mat& image, int top_k) {
     }
 
     const auto& info = input_info[0];
-    Tensor input(info.shape, DataType::Float32);
+    // Replace dynamic dims (-1) with concrete values (batch=1)
+    Shape input_shape = info.shape;
+    for (auto& d : input_shape) { if (d < 0) d = 1; }
+    Tensor input(input_shape, DataType::Float32);
     input.set_name(info.name);
 
     // Copy preprocessed data to tensor

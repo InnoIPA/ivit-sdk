@@ -58,14 +58,16 @@ Segmentor::Segmentor(
     // Load model
     model_ = ModelManager::instance().load(model_path, load_config);
 
-    // Get input size from model
+    // Get input size from model (guard against dynamic dims: -1)
     auto input_info = model_->input_info();
     if (!input_info.empty()) {
         const auto& shape = input_info[0].shape;
         if (shape.size() >= 4) {
+            int w = static_cast<int>(shape[3]);
+            int h = static_cast<int>(shape[2]);
             input_size_ = cv::Size(
-                static_cast<int>(shape[3]),
-                static_cast<int>(shape[2])
+                w > 0 ? w : 512,
+                h > 0 ? h : 512
             );
         } else {
             input_size_ = cv::Size(512, 512);
@@ -117,9 +119,11 @@ Segmentor::Segmentor(std::shared_ptr<Model> model)
     if (!input_info.empty()) {
         const auto& shape = input_info[0].shape;
         if (shape.size() >= 4) {
+            int w = static_cast<int>(shape[3]);
+            int h = static_cast<int>(shape[2]);
             input_size_ = cv::Size(
-                static_cast<int>(shape[3]),
-                static_cast<int>(shape[2])
+                w > 0 ? w : 512,
+                h > 0 ? h : 512
             );
         } else {
             input_size_ = cv::Size(512, 512);
@@ -152,7 +156,9 @@ Results Segmentor::predict(const cv::Mat& image) {
     }
 
     const auto& info = input_info[0];
-    Tensor input(info.shape, DataType::Float32);
+    Shape input_shape = info.shape;
+    for (auto& d : input_shape) { if (d < 0) d = 1; }
+    Tensor input(input_shape, DataType::Float32);
     input.set_name(info.name);
 
     std::memcpy(input.data(), processed.data, input.byte_size());

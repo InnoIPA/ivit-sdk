@@ -23,6 +23,10 @@
 #include <cuda_runtime.h>
 #endif
 
+#ifdef IVIT_HAS_QNN
+#include <dlfcn.h>
+#endif
+
 namespace ivit {
 
 // ============================================================================
@@ -282,8 +286,8 @@ void DeviceManager::discover_devices() {
     // NVIDIA: TensorRT/CUDA (dGPU, Jetson)
     discover_tensorrt_devices();
 
-    // [Future] Add new hardware platforms here:
-    // discover_xxx_devices();
+    // Qualcomm: QNN / AI Engine Direct (HTP, Adreno GPU)
+    discover_qnn_devices();
 
     // ========================================================================
     // CPU Fallback - Available when OpenVINO is installed
@@ -413,28 +417,44 @@ void DeviceManager::discover_tensorrt_devices() {
 #endif
 }
 
-// =============================================================================
-// Template for adding new hardware platforms
-// =============================================================================
-//
-// void DeviceManager::discover_xxx_devices() {
-// #ifdef IVIT_HAS_XXX
-//     try {
-//         // Use XXX SDK to enumerate devices
-//         for (int i = 0; i < xxx_device_count(); i++) {
-//             DeviceInfo info;
-//             info.id = "xxx:" + std::to_string(i);
-//             info.name = xxx_get_device_name(i);
-//             info.backend = "xxx";
-//             info.type = "npu";  // or "gpu", "cpu", etc.
-//             info.is_available = true;
-//             devices_.push_back(info);
-//         }
-//     } catch (...) {
-//         // XXX SDK not available
-//     }
-// #endif
-// }
+void DeviceManager::discover_qnn_devices() {
+#ifdef IVIT_HAS_QNN
+    // Probe backend libraries via dlopen — no QNN init required just for discovery.
+    struct {
+        const char* lib;
+        const char* id;
+        const char* display_name;
+        const char* type;
+    } candidates[] = {
+        {"libQnnHtp.so", "htp",     "Qualcomm Hexagon HTP (NPU)", "npu"},
+        {"libQnnGpu.so", "qnn:gpu", "Qualcomm Adreno GPU",         "gpu"},
+        {"libQnnCpu.so", "qnn:cpu", "Qualcomm QNN CPU",            "cpu"},
+    };
+
+    for (const auto& c : candidates) {
+        void* h = dlopen(c.lib, RTLD_NOW | RTLD_LOCAL);
+        if (!h) continue;
+        dlclose(h);
+
+        DeviceInfo info;
+        info.id        = c.id;
+        info.name      = c.display_name;
+        info.backend   = "qnn";
+        info.type      = c.type;
+        info.is_available = true;
+
+        if (std::string(c.type) == "npu") {
+            info.supported_precisions = {Precision::FP32, Precision::FP16, Precision::INT8};
+        } else if (std::string(c.type) == "gpu") {
+            info.supported_precisions = {Precision::FP32, Precision::FP16};
+        } else {
+            info.supported_precisions = {Precision::FP32};
+        }
+
+        devices_.push_back(info);
+    }
+#endif
+}
 
 // ============================================================================
 // Helper functions
@@ -521,22 +541,15 @@ bool openvino_is_available() {
 #endif
 }
 
-// =============================================================================
-// Template for new hardware platform availability check
-// =============================================================================
-//
-// bool xxx_is_available() {
-// #ifdef IVIT_HAS_XXX
-//     try {
-//         // Initialize XXX SDK and check availability
-//         return xxx_init() == XXX_SUCCESS;
-//     } catch (...) {
-//         return false;
-//     }
-// #else
-//     return false;
-// #endif
-// }
+bool qnn_is_available() {
+#ifdef IVIT_HAS_QNN
+    for (const char* lib : {"libQnnHtp.so", "libQnnCpu.so", "libQnnGpu.so"}) {
+        void* h = dlopen(lib, RTLD_NOW | RTLD_LOCAL);
+        if (h) { dlclose(h); return true; }
+    }
+#endif
+    return false;
+}
 
 // ============================================================================
 // Free functions (declared in ivit.hpp)

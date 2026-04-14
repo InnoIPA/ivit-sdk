@@ -136,6 +136,9 @@ testpaths = ["tests/python"]
 python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
+markers = [
+    "slow: 需要網路下載、長時間訓練或硬體的測試（用 -m slow 執行）",
+]
 
 [tool.coverage.run]
 source = ["python/ivit"]

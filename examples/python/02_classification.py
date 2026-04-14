@@ -119,7 +119,16 @@ def main():
     else:
         # Single inference
         print("\nRunning inference...")
-        results = classifier.predict(image, top_k=args.top_k)
+        print("type(image) =", type(image), flush=True)
+
+        if image is not None:
+            print("image.shape =", getattr(image, "shape", None), flush=True)
+            print("image.dtype =", getattr(image, "dtype", None), flush=True)
+            print("image.ndim =", getattr(image, "ndim", None), flush=True)
+        image=cv2.resize(image,(224,224))
+        image=image.astype(np.uint8)
+        print("top_k =", args.top_k, type(args.top_k), flush=True)
+        results = classifier.predict(image, top_k=1)
 
         print(f"\nResults:")
         print(f"  Inference time: {results.inference_time_ms:.2f} ms ({1000/results.inference_time_ms:.1f} FPS)")

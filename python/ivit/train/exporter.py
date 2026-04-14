@@ -114,13 +114,22 @@ class ModelExporter:
 
         # Export to ONNX
         logger.info(f"Exporting to ONNX: {path}")
+        # torch.onnx.export(
+        #     self.model,
+        #     dummy_input,
+        #     path,
+        #     input_names=input_names,
+        #     output_names=output_names,
+        #     dynamic_axes=dynamic_axes,
+        #     opset_version=opset_version,
+        #     do_constant_folding=True,
+        # )
         torch.onnx.export(
             self.model,
             dummy_input,
             path,
             input_names=input_names,
             output_names=output_names,
-            dynamic_axes=dynamic_axes,
             opset_version=opset_version,
             do_constant_folding=True,
         )
@@ -312,6 +321,133 @@ class ModelExporter:
         except ImportError:
             logger.warning("TensorRT not installed, returning ONNX path")
             return onnx_path
+
+
+def load_mambavision_for_export(variant: str = "t") -> Any:
+    """
+    Load a pretrained MambaVision model ready for ONNX export.
+
+    MambaVision uses CUDA-only selective scan ops (mamba_ssm) that break
+    standard torch.onnx.export. This function patches them to the pure
+    PyTorch reference implementation before returning the model.
+
+    Args:
+        variant: Model size — "t" (Tiny), "s" (Small), "b" (Base),
+                 "l" (Large), "l2" (Large2)
+
+    Returns:
+        torch.nn.Module in eval mode, ready to pass into ModelExporter
+
+    Requires:
+        pip install mambavision       # preferred (timm-compatible)
+        # or: pip install transformers  # HuggingFace fallback
+
+    Examples:
+        >>> from ivit.train.exporter import load_mambavision_for_export, ModelExporter
+        >>> model = load_mambavision_for_export("t")
+        >>> exporter = ModelExporter(model, device="cpu")
+        >>> exporter.export("mambavision-t.onnx", input_shape=(1, 3, 224, 224))
+    """
+    _TIMM_NAMES = {
+        "t":  "mambavision_tiny_1k",
+        "s":  "mambavision_small_1k",
+        "b":  "mambavision_base_1k",
+        "l":  "mambavision_large_1k",
+        "l2": "mambavision_large2_1k",
+    }
+    _HF_NAMES = {
+        "t":  "nvidia/MambaVision-T-1K",
+        "s":  "nvidia/MambaVision-S-1K",
+        "b":  "nvidia/MambaVision-B-1K",
+        "l":  "nvidia/MambaVision-L-1K",
+        "l2": "nvidia/MambaVision-L2-1K",
+    }
+
+    if variant not in _TIMM_NAMES:
+        raise ValueError(
+            f"Unknown MambaVision variant: '{variant}'. "
+            f"Choose from: {list(_TIMM_NAMES)}"
+        )
+
+    model = None
+
+    # Attempt 1: timm (mambavision package registers itself as timm models)
+    try:
+        import timm
+        import mambavision  # noqa: F401 — registers timm models on import
+        model = timm.create_model(_TIMM_NAMES[variant], pretrained=True)
+        logger.info(f"Loaded MambaVision-{variant.upper()} via timm + mambavision")
+    except Exception as e:
+        logger.debug(f"timm load failed: {e}")
+
+    # Attempt 2: HuggingFace transformers
+    if model is None:
+        try:
+            import torch
+            from transformers import PreTrainedModel, AutoModelForImageClassification
+
+            # Patch A: torch.linspace 在新版 PyTorch (≥2.8) 進入 meta tensor
+            # context 時 .item() 會拋錯，強制建在 CPU 上。
+            _orig_linspace = torch.linspace
+            def _cpu_linspace(*args, **kwargs):
+                kwargs.pop('device', None)
+                return _orig_linspace(*args, device='cpu', **kwargs)
+            torch.linspace = _cpu_linspace
+
+            # Patch B: transformers 5.5 將 _tied_weights_keys 改名為
+            # all_tied_weights_keys，舊模型 code 沒有這個 property。
+            if not hasattr(PreTrainedModel, 'all_tied_weights_keys'):
+                PreTrainedModel.all_tied_weights_keys = property(
+                    lambda self: getattr(self, '_tied_weights_keys', None) or {}
+                )
+
+            model = AutoModelForImageClassification.from_pretrained(
+                _HF_NAMES[variant],
+                trust_remote_code=True,
+                low_cpu_mem_usage=False,
+            )
+            torch.linspace = _orig_linspace  # restore
+
+            logger.info(f"Loaded MambaVision-{variant.upper()} via HuggingFace")
+        except Exception as e:
+            logger.debug(f"HuggingFace load failed: {e}")
+
+    if model is None:
+        raise ImportError(
+            f"Cannot load MambaVision-{variant.upper()}. Install one of:\n"
+            "  pip install mambavision\n"
+            "  pip install transformers"
+        )
+
+    # Patch selective scan: replace CUDA-only kernel with pure-Python reference
+    # so that torch.onnx.export can trace through it without custom ops.
+    # Must patch the module-level binding (not just the ssi module attribute)
+    # because modeling_mambavision uses `from mamba_ssm... import selective_scan_fn`.
+    try:
+        import sys
+        from mamba_ssm.ops.selective_scan_interface import selective_scan_ref
+        mod_key = next(
+            (k for k in sys.modules if 'modeling_mambavision' in k), None
+        )
+        if mod_key:
+            sys.modules[mod_key].selective_scan_fn = selective_scan_ref
+            logger.info(
+                "Patched modeling_mambavision.selective_scan_fn → selective_scan_ref "
+                "(pure Python, ONNX-compatible)"
+            )
+        else:
+            logger.warning(
+                "modeling_mambavision module not found in sys.modules; "
+                "selective_scan patch skipped."
+            )
+    except ImportError:
+        logger.warning(
+            "mamba_ssm not importable; skipping selective_scan patch. "
+            "Export will succeed only if the model was loaded without CUDA ops."
+        )
+
+    model.eval()
+    return model
 
 
 def export_model(

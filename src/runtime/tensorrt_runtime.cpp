@@ -362,6 +362,19 @@ std::map<std::string, Tensor> TensorRTRuntime::infer(
         }
 
         const Tensor& input = it->second;
+
+        // For dynamic inputs, tell the context the actual shape of this batch
+        bool is_dynamic = false;
+        for (auto d : info.shape) { if (d < 0) { is_dynamic = true; break; } }
+        if (is_dynamic) {
+            nvinfer1::Dims actual_dims;
+            actual_dims.nbDims = static_cast<int>(input.shape().size());
+            for (int d = 0; d < actual_dims.nbDims; d++) {
+                actual_dims.d[d] = input.shape()[d];
+            }
+            engine->context->setInputShape(info.name.c_str(), actual_dims);
+        }
+
         cudaError_t copy_err = cudaMemcpyAsync(
             engine->device_buffers[i],
             input.data(),
@@ -388,7 +401,20 @@ std::map<std::string, Tensor> TensorRTRuntime::infer(
 
     for (size_t i = 0; i < engine->output_infos.size(); i++) {
         const auto& info = engine->output_infos[i];
-        Tensor output(info.shape, info.dtype);
+
+        // Use actual (post-inference) output shape from context for dynamic models
+        Shape actual_shape = info.shape;
+        bool out_dynamic = false;
+        for (auto d : info.shape) { if (d < 0) { out_dynamic = true; break; } }
+        if (out_dynamic) {
+            nvinfer1::Dims ctx_dims = engine->context->getTensorShape(info.name.c_str());
+            actual_shape.clear();
+            for (int d = 0; d < ctx_dims.nbDims; d++) {
+                actual_shape.push_back(ctx_dims.d[d]);
+            }
+        }
+
+        Tensor output(actual_shape, info.dtype);
         output.set_name(info.name);
 
         cudaError_t copy_err = cudaMemcpyAsync(
@@ -503,6 +529,38 @@ std::shared_ptr<nvinfer1::ICudaEngine> TensorRTRuntime::build_engine_from_onnx(
         nvinfer1::MemoryPoolType::kWORKSPACE,
         1ULL << 30  // 1GB
     );
+
+    // Add optimization profile if any input has dynamic dimensions
+    {
+        bool has_dynamic = false;
+        for (int i = 0; i < network->getNbInputs(); i++) {
+            auto dims = network->getInput(i)->getDimensions();
+            for (int d = 0; d < dims.nbDims; d++) {
+                if (dims.d[d] < 0) { has_dynamic = true; break; }
+            }
+            if (has_dynamic) break;
+        }
+
+        if (has_dynamic) {
+            auto profile = builder->createOptimizationProfile();
+            for (int i = 0; i < network->getNbInputs(); i++) {
+                auto* input = network->getInput(i);
+                nvinfer1::Dims dims = input->getDimensions();
+                nvinfer1::Dims min_d = dims, opt_d = dims, max_d = dims;
+                for (int d = 0; d < dims.nbDims; d++) {
+                    if (dims.d[d] < 0) {
+                        min_d.d[d] = 1;
+                        opt_d.d[d] = 1;
+                        max_d.d[d] = 32;
+                    }
+                }
+                profile->setDimensions(input->getName(), nvinfer1::OptProfileSelector::kMIN, min_d);
+                profile->setDimensions(input->getName(), nvinfer1::OptProfileSelector::kOPT, opt_d);
+                profile->setDimensions(input->getName(), nvinfer1::OptProfileSelector::kMAX, max_d);
+            }
+            builder_config->addOptimizationProfile(profile);
+        }
+    }
 
     // Build engine
     auto serialized_engine = std::unique_ptr<nvinfer1::IHostMemory>(
@@ -624,11 +682,29 @@ TensorRTEngine* TensorRTRuntime::create_engine_wrapper(
         nvinfer1::DataType nv_dtype = engine->getTensorDataType(name);
         nvinfer1::TensorIOMode io_mode = engine->getTensorIOMode(name);
 
+        // Replace any dynamic (-1) dims with max-profile dims for buffer allocation
+        bool has_dynamic = false;
+        for (int d = 0; d < dims.nbDims; d++) {
+            if (dims.d[d] < 0) { has_dynamic = true; break; }
+        }
+        nvinfer1::Dims alloc_dims = dims;
+        if (has_dynamic && engine->getNbOptimizationProfiles() > 0) {
+            if (io_mode == nvinfer1::TensorIOMode::kINPUT) {
+                // getProfileShape is only valid for input tensors
+                alloc_dims = engine->getProfileShape(name, 0, nvinfer1::OptProfileSelector::kMAX);
+            } else {
+                // For dynamic output, replace -1 with 32 (matches our max profile batch)
+                for (int d = 0; d < alloc_dims.nbDims; d++) {
+                    if (alloc_dims.d[d] < 0) alloc_dims.d[d] = 32;
+                }
+            }
+        }
+
         TensorInfo info;
         info.name = name;
         info.dtype = nv_to_dtype(nv_dtype);
 
-        // Convert dims to shape
+        // Store logical shape (may contain -1 for dynamic dims)
         for (int d = 0; d < dims.nbDims; d++) {
             info.shape.push_back(dims.d[d]);
         }
@@ -642,8 +718,18 @@ TensorRTEngine* TensorRTRuntime::create_engine_wrapper(
             info.layout = Layout::Unknown;
         }
 
-        // Allocate device buffer with error checking
-        size_t buffer_size = info.byte_size();
+        // Compute buffer size using resolved (non-negative) alloc_dims
+        size_t elem_size = 4;
+        switch (nv_dtype) {
+            case nvinfer1::DataType::kHALF: elem_size = 2; break;
+            case nvinfer1::DataType::kINT8: elem_size = 1; break;
+            case nvinfer1::DataType::kINT64: elem_size = 8; break;
+            default: break;
+        }
+        size_t buffer_size = elem_size;
+        for (int d = 0; d < alloc_dims.nbDims; d++) {
+            buffer_size *= static_cast<size_t>(alloc_dims.d[d]);
+        }
         cudaError_t malloc_err = cudaMalloc(&wrapper->device_buffers[i], buffer_size);
         if (malloc_err != cudaSuccess) {
             // Cleanup already allocated buffers

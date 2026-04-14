@@ -165,12 +165,19 @@ def train_model(trainer, callbacks):
 
     print("Starting training...")
     history = trainer.fit(callbacks=callbacks)
-
+    print(history)
     print("\nTraining completed!")
-    print(f"Final training loss: {history['train_loss'][-1]:.4f}")
-    print(f"Final validation loss: {history['val_loss'][-1]:.4f}")
-    print(f"Best validation accuracy: {max(history['val_accuracy']):.2%}")
+    if history and isinstance(history[-1], dict):
+        last = history[-1]
+        print(f"Final training loss: {last['loss']:.4f}")
+        print(f"Final training accuracy: {last['accuracy']:.2f}%")
+        print(f"Final validation loss: {last['val_loss']:.4f}")
+        print(f"Final validation accuracy: {last['val_accuracy']:.2f}%")
+        # print(f"Best validation accuracy: {max(last['val_accuracy']):.2%}")
 
+    else:
+        print("Training history format is unexpected.")
+        
     return history
 
 

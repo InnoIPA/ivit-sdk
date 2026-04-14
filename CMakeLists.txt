@@ -161,6 +161,51 @@ if(IVIT_USE_TENSORRT)
 endif()
 
 # ============================================================================
+# QNN (Qualcomm AI Engine Direct)
+# ============================================================================
+if(IVIT_USE_QNN)
+    # Look for QNN SDK: honour QNN_SDK_ROOT env / cmake var, then common paths
+    if(NOT DEFINED QNN_SDK_ROOT AND DEFINED ENV{QNN_SDK_ROOT})
+        set(QNN_SDK_ROOT "$ENV{QNN_SDK_ROOT}")
+    endif()
+
+    find_path(QNN_INCLUDE_DIR QnnInterface.h
+        HINTS ${QNN_SDK_ROOT} /opt/qnn /usr/local/qnn
+        PATH_SUFFIXES include/QNN include QNN
+    )
+
+    if(QNN_INCLUDE_DIR)
+        message(STATUS "QNN SDK headers found: ${QNN_INCLUDE_DIR}")
+        add_compile_definitions(IVIT_HAS_QNN)
+
+        # Determine platform-specific library subdirectory
+        if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
+            set(_QNN_LIB_SUBDIR "aarch64-ubuntu-gcc9.4")
+        else()
+            set(_QNN_LIB_SUBDIR "x86_64-linux-clang")
+        endif()
+
+        # QNN backend libraries live under lib/<platform>/ in the SDK
+        find_library(QNN_HTP_LIBRARY QnnHtp
+            HINTS ${QNN_SDK_ROOT} /opt/qnn /usr/local/qnn
+            PATH_SUFFIXES lib/${_QNN_LIB_SUBDIR} lib
+        )
+        find_library(QNN_CPU_LIBRARY QnnCpu
+            HINTS ${QNN_SDK_ROOT} /opt/qnn /usr/local/qnn
+            PATH_SUFFIXES lib/${_QNN_LIB_SUBDIR} lib
+        )
+        find_library(QNN_SYSTEM_LIBRARY QnnSystem
+            HINTS ${QNN_SDK_ROOT} /opt/qnn /usr/local/qnn
+            PATH_SUFFIXES lib/${_QNN_LIB_SUBDIR} lib
+        )
+    else()
+        message(WARNING "QNN SDK not found — disabling QNN backend. "
+                        "Set QNN_SDK_ROOT to your SDK installation path.")
+        set(IVIT_USE_QNN OFF)
+    endif()
+endif()
+
+# ============================================================================
 # Library sources
 # ============================================================================
 set(IVIT_SOURCES
@@ -195,6 +240,9 @@ if(IVIT_USE_TENSORRT)
     list(APPEND IVIT_SOURCES src/runtime/tensorrt_runtime.cpp)
 endif()
 
+if(IVIT_USE_QNN)
+    list(APPEND IVIT_SOURCES src/runtime/qnn_runtime.cpp)
+endif()
 
 # ============================================================================
 # Create library
@@ -229,6 +277,16 @@ if(IVIT_USE_TENSORRT)
     )
 endif()
 
+if(IVIT_USE_QNN)
+    target_include_directories(ivit PRIVATE ${QNN_INCLUDE_DIR})
+    # QNN backend libraries are loaded dynamically at runtime (dlopen).
+    # We only need libdl for the dynamic linker, and optionally link the
+    # system library for binary metadata queries.
+    target_link_libraries(ivit PRIVATE ${CMAKE_DL_LIBS})
+    if(QNN_SYSTEM_LIBRARY)
+        target_link_libraries(ivit PRIVATE ${QNN_SYSTEM_LIBRARY})
+    endif()
+endif()
 
 # ============================================================================
 # Python bindings
@@ -270,10 +328,12 @@ if(IVIT_BUILD_TESTS)
     if(GTest_FOUND)
         add_executable(test_model tests/cpp/test_model.cpp)
         target_link_libraries(test_model PRIVATE ivit GTest::gtest_main)
+        target_link_options(test_model PRIVATE -Wl,--unresolved-symbols=ignore-in-shared-libs)
         add_test(NAME test_model COMMAND test_model)
 
         add_executable(test_inference tests/cpp/test_inference.cpp)
         target_link_libraries(test_inference PRIVATE ivit GTest::gtest_main)
+        target_link_options(test_inference PRIVATE -Wl,--unresolved-symbols=ignore-in-shared-libs)
         add_test(NAME test_inference COMMAND test_inference)
     else()
         message(STATUS "Google Test not found, C++ tests disabled")
@@ -407,6 +467,9 @@ if(IVIT_USE_OPENVINO)
 endif()
 if(IVIT_USE_TENSORRT)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libnvinfer-dev")
+endif()
+if(IVIT_USE_QNN)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, qnn-sdk")
 endif()
 
 # 架構與平台後綴

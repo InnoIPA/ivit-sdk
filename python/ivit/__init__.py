@@ -31,7 +31,12 @@ _libivit_path = _os.path.join(_package_dir, "libivit.so")
 
 if _os.path.exists(_libivit_path):
     try:
-        _ctypes.CDLL(_libivit_path, mode=_ctypes.RTLD_GLOBAL)
+        # Use RTLD_LOCAL (not RTLD_GLOBAL) to avoid polluting the global symbol
+        # table with OpenVINO / libcudart symbols, which conflict with PyTorch's
+        # own CUDA runtime and cause munmap heap-corruption in torch.jit.load.
+        # _ivit_core.so has a RUNPATH pointing to the build lib dir, so it
+        # resolves libivit.so independently without RTLD_GLOBAL.
+        _ctypes.CDLL(_libivit_path, mode=_ctypes.RTLD_LOCAL)
     except OSError:
         pass
 
@@ -111,6 +116,66 @@ def is_cpp_available():
     return _CPP_AVAILABLE
 
 
+# ── Python-only device discovery (used when C++ bindings are unavailable) ────
+
+class _DeviceInfo:
+    """Minimal DeviceInfo for the Python fallback path."""
+    __slots__ = ("id", "name", "backend", "memory_total")
+
+    def __init__(self, id: str, name: str, backend: str, memory_total: int = 0):
+        self.id = id
+        self.name = name
+        self.backend = backend
+        self.memory_total = memory_total
+
+    def __repr__(self):
+        return f"DeviceInfo(id={self.id!r}, name={self.name!r}, backend={self.backend!r})"
+
+
+def _py_list_devices():
+    """Return available devices using onnxruntime provider discovery."""
+    try:
+        import onnxruntime as ort
+        available = ort.get_available_providers()
+    except ImportError:
+        available = []
+
+    devs = [_DeviceInfo("cpu", "CPU", "cpu", 0)]
+
+    if "CUDAExecutionProvider" in available:
+        try:
+            import subprocess
+            out = subprocess.check_output(
+                ["nvidia-smi", "--query-gpu=name,memory.total",
+                 "--format=csv,noheader,nounits"],
+                text=True, timeout=5,
+            ).strip().splitlines()
+            for i, line in enumerate(out):
+                parts = [p.strip() for p in line.split(",")]
+                name = parts[0] if parts else "NVIDIA GPU"
+                mem  = int(parts[1]) * 1024 * 1024 if len(parts) > 1 else 0
+                devs.append(_DeviceInfo(f"cuda:{i}", name, "tensorrt", mem))
+        except Exception:
+            devs.append(_DeviceInfo("cuda:0", "NVIDIA GPU", "tensorrt", 0))
+
+    if "OpenVINOExecutionProvider" in available:
+        devs.append(_DeviceInfo("npu", "Intel NPU/iGPU", "openvino", 0))
+
+    return devs
+
+
+def _py_get_best_device():
+    """Return best available device (GPU > NPU > CPU)."""
+    devs = _py_list_devices()
+    for dev in devs:
+        if dev.id.startswith("cuda"):
+            return dev
+    for dev in devs:
+        if dev.id == "npu":
+            return dev
+    return devs[0]
+
+
 def _require_cpp():
     """Raise error if C++ bindings are not available."""
     if not _CPP_AVAILABLE:
@@ -154,6 +219,11 @@ if _CPP_AVAILABLE:
         from .devices import devices, Device, D
     except ImportError:
         pass
+
+# When C++ is unavailable, expose Python-only list_devices / get_best_device
+if not _CPP_AVAILABLE:
+    list_devices = _py_list_devices
+    get_best_device = _py_get_best_device
 
 # Import Model Zoo (works without C++ bindings)
 from . import zoo

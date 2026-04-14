@@ -233,15 +233,21 @@ private:
         const auto& info = input_info_[0];
         const auto& shape = info.shape;
 
-        // Assume NCHW layout
-        int64_t batch = shape.size() > 0 ? shape[0] : 1;
-        int64_t channels = shape.size() > 1 ? shape[1] : 3;
-        int64_t height = shape.size() > 2 ? shape[2] : 224;
-        int64_t width = shape.size() > 3 ? shape[3] : 224;
+        // Assume NCHW layout — use int to match cv::Size and avoid
+        // int64_t→int narrowing issues across OpenCV ABI boundaries
+        int channels = static_cast<int>(shape.size() > 1 ? shape[1] : 3);
+        int height   = static_cast<int>(shape.size() > 2 ? shape[2] : 224);
+        int width    = static_cast<int>(shape.size() > 3 ? shape[3] : 224);
+
+        // Guard against dynamic dimensions (-1) or invalid values
+        if (height <= 0) height = 224;
+        if (width  <= 0) width  = 224;
+        if (channels <= 0) channels = 3;
 
         // Resize image
         cv::Mat resized;
-        cv::resize(image, resized, cv::Size(width, height));
+        cv::Size target_size(width, height);
+        cv::resize(image, resized, target_size);
 
         // Convert to float and normalize
         cv::Mat float_img;
@@ -267,7 +273,7 @@ private:
             std::memcpy(
                 ptr + c * height * width,
                 channel.data,
-                height * width * sizeof(float)
+                static_cast<size_t>(height) * width * sizeof(float)
             );
         }
 
@@ -607,17 +613,21 @@ void Model::submit_inference(
     // Fire-and-forget: launch async task that calls callback
     cv::Mat image_copy = image.clone();
 
-    std::thread([this, image_copy, callback, config]() {
-        try {
-            Results results = this->predict(image_copy, config);
-            if (callback) {
-                callback(std::move(results));
+    ensure_executor();
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex_);
+        task_queue_.push([this, image_copy, callback, config]() {
+            try {
+                Results results = this->predict(image_copy, config);
+                if (callback) {
+                    callback(std::move(results));
+                }
+            } catch (const std::exception& e) {
+                std::cerr << "[iVIT] Async inference error: " << e.what() << std::endl;
             }
-        } catch (const std::exception& e) {
-            // Log error but don't propagate - this is fire-and-forget
-            std::cerr << "[iVIT] Async inference error: " << e.what() << std::endl;
-        }
-    }).detach();
+        });
+    }
+    queue_cv_.notify_one();
 }
 
 // ============================================================================
@@ -684,9 +694,9 @@ std::vector<Results> Model::predict_concurrent(
 // ============================================================================
 
 void Model::ensure_executor() {
-    if (executor_running_.load()) return;
+    bool expected = false;
+    if (!executor_running_.compare_exchange_strong(expected, true)) return;
 
-    executor_running_.store(true);
     executor_thread_ = std::make_unique<std::thread>([this]() {
         while (executor_running_.load()) {
             std::function<void()> task;

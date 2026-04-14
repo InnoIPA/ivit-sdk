@@ -20,28 +20,30 @@ iVIT-SDK (Innodisk Vision Intelligence Toolkit) 是一個統一的電腦視覺�
 ## 系統需求
 
 ### 作業系統
+
 - Ubuntu 22.04（推薦）
 
 ### 硬體支援
-| 廠商 | 硬體 | 後端 |
-|------|------|------|
-| Intel | CPU / iGPU / NPU | OpenVINO |
-| NVIDIA | dGPU / Jetson | TensorRT |
-| Qualcomm | IQ9 / IQ8 / IQ6 | QNN（規劃中）|
+
+| 廠商     | 硬體             | 後端          |
+| -------- | ---------------- | ------------- |
+| Intel    | CPU / iGPU / NPU | OpenVINO      |
+| NVIDIA   | dGPU / Jetson    | TensorRT      |
+| Qualcomm | IQ9 / IQ8 / IQ6  | QNN（規劃中） |
 
 ### 軟體依賴
 
-| 套件 | 用途 | 安裝方式 |
-|------|------|----------|
-| build-essential | C++ 編譯器 (GCC 11+) | APT |
-| cmake | 建置系統 (3.18+) | APT |
-| ninja-build | Ninja 建置工具（Python 套件編譯需要）| APT |
-| pkg-config | 套件偵測 | APT |
-| libopencv-dev | OpenCV 4.5+ (含 dnn 模組) | APT |
-| libopenvino-dev | OpenVINO C++ Runtime | Intel APT |
-| intel-opencl-icd | Intel GPU OpenCL Runtime（iGPU 推論需要）| Intel APT |
-| python3-dev | Python 標頭檔（Python 綁定需要）| APT |
-| pybind11 | Python/C++ 綁定（Python 綁定需要）| pip |
+| 套件             | 用途                                      | 安裝方式  |
+| ---------------- | ----------------------------------------- | --------- |
+| build-essential  | C++ 編譯器 (GCC 11+)                      | APT       |
+| cmake            | 建置系統 (3.18+)                          | APT       |
+| ninja-build      | Ninja 建置工具（Python 套件編譯需要）     | APT       |
+| pkg-config       | 套件偵測                                  | APT       |
+| libopencv-dev    | OpenCV 4.5+ (含 dnn 模組)                 | APT       |
+| libopenvino-dev  | OpenVINO C++ Runtime                      | Intel APT |
+| intel-opencl-icd | Intel GPU OpenCL Runtime（iGPU 推論需要） | Intel APT |
+| python3-dev      | Python 標頭檔（Python 綁定需要）          | APT       |
+| pybind11         | Python/C++ 綁定（Python 綁定需要）        | pip       |
 
 > **重要**：OpenVINO 必須使用 **APT 安裝的 C++ 版本**，不能用 `pip install openvino`。
 > pip 版本的 OpenVINO 會造成 C++ ABI 不相容（`_GLIBCXX_USE_CXX11_ABI=0`），導致與系統 OpenCV 連結失敗。
@@ -121,6 +123,7 @@ sudo apt install cuda-toolkit tensorrt-dev
 ```
 
 > 若只需要最小安裝（C++ 編譯用）：
+>
 > ```bash
 > sudo apt install libnvinfer-dev libnvonnxparsers-dev libnvinfer-plugin-dev
 > ```
@@ -204,6 +207,12 @@ cmake .. \
     -DIVIT_BUILD_PYTHON=ON
 make -j$(nproc)
 ```
+### 安裝至site-package
+```bash
+cd ..
+python -m build
+pip install dist/ivit_sdk-1.0.0-cp310-cp310-linux_x86_64.whl
+```
 
 ### 安裝 Python 套件
 
@@ -219,26 +228,29 @@ source .venv/bin/activate
 pip install -e ".[zoo]"
 ```
 
+
 > **注意**：Ubuntu 24.04 的系統 Python 不允許直接 `pip install`（PEP 668），必須使用 venv。
 > 之後每次開新 terminal 需先執行 `source .venv/bin/activate`。
 
 > **PATH 設定**：若安裝後出現 `WARNING: The script ivit is installed in '/home/xxx/.local/bin' which is not on PATH`，
 > 需將 `~/.local/bin` 加入 PATH：
+>
 > ```bash
 > echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
 > source ~/.bashrc
 > ```
+>
 > 使用 venv 的情況下不會有此問題。
 
 ### CMake 選項
 
-| 選項 | 預設值 | 說明 |
-|------|--------|------|
-| `IVIT_BUILD_PYTHON` | ON | 編譯 Python bindings |
-| `IVIT_BUILD_TESTS` | ON | 編譯單元測試 |
-| `IVIT_BUILD_EXAMPLES` | ON | 編譯範例程式 |
-| `IVIT_USE_OPENVINO` | ON | 啟用 OpenVINO 後端 |
-| `IVIT_USE_TENSORRT` | ON | 啟用 TensorRT 後端 |
+| 選項                    | 預設值 | 說明                 |
+| ----------------------- | ------ | -------------------- |
+| `IVIT_BUILD_PYTHON`   | ON     | 編譯 Python bindings |
+| `IVIT_BUILD_TESTS`    | ON     | 編譯單元測試         |
+| `IVIT_BUILD_EXAMPLES` | ON     | 編譯範例程式         |
+| `IVIT_USE_OPENVINO`   | ON     | 啟用 OpenVINO 後端   |
+| `IVIT_USE_TENSORRT`   | ON     | 啟用 TensorRT 後端   |
 
 ### 預期輸出
 
@@ -395,14 +407,14 @@ for cls in results.classifications:
 
 ### 主要類別
 
-| 類別 | 說明 |
-|------|------|
-| `Detector` | 物件偵測（YOLO, SSD, Faster R-CNN） |
-| `Classifier` | 影像分類（ResNet, EfficientNet） |
-| `Segmentor` | 語意分割（DeepLabV3, U-Net） |
-| `Model` | 底層模型抽象介面 |
-| `Results` | 推理結果容器 |
-| `DeviceManager` | 裝置管理與發現 |
+| 類別              | 說明                                |
+| ----------------- | ----------------------------------- |
+| `Detector`      | 物件偵測（YOLO, SSD, Faster R-CNN） |
+| `Classifier`    | 影像分類（ResNet, EfficientNet）    |
+| `Segmentor`     | 語意分割（DeepLabV3, U-Net）        |
+| `Model`         | 底層模型抽象介面                    |
+| `Results`       | 推理結果容器                        |
+| `DeviceManager` | 裝置管理與發現                      |
 
 ---
 
@@ -499,16 +511,16 @@ struct BBox {
 
 ### 支援的裝置
 
-| 裝置字串 | 說明 | 後端 |
-|----------|------|------|
-| `auto` | 自動選擇最佳裝置 | 自動 |
-| `cpu` | CPU | OpenVINO |
-| `gpu:0` | Intel 內顯 | OpenVINO |
-| `cuda:0` | NVIDIA GPU | TensorRT |
-| `npu` | Intel NPU | OpenVINO |
-| `iq9` | Qualcomm IQ9 (QCS9075) | QNN (規劃中) |
-| `iq8` | Qualcomm IQ8 (QCS8550) | QNN (規劃中) |
-| `iq6` | Qualcomm IQ6 (QCS6490) | QNN (規劃中) |
+| 裝置字串   | 說明                   | 後端         |
+| ---------- | ---------------------- | ------------ |
+| `auto`   | 自動選擇最佳裝置       | 自動         |
+| `cpu`    | CPU                    | OpenVINO     |
+| `gpu:0`  | Intel 內顯             | OpenVINO     |
+| `cuda:0` | NVIDIA GPU             | TensorRT     |
+| `npu`    | Intel NPU              | OpenVINO     |
+| `iq9`    | Qualcomm IQ9 (QCS9075) | QNN (規劃中) |
+| `iq8`    | Qualcomm IQ8 (QCS8550) | QNN (規劃中) |
+| `iq6`    | Qualcomm IQ6 (QCS6490) | QNN (規劃中) |
 
 ### 裝置發現
 
@@ -551,20 +563,20 @@ Detector detector("model.onnx", config.device, config);
 
 ### 支援的格式
 
-| 格式 | 副檔名 | 後端 | 說明 |
-|------|--------|------|------|
-| ONNX | `.onnx` | 全部 | 通用交換格式（推薦） |
-| OpenVINO IR | `.xml`, `.bin` | OpenVINO | Intel 優化格式 |
-| TensorRT Engine | `.engine`, `.trt` | TensorRT | NVIDIA 優化格式 |
-| PaddlePaddle | `.pdmodel` | OpenVINO | 百度框架格式 |
+| 格式            | 副檔名                | 後端     | 說明                 |
+| --------------- | --------------------- | -------- | -------------------- |
+| ONNX            | `.onnx`             | 全部     | 通用交換格式（推薦） |
+| OpenVINO IR     | `.xml`, `.bin`    | OpenVINO | Intel 優化格式       |
+| TensorRT Engine | `.engine`, `.trt` | TensorRT | NVIDIA 優化格式      |
+| PaddlePaddle    | `.pdmodel`          | OpenVINO | 百度框架格式         |
 
 ### 精度設定
 
-| 精度 | 說明 | 適用場景 |
-|------|------|----------|
-| `FP32` | 32 位元浮點 | 最高精度，NPU/CPU 推薦直接使用 |
-| `FP16` | 16 位元浮點 | 縮小模型檔案（約 50%），適合儲存與部署 |
-| `INT8` | 8 位元整數 | 最高效能（需校準資料集），可透過 `ivit convert -p int8 -c` 轉換 |
+| 精度     | 說明        | 適用場景                                                          |
+| -------- | ----------- | ----------------------------------------------------------------- |
+| `FP32` | 32 位元浮點 | 最高精度，NPU/CPU 推薦直接使用                                    |
+| `FP16` | 16 位元浮點 | 縮小模型檔案（約 50%），適合儲存與部署                            |
+| `INT8` | 8 位元整數  | 最高效能（需校準資料集），可透過 `ivit convert -p int8 -c` 轉換 |
 
 ```cpp
 LoadConfig config;
@@ -619,11 +631,11 @@ ivit convert model.onnx --format openvino --precision fp16
 
 #### 精度支援與限制
 
-| 精度 | OpenVINO | TensorRT | 說明 |
-|------|----------|----------|------|
-| `fp32` | ✅ | ✅ | 預設精度 |
-| `fp16` | ✅ | ✅ | 縮小模型檔案，不影響推論速度（見下方說明） |
-| `int8` | ✅（需校準） | ✅（需校準） | 最高效能，需提供校準圖片資料夾 |
+| 精度     | OpenVINO     | TensorRT     | 說明                                       |
+| -------- | ------------ | ------------ | ------------------------------------------ |
+| `fp32` | ✅           | ✅           | 預設精度                                   |
+| `fp16` | ✅           | ✅           | 縮小模型檔案，不影響推論速度（見下方說明） |
+| `int8` | ✅（需校準） | ✅（需校準） | 最高效能，需提供校準圖片資料夾             |
 
 #### OpenVINO INT8 量化
 
@@ -665,14 +677,14 @@ FP16 壓縮**不會提升推論速度**，唯一好處是模型檔案大小減�
 
 以下為 YOLOv8n 在 Intel AIPC 平台的實測數據（100 次迭代）：
 
-| 模型格式 | 裝置 | 平均延遲 | 吞吐量 | 檔案大小 |
-|----------|------|----------|--------|----------|
-| ONNX (FP32) | NPU | 8.74 ms | 114 FPS | 13 MB |
-| IR FP32 | NPU | 8.77 ms | 114 FPS | ~12 MB |
-| IR FP16 | NPU | 13.38 ms | 75 FPS | ~6 MB |
-| ONNX (FP32) | CPU | 33.25 ms | 30 FPS | 13 MB |
-| IR FP32 | CPU | 34.30 ms | 29 FPS | ~12 MB |
-| IR FP16 | CPU | 34.18 ms | 29 FPS | ~6 MB |
+| 模型格式    | 裝置 | 平均延遲 | 吞吐量  | 檔案大小 |
+| ----------- | ---- | -------- | ------- | -------- |
+| ONNX (FP32) | NPU  | 8.74 ms  | 114 FPS | 13 MB    |
+| IR FP32     | NPU  | 8.77 ms  | 114 FPS | ~12 MB   |
+| IR FP16     | NPU  | 13.38 ms | 75 FPS  | ~6 MB    |
+| ONNX (FP32) | CPU  | 33.25 ms | 30 FPS  | 13 MB    |
+| IR FP32     | CPU  | 34.30 ms | 29 FPS  | ~12 MB   |
+| IR FP16     | CPU  | 34.18 ms | 29 FPS  | ~6 MB    |
 
 > **建議**：NPU 推論直接使用 ONNX 或 FP32 IR 即可，效能最佳。
 > FP16 轉換適合需要縮小模型檔案的部署場景（如嵌入式裝置儲存空間有限）。
@@ -749,12 +761,12 @@ Detector detector("model.onnx", "npu", config);
 
 ### C++ 範例
 
-| 範例 | 說明 |
-|------|------|
-| `simple_inference` | 綜合範例（分類、偵測、分割、效能測試） |
-| `classification_demo` | 影像分類範例 |
-| `detection_demo` | 物件偵測範例 |
-| `video_demo` | 即時影片偵測範例 |
+| 範例                    | 說明                                   |
+| ----------------------- | -------------------------------------- |
+| `simple_inference`    | 綜合範例（分類、偵測、分割、效能測試） |
+| `classification_demo` | 影像分類範例                           |
+| `detection_demo`      | 物件偵測範例                           |
+| `video_demo`          | 即時影片偵測範例                       |
 
 ```bash
 # 列出可用裝置
@@ -775,12 +787,12 @@ Detector detector("model.onnx", "npu", config);
 
 ### Python 範例
 
-| 範例 | 說明 |
-|------|------|
-| `01_quickstart.py` | 快速入門範例 |
-| `02_detection.py` | 物件偵測完整範例 |
-| `02_classification.py` | 影像分類範例 |
-| `02_segmentation.py` | 語意分割範例 |
+| 範例                     | 說明             |
+| ------------------------ | ---------------- |
+| `01_quickstart.py`     | 快速入門範例     |
+| `02_detection.py`      | 物件偵測完整範例 |
+| `02_classification.py` | 影像分類範例     |
+| `02_segmentation.py`   | 語意分割範例     |
 
 Python 範例使用 Model Zoo 的模型。`01_quickstart.py` 會自動下載模型，其他範例需先手動下載。
 
