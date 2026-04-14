@@ -13,6 +13,13 @@
 #include "ivit/runtime/openvino_runtime.hpp"
 #endif
 
+#ifdef IVIT_HAS_QNN
+#include "ivit/runtime/qnn_runtime.hpp"
+#endif
+
+#ifdef IVIT_HAS_HAILORT
+#include "ivit/runtime/hailort_runtime.hpp"
+#endif
 
 namespace ivit {
 
@@ -43,6 +50,17 @@ public:
             }
         } catch (...) {
             // OpenVINO not available, skip
+        }
+#endif
+
+#ifdef IVIT_HAS_HAILORT
+        try {
+            auto hailort = std::make_shared<HailoRTRuntime>();
+            if (hailort->is_available()) {
+                factory.register_runtime(hailort);
+            }
+        } catch (...) {
+            // HailoRT not available, skip
         }
 #endif
 
