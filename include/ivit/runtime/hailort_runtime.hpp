@@ -36,6 +36,8 @@ namespace ivit {
  *
  * Holds all HailoRT InferModel handles and tensor metadata
  * for one loaded .hef model.
+ *
+ * Note: ConfiguredInferModel is move-only; HailoRTModel must not be copied.
  */
 struct HailoRTModel {
     std::shared_ptr<hailort::VDevice>    vdevice;
