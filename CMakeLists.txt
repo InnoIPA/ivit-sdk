@@ -162,6 +162,32 @@ if(IVIT_USE_TENSORRT)
 endif()
 
 # ============================================================================
+# HailoRT (Hailo-8 PCIe AI Accelerator)
+# ============================================================================
+if(IVIT_USE_HAILORT)
+    if(NOT DEFINED HAILORT_SDK_ROOT AND DEFINED ENV{HAILORT_SDK_ROOT})
+        set(HAILORT_SDK_ROOT "$ENV{HAILORT_SDK_ROOT}")
+    endif()
+
+    find_path(HAILORT_INCLUDE_DIR hailo/hailort.hpp
+        HINTS ${HAILORT_SDK_ROOT} /usr/include /usr/local/include
+    )
+    find_library(HAILORT_LIBRARY hailort
+        HINTS ${HAILORT_SDK_ROOT} /usr/lib /usr/local/lib
+    )
+
+    if(HAILORT_INCLUDE_DIR AND HAILORT_LIBRARY)
+        message(STATUS "HailoRT found: ${HAILORT_LIBRARY}")
+        add_compile_definitions(IVIT_HAS_HAILORT)
+    else()
+        message(WARNING "HailoRT not found — disabling HailoRT backend. "
+                        "Set HAILORT_SDK_ROOT to your SDK installation path "
+                        "or install via: apt install hailoRT-dev")
+        set(IVIT_USE_HAILORT OFF)
+    endif()
+endif()
+
+# ============================================================================
 # Library sources
 # ============================================================================
 set(IVIT_SOURCES
@@ -198,7 +224,6 @@ endif()
 
 if(IVIT_USE_HAILORT)
     list(APPEND IVIT_SOURCES src/runtime/hailort_runtime.cpp)
-    add_compile_definitions(IVIT_HAS_HAILORT)
 endif()
 
 # ============================================================================
@@ -234,6 +259,10 @@ if(IVIT_USE_TENSORRT)
     )
 endif()
 
+if(IVIT_USE_HAILORT)
+    target_include_directories(ivit PRIVATE ${HAILORT_INCLUDE_DIR})
+    target_link_libraries(ivit PRIVATE ${HAILORT_LIBRARY})
+endif()
 
 # ============================================================================
 # Python bindings
