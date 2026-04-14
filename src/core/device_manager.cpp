@@ -23,6 +23,14 @@
 #include <cuda_runtime.h>
 #endif
 
+#ifdef IVIT_HAS_QNN
+#include <dlfcn.h>
+#endif
+
+#ifdef IVIT_HAS_HAILORT
+// <filesystem> already included above
+#endif
+
 namespace ivit {
 
 // ============================================================================
@@ -282,6 +290,12 @@ void DeviceManager::discover_devices() {
     // NVIDIA: TensorRT/CUDA (dGPU, Jetson)
     discover_tensorrt_devices();
 
+    // Qualcomm: QNN / AI Engine Direct (HTP, Adreno GPU)
+    discover_qnn_devices();
+
+    // Hailo: HailoRT (Hailo-8 PCIe AI accelerator)
+    discover_hailort_devices();
+
     // [Future] Add new hardware platforms here:
     // discover_xxx_devices();
 
@@ -480,6 +494,14 @@ std::pair<BackendType, std::string> parse_device_string(const std::string& devic
         return {BackendType::QNN, "HTP"};  // Hexagon Tensor Processor
     }
 
+    // Hailo-8 PCIe AI accelerator via HailoRT
+    if (dev_lower == "hailo" || dev_lower.rfind("hailo:", 0) == 0) {
+        std::string idx = "0";
+        auto pos = dev_lower.find(':');
+        if (pos != std::string::npos) idx = dev_lower.substr(pos + 1);
+        return {BackendType::HailoRT, idx};
+    }
+
     // Default to CPU (OpenVINO fallback)
     return {BackendType::OpenVINO, "CPU"};
 }
@@ -516,6 +538,48 @@ bool openvino_is_available() {
     } catch (...) {
         return false;
     }
+#else
+    return false;
+#endif
+}
+
+void DeviceManager::discover_qnn_devices() {
+#ifdef IVIT_HAS_QNN
+    // QNN device discovery would enumerate Qualcomm HTP/GPU devices via QNN SDK
+    // Placeholder: actual implementation would use QNN SDK APIs
+#endif
+}
+
+bool qnn_is_available() {
+#ifdef IVIT_HAS_QNN
+    return true;  // Placeholder: check QNN SDK availability
+#else
+    return false;
+#endif
+}
+
+void DeviceManager::discover_hailort_devices() {
+#ifdef IVIT_HAS_HAILORT
+    for (int i = 0; i < 8; ++i) {
+        std::string dev_node = "/dev/hailo" + std::to_string(i);
+        if (!std::filesystem::exists(dev_node)) break;
+
+        DeviceInfo info;
+        info.id           = "hailo:" + std::to_string(i);
+        info.name         = "Hailo-8 (device " + std::to_string(i) + ")";
+        info.backend      = "hailort";
+        info.type         = "npu";
+        info.is_available = true;
+        info.supported_precisions = {Precision::FP32, Precision::FP16, Precision::INT8};
+
+        devices_.push_back(info);
+    }
+#endif
+}
+
+bool hailo_is_available() {
+#ifdef IVIT_HAS_HAILORT
+    return std::filesystem::exists("/dev/hailo0");
 #else
     return false;
 #endif

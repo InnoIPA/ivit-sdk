@@ -10,6 +10,7 @@ option(IVIT_BUILD_EXAMPLES "Build examples" ON)
 option(IVIT_USE_OPENVINO "Enable OpenVINO backend" ON)
 option(IVIT_USE_TENSORRT "Enable TensorRT backend" ON)
 option(IVIT_USE_QNN "Enable QNN backend (Qualcomm IQ Series)" OFF)
+option(IVIT_USE_HAILORT "Enable HailoRT backend (Hailo-8 PCIe AI accelerator)" OFF)
 
 # 依賴打包選項
 option(IVIT_BUNDLE_DEPS "Bundle dependencies into SDK for redistribution" OFF)
@@ -195,6 +196,10 @@ if(IVIT_USE_TENSORRT)
     list(APPEND IVIT_SOURCES src/runtime/tensorrt_runtime.cpp)
 endif()
 
+if(IVIT_USE_HAILORT)
+    list(APPEND IVIT_SOURCES src/runtime/hailort_runtime.cpp)
+    add_compile_definitions(IVIT_HAS_HAILORT)
+endif()
 
 # ============================================================================
 # Create library
@@ -439,6 +444,7 @@ message(STATUS "Backends:")
 message(STATUS "  OpenVINO:       ${IVIT_USE_OPENVINO}")
 message(STATUS "  TensorRT:       ${IVIT_USE_TENSORRT}")
 message(STATUS "  QNN:            ${IVIT_USE_QNN}")
+message(STATUS "  HailoRT:        ${IVIT_USE_HAILORT}")
 message(STATUS "")
 message(STATUS "Components:")
 message(STATUS "  Python:         ${IVIT_BUILD_PYTHON}")
