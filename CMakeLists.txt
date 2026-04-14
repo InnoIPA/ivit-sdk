@@ -170,19 +170,29 @@ if(IVIT_USE_HAILORT)
     endif()
 
     find_path(HAILORT_INCLUDE_DIR hailo/hailort.hpp
-        HINTS ${HAILORT_SDK_ROOT} /usr/include /usr/local/include
+        HINTS ${HAILORT_SDK_ROOT}
+        PATHS /usr/include /usr/local/include
+        PATH_SUFFIXES include
     )
     find_library(HAILORT_LIBRARY hailort
-        HINTS ${HAILORT_SDK_ROOT} /usr/lib /usr/local/lib
+        HINTS ${HAILORT_SDK_ROOT}
+        PATHS /usr/lib /usr/local/lib
+        PATH_SUFFIXES lib lib64
     )
 
     if(HAILORT_INCLUDE_DIR AND HAILORT_LIBRARY)
         message(STATUS "HailoRT found: ${HAILORT_LIBRARY}")
         add_compile_definitions(IVIT_HAS_HAILORT)
+
+        if(IVIT_BUNDLE_DEPS)
+            get_filename_component(HAILO_LIB_DIR ${HAILORT_LIBRARY} DIRECTORY)
+            file(GLOB HAILO_LIBS "${HAILO_LIB_DIR}/libhailort*.so*")
+            list(APPEND IVIT_BUNDLE_LIBRARIES ${HAILO_LIBS})
+        endif()
     else()
         message(WARNING "HailoRT not found — disabling HailoRT backend. "
                         "Set HAILORT_SDK_ROOT to your SDK installation path "
-                        "or install via: apt install hailoRT-dev")
+                        "or install via: apt install hailort-dev")
         set(IVIT_USE_HAILORT OFF)
     endif()
 endif()
@@ -441,6 +451,9 @@ if(IVIT_USE_OPENVINO)
 endif()
 if(IVIT_USE_TENSORRT)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libnvinfer-dev")
+endif()
+if(IVIT_USE_HAILORT)
+    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, hailort-dev")
 endif()
 
 # 架構與平台後綴
