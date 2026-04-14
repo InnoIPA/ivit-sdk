@@ -168,7 +168,6 @@ class TestHailoRTRuntimeAvailability:
         devices = ivit.list_devices()
         assert isinstance(devices, list)
 
-    @pytest.mark.skipif(not _cpp_available(), reason="C++ bindings not available")
     def test_hailort_supported_formats(self):
         """HailoRTRuntime must report .hef as the only supported format."""
         import ivit
@@ -178,7 +177,6 @@ class TestHailoRTRuntimeAvailability:
         hailo_devices = [d for d in devices if getattr(d, "backend", "") == "hailort"]
         if not hailo_devices:
             # No Hailo hardware — verify format contract via string check in source
-            import os
             src_path = os.path.join(_ROOT, "src", "runtime", "hailort_runtime.cpp")
             if os.path.isfile(src_path):
                 with open(src_path) as f:
@@ -223,7 +221,6 @@ class TestHailoConvertModel:
 
     def test_hailort_convert_no_dfc_source_has_error_message(self):
         """hailort_runtime.cpp must include DFC installation instructions in convert_model."""
-        import os
         src_path = os.path.join(_ROOT, "src", "runtime", "hailort_runtime.cpp")
         if not os.path.isfile(src_path):
             pytest.skip("hailort_runtime.cpp not yet implemented")
