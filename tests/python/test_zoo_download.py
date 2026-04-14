@@ -24,6 +24,11 @@ _MODELS_WITH_ONNX_URL = [
     "yolox-l",
     "rtdetr-l",
     "rtdetr-x",
+    "mambavision-t",
+    "mambavision-s",
+    "mambavision-b",
+    "mambavision-l",
+    "mambavision-l2",
     "rtmpose-s",
     "rtmpose-m",
 ]
@@ -60,7 +65,7 @@ class TestModelInfoOnnxUrl:
 
     @pytest.mark.parametrize("model_name", _MODELS_WITH_ONNX_URL)
     def test_models_have_onnx_url(self, model_name):
-        """All 9 target models should have onnx_url set."""
+        """All target models should have onnx_url set."""
         info = MODEL_REGISTRY[model_name]
         assert info.onnx_url is not None
         assert info.onnx_url.startswith(_ONNX_URL_BASE)
@@ -78,13 +83,13 @@ class TestModelInfoOnnxUrl:
                 f"Torchvision model '{name}' should not have onnx_url"
             )
 
-    def test_all_nine_models_accounted_for(self):
-        """Exactly 9 models should have onnx_url."""
-        models_with_url = [
+    def test_all_models_with_onnx_url_accounted_for(self):
+        """Registry models with onnx_url must match the expected list exactly."""
+        models_with_url = sorted(
             name for name, info in MODEL_REGISTRY.items()
             if info.onnx_url is not None
-        ]
-        assert len(models_with_url) == 9
+        )
+        assert models_with_url == sorted(_MODELS_WITH_ONNX_URL)
 
 
 class TestDownloadRouting:
