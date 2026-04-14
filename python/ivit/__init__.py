@@ -80,6 +80,7 @@ try:
         TensorRTConfig,
 
         QNNConfig,
+        HailoConfig,
 
         # Stream
         StreamResult,
@@ -231,6 +232,7 @@ __all__ = [
     "TensorRTConfig",
 
     "QNNConfig",
+    "HailoConfig",
 
     # Data structures
     "TensorInfo",
