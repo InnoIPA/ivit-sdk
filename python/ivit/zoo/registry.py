@@ -257,6 +257,83 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
     ),
 
     # =========================================================================
+    # MambaVision Classification Models (NVIDIA Research, Apache-2.0)
+    # Hybrid Mamba + Transformer architecture for image classification.
+    # Export: requires `pip install mambavision` and selective_scan patching.
+    # See: ivit.train.exporter.load_mambavision_for_export()
+    # =========================================================================
+    "mambavision-t": ModelInfo(
+        name="mambavision-t",
+        task="classify",
+        description="MambaVision-Tiny - Hybrid Mamba+Transformer, fast edge inference",
+        input_size=(224, 224),
+        num_classes=1000,
+        formats=["onnx", "openvino", "tensorrt"],
+        url="https://huggingface.co/nvidia/MambaVision-T-1K",
+        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/mambavision-t.onnx",
+        source="mambavision",
+        license="Apache-2.0",
+        metrics={"top1": 82.3, "params_m": 31.8, "macs_g": 4.4},
+        tags=["classification", "imagenet", "mamba", "ssm", "transformer", "hybrid", "fast", "commercial-friendly"],
+    ),
+    "mambavision-s": ModelInfo(
+        name="mambavision-s",
+        task="classify",
+        description="MambaVision-Small - Balanced speed/accuracy",
+        input_size=(224, 224),
+        num_classes=1000,
+        formats=["onnx", "openvino", "tensorrt"],
+        url="https://huggingface.co/nvidia/MambaVision-S-1K",
+        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/mambavision-s.onnx",
+        source="mambavision",
+        license="Apache-2.0",
+        metrics={"top1": 83.3, "params_m": 50.1, "macs_g": 7.5},
+        tags=["classification", "imagenet", "mamba", "ssm", "transformer", "hybrid", "balanced", "commercial-friendly"],
+    ),
+    "mambavision-b": ModelInfo(
+        name="mambavision-b",
+        task="classify",
+        description="MambaVision-Base - High accuracy",
+        input_size=(224, 224),
+        num_classes=1000,
+        formats=["onnx", "openvino", "tensorrt"],
+        url="https://huggingface.co/nvidia/MambaVision-B-1K",
+        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/mambavision-b.onnx",
+        source="mambavision",
+        license="Apache-2.0",
+        metrics={"top1": 84.2, "params_m": 97.7, "macs_g": 15.0},
+        tags=["classification", "imagenet", "mamba", "ssm", "transformer", "hybrid", "accurate", "commercial-friendly"],
+    ),
+    "mambavision-l": ModelInfo(
+        name="mambavision-l",
+        task="classify",
+        description="MambaVision-Large - Maximum accuracy",
+        input_size=(224, 224),
+        num_classes=1000,
+        formats=["onnx", "openvino", "tensorrt"],
+        url="https://huggingface.co/nvidia/MambaVision-L-1K",
+        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/mambavision-l.onnx",
+        source="mambavision",
+        license="Apache-2.0",
+        metrics={"top1": 85.0, "params_m": 227.9, "macs_g": 34.9},
+        tags=["classification", "imagenet", "mamba", "ssm", "transformer", "hybrid", "accurate", "server", "commercial-friendly"],
+    ),
+    "mambavision-l2": ModelInfo(
+        name="mambavision-l2",
+        task="classify",
+        description="MambaVision-Large2 - State-of-the-art accuracy",
+        input_size=(224, 224),
+        num_classes=1000,
+        formats=["onnx", "openvino", "tensorrt"],
+        url="https://huggingface.co/nvidia/MambaVision-L2-1K",
+        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/mambavision-l2.onnx",
+        source="mambavision",
+        license="Apache-2.0",
+        metrics={"top1": 85.3, "params_m": 241.5, "macs_g": 37.5},
+        tags=["classification", "imagenet", "mamba", "ssm", "transformer", "hybrid", "accurate", "server", "commercial-friendly"],
+    ),
+
+    # =========================================================================
     # Semantic Segmentation Models (torchvision, BSD-3-Clause)
     # =========================================================================
     "deeplabv3-resnet50": ModelInfo(
