@@ -316,14 +316,6 @@ TensorInfo HailoRTRuntime::make_tensor_info(
     return info;
 }
 
-// ============================================================================
-// hailo_is_available()
-// ============================================================================
-
-bool hailo_is_available() {
-    return std::filesystem::exists("/dev/hailo0");
-}
-
 } // namespace ivit
 
 #endif // IVIT_HAS_HAILORT
