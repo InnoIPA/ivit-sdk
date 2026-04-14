@@ -93,6 +93,7 @@ enum class BackendType {
     OpenVINO,    ///< Intel: CPU, iGPU, NPU, VPU
     TensorRT,    ///< NVIDIA: CUDA GPUs, Jetson
     QNN,         ///< Qualcomm: IQ Series NPU (Hexagon) via AI Engine Direct
+    HailoRT,     ///< Hailo: Hailo-8 PCIe AI accelerator
     Auto,        ///< Automatic selection
     Unknown
 };
@@ -245,6 +246,7 @@ inline std::string to_string(BackendType backend) {
         case BackendType::OpenVINO: return "openvino";
         case BackendType::TensorRT: return "tensorrt";
         case BackendType::QNN: return "qnn";
+        case BackendType::HailoRT: return "hailort";
         case BackendType::Auto: return "auto";
         default: return "unknown";
     }
