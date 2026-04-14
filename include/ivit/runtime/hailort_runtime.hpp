@@ -49,6 +49,7 @@ struct HailoRTModel {
 
     std::string device_id;  ///< e.g. "hailo:0"
     int         device_idx; ///< Physical device index (0, 1, …)
+    int         timeout_ms = 1000; ///< Inference timeout in milliseconds
 };
 
 /**

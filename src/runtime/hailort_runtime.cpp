@@ -78,13 +78,9 @@ void* HailoRTRuntime::load_model(
         throw ModelLoadError("File not found: " + path);
     }
 
-    // Extract HailoConfig if present
+    // Use defaults (RuntimeConfig has no backend_config variant field)
     int batch_size = 1;
     int timeout_ms = 1000;
-    if (auto* hcfg = std::get_if<HailoConfig>(&config.backend_config)) {
-        batch_size = hcfg->batch_size;
-        timeout_ms = hcfg->timeout_ms;
-    }
 
     auto model_handle = std::make_unique<HailoRTModel>();
     model_handle->device_id  = config.device;
@@ -121,6 +117,7 @@ void* HailoRTRuntime::load_model(
         throw ModelLoadError("InferModel::configure() failed: " + path);
     }
     model_handle->configured_model = std::move(configured.value());
+    model_handle->timeout_ms = timeout_ms;
 
     // Extract tensor info
     for (const auto& input : model_handle->infer_model->inputs()) {
@@ -166,7 +163,7 @@ std::map<std::string, Tensor> HailoRTRuntime::infer(
     std::lock_guard<std::mutex> lock(mutex_);
 
     auto* m = static_cast<HailoRTModel*>(handle);
-    constexpr int timeout_ms = 1000;
+    int timeout_ms = m->timeout_ms;
 
     // Create bindings
     auto bindings_exp = m->configured_model.create_bindings();
@@ -195,7 +192,13 @@ std::map<std::string, Tensor> HailoRTRuntime::infer(
     for (const auto& info : m->output_infos) {
         size_t nbytes = 1;
         for (auto d : info.shape) nbytes *= static_cast<size_t>(d);
-        nbytes *= sizeof(float);
+        size_t elem_size = 4;  // default float32
+        if (info.dtype == DataType::UInt8 || info.dtype == DataType::Int8) {
+            elem_size = 1;
+        } else if (info.dtype == DataType::Float16) {
+            elem_size = 2;
+        }
+        nbytes *= elem_size;
 
         out_buffers[info.name].resize(nbytes);
 
@@ -262,8 +265,8 @@ void HailoRTRuntime::convert_model(
         );
     }
 
-    std::string cmd = "python -m hailo_model_zoo compile " + src_path +
-                      " --hw-arch hailo8 -o " + dst_path;
+    std::string cmd = "python -m hailo_model_zoo compile \"" + src_path +
+                      "\" --hw-arch hailo8 -o \"" + dst_path + "\"";
 
     int ret = std::system(cmd.c_str());
     if (ret != 0) {
@@ -290,7 +293,7 @@ DataType HailoRTRuntime::hailort_to_dtype(hailo_format_type_t fmt) const {
     switch (fmt) {
         case HAILO_FORMAT_TYPE_FLOAT32: return DataType::Float32;
         case HAILO_FORMAT_TYPE_UINT8:   return DataType::UInt8;
-        case HAILO_FORMAT_TYPE_UINT16:  return DataType::UInt8;
+        case HAILO_FORMAT_TYPE_UINT16:  return DataType::Unknown;
         default:                        return DataType::Unknown;
     }
 }
