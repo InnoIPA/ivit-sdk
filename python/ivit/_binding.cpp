@@ -601,10 +601,8 @@ PYBIND11_MODULE(_ivit_core, m) {
 
     py::class_<ivit::HailoConfig>(m, "HailoConfig", "HailoRT Hailo-8 configuration")
         .def(py::init<>())
-        .def_readwrite("batch_size", &ivit::HailoConfig::batch_size,
-                       "Batch size for inference (default 1)")
-        .def_readwrite("timeout_ms", &ivit::HailoConfig::timeout_ms,
-                       "Inference timeout in milliseconds (default 1000)");
+        .def_readwrite("batch_size", &ivit::HailoConfig::batch_size)
+        .def_readwrite("timeout_ms", &ivit::HailoConfig::timeout_ms);
 
     // ========================================================================
     // Model (C++ core model with full API)
