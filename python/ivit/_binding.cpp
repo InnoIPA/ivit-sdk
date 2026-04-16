@@ -718,6 +718,60 @@ PYBIND11_MODULE(_ivit_core, m) {
             return model.stream(source, config);
         }, py::arg("source"), py::arg("config") = ivit::InferConfig{})
 
+        // Raw tensor-in / tensor-out inference
+        .def("infer", [](ivit::Model& model, py::dict inputs_dict) -> py::dict {
+            std::map<std::string, ivit::Tensor> inputs;
+            for (auto& item : inputs_dict) {
+                std::string name = item.first.cast<std::string>();
+                py::array arr = item.second.cast<py::array>();
+
+                ivit::Shape shape;
+                for (py::ssize_t i = 0; i < arr.ndim(); ++i)
+                    shape.push_back(static_cast<int64_t>(arr.shape(i)));
+
+                char kind = arr.dtype().kind();
+                py::ssize_t itemsize = arr.dtype().itemsize();
+                ivit::DataType dtype = ivit::DataType::Float32;
+                if      (kind == 'f' && itemsize == 2) dtype = ivit::DataType::Float16;
+                else if (kind == 'f' && itemsize == 4) dtype = ivit::DataType::Float32;
+                else if (kind == 'u' && itemsize == 1) dtype = ivit::DataType::UInt8;
+                else if (kind == 'i' && itemsize == 1) dtype = ivit::DataType::Int8;
+                else if (kind == 'i' && itemsize == 4) dtype = ivit::DataType::Int32;
+                else if (kind == 'i' && itemsize == 8) dtype = ivit::DataType::Int64;
+
+                py::array c_arr = py::array::ensure(arr, py::array::c_style);
+                ivit::Tensor tensor(shape, dtype);
+                tensor.set_name(name);
+                std::memcpy(tensor.data(), c_arr.data(), tensor.byte_size());
+                inputs[name] = std::move(tensor);
+            }
+
+            auto outputs = model.infer_raw(inputs);
+
+            py::dict result;
+            for (auto& [oname, tensor] : outputs) {
+                std::vector<py::ssize_t> py_shape(tensor.shape().begin(), tensor.shape().end());
+                py::array out_arr;
+                switch (tensor.dtype()) {
+                    case ivit::DataType::Float16:
+                        out_arr = py::array(py::dtype("float16"), py_shape); break;
+                    case ivit::DataType::UInt8:
+                        out_arr = py::array_t<uint8_t>(py_shape); break;
+                    case ivit::DataType::Int8:
+                        out_arr = py::array_t<int8_t>(py_shape); break;
+                    case ivit::DataType::Int32:
+                        out_arr = py::array_t<int32_t>(py_shape); break;
+                    case ivit::DataType::Int64:
+                        out_arr = py::array_t<int64_t>(py_shape); break;
+                    default:
+                        out_arr = py::array_t<float>(py_shape); break;
+                }
+                std::memcpy(out_arr.mutable_data(), tensor.data(), tensor.byte_size());
+                result[py::str(oname)] = out_arr;
+            }
+            return result;
+        }, py::arg("inputs"), "Raw tensor-in / tensor-out inference")
+
         .def("__repr__", [](const ivit::Model& m) {
             return "<Model '" + m.name() + "' device='" + m.device() + "'>";
         });
@@ -806,4 +860,21 @@ Examples:
     py::register_exception<ivit::InferenceError>(m, "InferenceError");
     py::register_exception<ivit::DeviceNotFoundError>(m, "DeviceNotFoundError");
     py::register_exception<ivit::UnsupportedFormatError>(m, "UnsupportedFormatError");
+
+    // ========================================================================
+    // Module-level cleanup via Python atexit
+    // ========================================================================
+    // Python atexit callbacks run before C++ static destructors and before
+    // shared-library finalizers (e.g. HailoRT's PCIe cleanup).  Releasing the
+    // ModelManager cache here ensures every loaded HailoRT model is destroyed
+    // while HailoRT's own global state is still valid, preventing the
+    // intermittent SIGSEGV observed at Python interpreter shutdown.
+    try {
+        auto atexit_mod = py::module_::import("atexit");
+        atexit_mod.attr("register")(py::cpp_function([]() {
+            try {
+                ivit::ModelManager::instance().clear_cache();
+            } catch (...) {}
+        }));
+    } catch (...) {}
 }

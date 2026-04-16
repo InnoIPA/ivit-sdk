@@ -277,6 +277,9 @@ if(IVIT_USE_TENSORRT)
     list(APPEND IVIT_SOURCES src/runtime/tensorrt_runtime.cpp)
 endif()
 
+if(IVIT_USE_HAILORT)
+    list(APPEND IVIT_SOURCES src/runtime/hailort_runtime.cpp)
+endif()
 
 # ============================================================================
 # Create library
@@ -309,6 +312,11 @@ if(IVIT_USE_TENSORRT)
         ${NVONNXPARSER_LIBRARY}
         CUDA::cudart
     )
+endif()
+
+if(IVIT_USE_HAILORT)
+    target_include_directories(ivit PRIVATE ${HAILORT_INCLUDE_DIR})
+    target_link_libraries(ivit PRIVATE ${HAILORT_LIBRARY})
 endif()
 
 

@@ -568,21 +568,6 @@ bool qnn_is_available() {
 #endif
     return false;
 }
-void DeviceManager::discover_qnn_devices() {
-#ifdef IVIT_HAS_QNN
-    // QNN device discovery would enumerate Qualcomm HTP/GPU devices via QNN SDK
-    // Placeholder: actual implementation would use QNN SDK APIs
-#endif
-}
-
-bool qnn_is_available() {
-#ifdef IVIT_HAS_QNN
-    return true;  // Placeholder: check QNN SDK availability
-#else
-    return false;
-#endif
-}
-
 void DeviceManager::discover_hailort_devices() {
 #ifdef IVIT_HAS_HAILORT
     for (int i = 0; i < 8; ++i) {

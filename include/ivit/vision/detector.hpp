@@ -165,6 +165,16 @@ private:
         const InferConfig& config
     );
 
+    // Hailo on-device NMS postprocessing
+    Results postprocess_hailo_nms(
+        const Tensor& output,
+        const cv::Size& orig_size,
+        float scale,
+        int pad_w,
+        int pad_h,
+        const InferConfig& config
+    );
+
     // NMS
     std::vector<Detection> nms(
         std::vector<Detection>& detections,

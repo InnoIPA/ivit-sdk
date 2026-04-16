@@ -203,12 +203,13 @@ class TestHailoRTRuntimeAvailability:
             pytest.skip("Hailo-8 card not present")
         import ivit
         import numpy as np
-        hef_path = os.path.join(_ROOT, "tests", "data", "resnet50.hef")
+        hef_path = os.path.join(_ROOT, "tests", "data", "yolov8n.hef")
         if not os.path.isfile(hef_path):
             pytest.skip(f"Test HEF not found: {hef_path}")
         model = ivit.load(hef_path, device="hailo:0")
-        dummy = np.zeros((1, 3, 224, 224), dtype=np.float32)
-        results = model.infer({"input": dummy})
+        # yolov8n expects UINT8 NHWC(640x640x3)
+        dummy = np.zeros((1, 640, 640, 3), dtype=np.uint8)
+        results = model.infer({"yolov8n/input_layer1": dummy})
         assert isinstance(results, dict)
 
 

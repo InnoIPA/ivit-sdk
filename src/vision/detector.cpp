@@ -330,13 +330,14 @@ Results Detector::postprocess(
         return Results();
     }
 
-    const Tensor& output = outputs.begin()->second;
-
-    if (model_type_.find("yolo") != std::string::npos) {
-        return postprocess_yolo(output, orig_size, scale, pad_w, pad_h, config);
+    // Hailo on-device NMS outputs carry Layout::HailoNMS — dispatch first
+    for (const auto& [name, tensor] : outputs) {
+        if (tensor.layout() == Layout::HailoNMS) {
+            return postprocess_hailo_nms(tensor, orig_size, scale, pad_w, pad_h, config);
+        }
     }
 
-    // Generic postprocessing
+    const Tensor& output = outputs.begin()->second;
     return postprocess_yolo(output, orig_size, scale, pad_w, pad_h, config);
 }
 
@@ -515,6 +516,84 @@ Results Detector::postprocess_yolo(
         results.detections.resize(config.max_detections);
     }
 
+    return results;
+}
+
+Results Detector::postprocess_hailo_nms(
+    const Tensor& output,
+    const cv::Size& orig_size,
+    float scale,
+    int pad_w,
+    int pad_h,
+    const InferConfig& config
+) {
+    Results results;
+    const auto& shape = output.shape();  // {num_classes, 1 + max_bboxes * 5}
+
+    if (shape.size() < 2) return results;
+
+    const size_t num_classes      = static_cast<size_t>(shape[0]);
+    const size_t floats_per_class = static_cast<size_t>(shape[1]);
+    const size_t max_bboxes       = (floats_per_class - 1) / 5;
+
+    const float* fdata = output.data_ptr<float>();
+    std::vector<Detection> detections;
+
+    // HAILO_FORMAT_ORDER_HAILO_NMS_BY_CLASS layout:
+    //   for each class: [ bbox_count (float32), y1,x1,y2,x2,score × max_bboxes ]
+    // Coordinates are in model input space (e.g. 640×640 letterboxed).
+    // NMS is already performed on-chip — no second NMS needed.
+    for (size_t cls = 0; cls < num_classes; cls++) {
+        const float* cls_ptr = fdata + cls * floats_per_class;
+        int count = static_cast<int>(cls_ptr[0]);
+        count = std::min(count, static_cast<int>(max_bboxes));
+
+        for (int bi = 0; bi < count; bi++) {
+            const float* bbox = cls_ptr + 1 + bi * 5;
+            float y1    = bbox[0];
+            float x1    = bbox[1];
+            float y2    = bbox[2];
+            float x2    = bbox[3];
+            float score = bbox[4];
+
+            if (score < config.conf_threshold) continue;
+
+            // Class filter
+            if (!config.classes.empty()) {
+                bool found = false;
+                for (int filter_cls : config.classes) {
+                    if (static_cast<size_t>(filter_cls) == cls) { found = true; break; }
+                }
+                if (!found) continue;
+            }
+
+            // HailoRT NMS coords are normalized [0,1] relative to model input (e.g. 640×640).
+            // Convert: pixel = coord * input_size; then remove letterbox padding and scale.
+            float iw = static_cast<float>(input_size_.width);
+            float ih = static_cast<float>(input_size_.height);
+            float ox1 = std::max(0.0f, std::min((x1 * iw - pad_w) / scale, static_cast<float>(orig_size.width)));
+            float oy1 = std::max(0.0f, std::min((y1 * ih - pad_h) / scale, static_cast<float>(orig_size.height)));
+            float ox2 = std::max(0.0f, std::min((x2 * iw - pad_w) / scale, static_cast<float>(orig_size.width)));
+            float oy2 = std::max(0.0f, std::min((y2 * ih - pad_h) / scale, static_cast<float>(orig_size.height)));
+
+            Detection det;
+            det.bbox       = BBox(ox1, oy1, ox2, oy2);
+            det.class_id   = static_cast<int>(cls);
+            det.confidence = score;
+            det.label      = (cls < labels_.size()) ? labels_[cls] : "class_" + std::to_string(cls);
+            detections.push_back(det);
+        }
+    }
+
+    // Sort by confidence and apply max_detections limit (NMS already done on chip)
+    std::sort(detections.begin(), detections.end(),
+        [](const Detection& a, const Detection& b) { return a.confidence > b.confidence; });
+
+    if (static_cast<int>(detections.size()) > config.max_detections) {
+        detections.resize(config.max_detections);
+    }
+
+    results.detections = std::move(detections);
     return results;
 }
 

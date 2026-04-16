@@ -48,11 +48,12 @@ enum class DataType {
  * @brief Tensor layout enumeration
  */
 enum class Layout {
-    NCHW,   ///< Batch, Channel, Height, Width
-    NHWC,   ///< Batch, Height, Width, Channel
-    NC,     ///< Batch, Channel
-    CHW,    ///< Channel, Height, Width
-    HWC,    ///< Height, Width, Channel
+    NCHW,     ///< Batch, Channel, Height, Width
+    NHWC,     ///< Batch, Height, Width, Channel
+    NC,       ///< Batch, Channel
+    CHW,      ///< Channel, Height, Width
+    HWC,      ///< Height, Width, Channel
+    HailoNMS, ///< Hailo on-device NMS output: {num_classes, 1+max_bboxes*5} float32
     Unknown
 };
 

@@ -61,6 +61,9 @@ public:
             }
         } catch (...) {
             // QNN not available, skip
+        }
+#endif
+
 #ifdef IVIT_HAS_HAILORT
         try {
             auto hailort = std::make_shared<HailoRTRuntime>();
@@ -71,7 +74,6 @@ public:
             // HailoRT not available, skip
         }
 #endif
-
     }
 };
 

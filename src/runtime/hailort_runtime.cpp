@@ -45,10 +45,10 @@ std::vector<DeviceInfo> HailoRTRuntime::get_devices() const {
     }
 
     int idx = 0;
-    for (const auto& dev_info : scan.value()) {
+    for (const auto& dev_str : scan.value()) {
         DeviceInfo info;
         info.id           = "hailo:" + std::to_string(idx);
-        info.name         = "Hailo-8 [" + std::string(dev_info.id) + "]";
+        info.name         = "Hailo-8 [" + dev_str + "]";
         info.backend      = "hailort";
         info.type         = "npu";
         info.is_available = true;
@@ -120,11 +120,27 @@ void* HailoRTRuntime::load_model(
     model_handle->timeout_ms = timeout_ms;
 
     // Extract tensor info
+    // Inputs: report as NCHW float32 so the generic Vision layer preprocess works correctly.
+    // The actual HailoRT dtype (e.g. UInt8) is stored separately for conversion in infer().
     for (const auto& input : model_handle->infer_model->inputs()) {
-        model_handle->input_infos.push_back(make_tensor_info(input));
+        auto hailo_shape = input.shape();
+        TensorInfo info;
+        info.name   = input.name();
+        info.shape  = std::vector<int64_t>{
+            1LL,
+            static_cast<int64_t>(hailo_shape.features),
+            static_cast<int64_t>(hailo_shape.height),
+            static_cast<int64_t>(hailo_shape.width)
+        };
+        info.dtype  = DataType::Float32;
+        info.layout = Layout::NCHW;
+        model_handle->input_infos.push_back(info);
+        model_handle->input_hailo_dtypes.push_back(hailort_to_dtype(input.format().type));
     }
+    // Outputs: use real HailoRT format + frame_size for correct buffer allocation.
     for (const auto& output : model_handle->infer_model->outputs()) {
         model_handle->output_infos.push_back(make_tensor_info(output));
+        model_handle->output_frame_sizes.push_back(output.get_frame_size());
     }
 
     return model_handle.release();
@@ -135,9 +151,16 @@ void* HailoRTRuntime::load_model(
 // ============================================================================
 
 void HailoRTRuntime::unload_model(void* handle) {
-    if (handle) {
-        delete static_cast<HailoRTModel*>(handle);
-    }
+    if (!handle) return;
+    auto* m = static_cast<HailoRTModel*>(handle);
+    // Explicit teardown order required by HailoRT:
+    //   ConfiguredInferModel → InferModel → VDevice
+    // Move configured_model into a local scope so it is destroyed first,
+    // before the shared_ptrs below are reset.
+    { auto _cfg = std::move(m->configured_model); }
+    m->infer_model.reset();
+    m->vdevice.reset();
+    delete m;
 }
 
 // ============================================================================
@@ -172,15 +195,44 @@ std::map<std::string, Tensor> HailoRTRuntime::infer(
     }
     auto bindings = std::move(bindings_exp.value());
 
-    // Copy input tensors into bindings
-    for (const auto& [name, tensor] : inputs) {
+    // Copy input tensors into bindings.
+    // When the Vision layer sends NCHW float32 [0,1] but HailoRT expects NHWC uint8 [0,255],
+    // convert on-the-fly.
+    for (size_t idx = 0; idx < m->input_infos.size(); ++idx) {
+        const std::string& name    = m->input_infos[idx].name;
+        const Tensor&      tensor  = inputs.at(name);
+        DataType           hailo_dtype = m->input_hailo_dtypes[idx];
+
         auto input_buffer = bindings.input(name);
         if (!input_buffer) {
             throw InferenceError("HailoRT: unknown input name: " + name);
         }
+
+        std::vector<uint8_t> converted;
+        const void* data_ptr  = tensor.data();
+        size_t      data_size = tensor.byte_size();
+
+        if (hailo_dtype == DataType::UInt8 && tensor.dtype() == DataType::Float32) {
+            // NCHW float32 [0,1] → NHWC uint8 [0,255]
+            const auto& s = tensor.shape();  // {1, C, H, W}
+            if (s.size() == 4) {
+                const int64_t C = s[1], H = s[2], W = s[3];
+                converted.resize(static_cast<size_t>(H * W * C));
+                const float* src = tensor.data_ptr<float>();
+                uint8_t*     dst = converted.data();
+                for (int64_t h = 0; h < H; ++h)
+                    for (int64_t w = 0; w < W; ++w)
+                        for (int64_t c = 0; c < C; ++c)
+                            dst[h * W * C + w * C + c] = static_cast<uint8_t>(
+                                std::clamp(src[c * H * W + h * W + w] * 255.0f,
+                                           0.0f, 255.0f));
+                data_ptr  = converted.data();
+                data_size = converted.size();
+            }
+        }
+
         auto set_status = input_buffer->set_buffer(
-            hailort::MemoryView(const_cast<void*>(tensor.data()),
-                                tensor.nbytes())
+            hailort::MemoryView(const_cast<void*>(data_ptr), data_size)
         );
         if (set_status != HAILO_SUCCESS) {
             throw InferenceError("HailoRT: set_buffer failed for input: " + name);
@@ -189,16 +241,9 @@ std::map<std::string, Tensor> HailoRTRuntime::infer(
 
     // Allocate output buffers and bind them
     std::map<std::string, std::vector<uint8_t>> out_buffers;
-    for (const auto& info : m->output_infos) {
-        size_t nbytes = 1;
-        for (auto d : info.shape) nbytes *= static_cast<size_t>(d);
-        size_t elem_size = 4;  // default float32
-        if (info.dtype == DataType::UInt8 || info.dtype == DataType::Int8) {
-            elem_size = 1;
-        } else if (info.dtype == DataType::Float16) {
-            elem_size = 2;
-        }
-        nbytes *= elem_size;
+    for (size_t i = 0; i < m->output_infos.size(); ++i) {
+        const auto& info = m->output_infos[i];
+        size_t nbytes = m->output_frame_sizes[i];
 
         out_buffers[info.name].resize(nbytes);
 
@@ -230,14 +275,22 @@ std::map<std::string, Tensor> HailoRTRuntime::infer(
 
     // Collect outputs into Tensor map
     std::map<std::string, Tensor> results;
-    for (const auto& info : m->output_infos) {
+    for (size_t i = 0; i < m->output_infos.size(); ++i) {
+        const auto& info = m->output_infos[i];
+        size_t frame_size = m->output_frame_sizes[i];
+
         Tensor t;
-        t.name  = info.name;
-        t.shape = info.shape;
-        t.dtype = info.dtype;
+        if (info.layout == Layout::HailoNMS) {
+            // NMS output: shape is {num_classes, 1+max_bboxes*5}, dtype Float32.
+            // byte_size() == frame_size so the memcpy below is safe.
+            t = Tensor(info.shape, DataType::Float32);
+            t.set_layout(Layout::HailoNMS);
+        } else {
+            t = Tensor(Shape{static_cast<int64_t>(frame_size)}, DataType::UInt8);
+        }
+        t.set_name(info.name);
         auto& buf = out_buffers[info.name];
-        t.data_buffer.assign(buf.begin(), buf.end());
-        t.data = t.data_buffer.data();
+        std::memcpy(t.data(), buf.data(), buf.size());
         results[info.name] = std::move(t);
     }
     return results;
@@ -304,15 +357,32 @@ TensorInfo HailoRTRuntime::make_tensor_info(
     TensorInfo info;
     info.name = stream.name();
 
-    auto shape = stream.shape();
-    info.shape = {
-        static_cast<int64_t>(shape.batch_size),
-        static_cast<int64_t>(shape.height),
-        static_cast<int64_t>(shape.width),
-        static_cast<int64_t>(shape.features)
-    };
-    info.dtype  = hailort_to_dtype(stream.format().type);
-    info.layout = Layout::NHWC;
+    if (stream.format().order == HAILO_FORMAT_ORDER_HAILO_NMS_BY_CLASS) {
+        // On-device NMS output: shape encodes {num_classes, 1 + max_bboxes_per_class * 5}
+        // so that byte_size() == frame_size and data is directly readable as float32.
+        auto nms_exp = stream.get_nms_shape();
+        if (nms_exp) {
+            const auto& nms = nms_exp.value();
+            info.shape = std::vector<int64_t>{
+                static_cast<int64_t>(nms.number_of_classes),
+                static_cast<int64_t>(1 + nms.max_bboxes_per_class * 5)
+            };
+        } else {
+            // Fallback: 80 classes × (1 + 100×5) = 80 × 501 floats
+            info.shape = {80LL, 501LL};
+        }
+        info.dtype  = DataType::Float32;
+        info.layout = Layout::HailoNMS;
+    } else {
+        auto shape = stream.shape();
+        info.shape = std::vector<int64_t>{
+            static_cast<int64_t>(shape.height),
+            static_cast<int64_t>(shape.width),
+            static_cast<int64_t>(shape.features)
+        };
+        info.dtype  = hailort_to_dtype(stream.format().type);
+        info.layout = Layout::NHWC;
+    }
     return info;
 }
 

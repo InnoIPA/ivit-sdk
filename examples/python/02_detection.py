@@ -54,7 +54,7 @@ def main():
                         help='Path to the input image')
     parser.add_argument('--output', '-o', type=str, default='output.jpg',
                         help='Path to the output image')
-    parser.add_argument('--conf', type=float, default=0.5,
+    parser.add_argument('--conf', type=float, default=0.1,
                         help='Confidence threshold')
     parser.add_argument('--iou', type=float, default=0.45,
                         help='NMS IoU threshold')

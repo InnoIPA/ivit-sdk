@@ -44,8 +44,10 @@ struct HailoRTModel {
     std::shared_ptr<hailort::InferModel> infer_model;
     hailort::ConfiguredInferModel        configured_model;
 
-    std::vector<TensorInfo> input_infos;
+    std::vector<TensorInfo> input_infos;        ///< NCHW float32 (preprocess compat)
+    std::vector<DataType>   input_hailo_dtypes; ///< Actual HailoRT input dtype (e.g. UInt8)
     std::vector<TensorInfo> output_infos;
+    std::vector<size_t>     output_frame_sizes; ///< Actual byte sizes from get_frame_size()
 
     std::string device_id;  ///< e.g. "hailo:0"
     int         device_idx; ///< Physical device index (0, 1, …)

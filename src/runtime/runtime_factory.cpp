@@ -74,6 +74,9 @@ std::shared_ptr<IRuntime> RuntimeFactory::get_best_runtime(
     } else if (ext == ".xml" || ext == ".bin") {
         auto rt = get_runtime(BackendType::OpenVINO);
         if (rt) return rt;
+    } else if (ext == ".hef") {
+        auto rt = get_runtime(BackendType::HailoRT);
+        if (rt) return rt;
     } else if (ext == ".dlc" || ext == ".serialized") {
         // QNN supports DLC (legacy SNPE) and serialized context formats
         auto rt = get_runtime(BackendType::QNN);

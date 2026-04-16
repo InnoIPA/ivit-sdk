@@ -68,3 +68,11 @@ model_cache/
 .pytest_cache/
 .coverage
 htmlcov/
+
+yolov5m_vehicles.hef
+
+# Large datasets
+dogs-vs-cats/
+
+.cache/
+
