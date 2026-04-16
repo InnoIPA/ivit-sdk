@@ -57,6 +57,14 @@ struct QNNConfig {
     std::map<std::string, std::string> extra_options; ///< Additional options
 };
 
+/**
+ * @brief HailoRT runtime configuration for Hailo-8 AI accelerator
+ */
+struct HailoConfig {
+    int batch_size = 1;      ///< Batch size (default 1)
+    int timeout_ms = 1000;   ///< Inference timeout in milliseconds (default 1000)
+};
+
 } // namespace ivit
 
 #endif // IVIT_CORE_RUNTIME_CONFIG_HPP

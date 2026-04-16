@@ -599,6 +599,11 @@ PYBIND11_MODULE(_ivit_core, m) {
         .def_readwrite("precision", &ivit::QNNConfig::precision)
         .def_readwrite("enable_htp_fp16", &ivit::QNNConfig::enable_htp_fp16);
 
+    py::class_<ivit::HailoConfig>(m, "HailoConfig", "HailoRT Hailo-8 configuration")
+        .def(py::init<>())
+        .def_readwrite("batch_size", &ivit::HailoConfig::batch_size)
+        .def_readwrite("timeout_ms", &ivit::HailoConfig::timeout_ms);
+
     // ========================================================================
     // Model (C++ core model with full API)
     // ========================================================================

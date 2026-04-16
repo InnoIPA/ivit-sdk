@@ -115,6 +115,7 @@ private:
     void discover_openvino_devices();
     void discover_tensorrt_devices();
     void discover_qnn_devices();
+    void discover_hailort_devices();
 
     std::vector<DeviceInfo> devices_;
     bool initialized_ = false;
@@ -162,6 +163,11 @@ bool openvino_is_available();
  * @brief Check if QNN (Qualcomm AI Engine Direct) is available
  */
 bool qnn_is_available();
+
+/**
+ * @brief Check if HailoRT (Hailo-8 PCIe AI accelerator) is available
+ */
+bool hailo_is_available();
 
 } // namespace ivit
 

@@ -17,6 +17,9 @@
 #include "ivit/runtime/qnn_runtime.hpp"
 #endif
 
+#ifdef IVIT_HAS_HAILORT
+#include "ivit/runtime/hailort_runtime.hpp"
+#endif
 
 namespace ivit {
 
@@ -58,6 +61,14 @@ public:
             }
         } catch (...) {
             // QNN not available, skip
+#ifdef IVIT_HAS_HAILORT
+        try {
+            auto hailort = std::make_shared<HailoRTRuntime>();
+            if (hailort->is_available()) {
+                factory.register_runtime(hailort);
+            }
+        } catch (...) {
+            // HailoRT not available, skip
         }
 #endif
 

@@ -220,3 +220,25 @@ class QNNConfig:
 
 # Backward compatibility alias
 SNPEConfig = QNNConfig
+
+
+@dataclass
+class HailoConfig:
+    """
+    HailoRT runtime configuration for Hailo-8 AI acceleration card.
+
+    Examples:
+        >>> config = HailoConfig(batch_size=1, timeout_ms=1000)
+    """
+    batch_size: int = 1
+    """Batch size for inference (default 1)"""
+
+    timeout_ms: int = 1000
+    """Inference timeout in milliseconds (default 1000)"""
+
+    def to_hailo_config(self) -> Dict[str, Any]:
+        """Convert to HailoRT config dict."""
+        return {
+            "batch_size": self.batch_size,
+            "timeout_ms": self.timeout_ms,
+        }

@@ -10,6 +10,7 @@ option(IVIT_BUILD_EXAMPLES "Build examples" ON)
 option(IVIT_USE_OPENVINO "Enable OpenVINO backend" ON)
 option(IVIT_USE_TENSORRT "Enable TensorRT backend" ON)
 option(IVIT_USE_QNN "Enable QNN backend (Qualcomm IQ Series)" OFF)
+option(IVIT_USE_HAILORT "Enable HailoRT backend (Hailo-8 PCIe AI accelerator)" OFF)
 
 # 依賴打包選項
 option(IVIT_BUNDLE_DEPS "Bundle dependencies into SDK for redistribution" OFF)
@@ -161,6 +162,42 @@ if(IVIT_USE_TENSORRT)
 endif()
 
 # ============================================================================
+# HailoRT (Hailo-8 PCIe AI Accelerator)
+# ============================================================================
+if(IVIT_USE_HAILORT)
+    if(NOT DEFINED HAILORT_SDK_ROOT AND DEFINED ENV{HAILORT_SDK_ROOT})
+        set(HAILORT_SDK_ROOT "$ENV{HAILORT_SDK_ROOT}")
+    endif()
+
+    find_path(HAILORT_INCLUDE_DIR hailo/hailort.hpp
+        HINTS ${HAILORT_SDK_ROOT}
+        PATHS /usr/include /usr/local/include
+        PATH_SUFFIXES include
+    )
+    find_library(HAILORT_LIBRARY hailort
+        HINTS ${HAILORT_SDK_ROOT}
+        PATHS /usr/lib /usr/local/lib
+        PATH_SUFFIXES lib lib64
+    )
+
+    if(HAILORT_INCLUDE_DIR AND HAILORT_LIBRARY)
+        message(STATUS "HailoRT found: ${HAILORT_LIBRARY}")
+        add_compile_definitions(IVIT_HAS_HAILORT)
+
+        if(IVIT_BUNDLE_DEPS)
+            get_filename_component(HAILO_LIB_DIR ${HAILORT_LIBRARY} DIRECTORY)
+            file(GLOB HAILO_LIBS "${HAILO_LIB_DIR}/libhailort*.so*")
+            list(APPEND IVIT_BUNDLE_LIBRARIES ${HAILO_LIBS})
+        endif()
+    else()
+        message(WARNING "HailoRT not found — disabling HailoRT backend. "
+                        "Set HAILORT_SDK_ROOT to your SDK installation path "
+                        "or install via: apt install hailort-dev")
+        set(IVIT_USE_HAILORT OFF)
+    endif()
+endif()
+
+# ============================================================================
 # QNN (Qualcomm AI Engine Direct)
 # ============================================================================
 if(IVIT_USE_QNN)
@@ -240,9 +277,6 @@ if(IVIT_USE_TENSORRT)
     list(APPEND IVIT_SOURCES src/runtime/tensorrt_runtime.cpp)
 endif()
 
-if(IVIT_USE_QNN)
-    list(APPEND IVIT_SOURCES src/runtime/qnn_runtime.cpp)
-endif()
 
 # ============================================================================
 # Create library
@@ -277,16 +311,6 @@ if(IVIT_USE_TENSORRT)
     )
 endif()
 
-if(IVIT_USE_QNN)
-    target_include_directories(ivit PRIVATE ${QNN_INCLUDE_DIR})
-    # QNN backend libraries are loaded dynamically at runtime (dlopen).
-    # We only need libdl for the dynamic linker, and optionally link the
-    # system library for binary metadata queries.
-    target_link_libraries(ivit PRIVATE ${CMAKE_DL_LIBS})
-    if(QNN_SYSTEM_LIBRARY)
-        target_link_libraries(ivit PRIVATE ${QNN_SYSTEM_LIBRARY})
-    endif()
-endif()
 
 # ============================================================================
 # Python bindings
@@ -468,9 +492,6 @@ endif()
 if(IVIT_USE_TENSORRT)
     set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libnvinfer-dev")
 endif()
-if(IVIT_USE_QNN)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, qnn-sdk")
-endif()
 
 # 架構與平台後綴
 if(CMAKE_SYSTEM_PROCESSOR STREQUAL "aarch64")
@@ -502,6 +523,7 @@ message(STATUS "Backends:")
 message(STATUS "  OpenVINO:       ${IVIT_USE_OPENVINO}")
 message(STATUS "  TensorRT:       ${IVIT_USE_TENSORRT}")
 message(STATUS "  QNN:            ${IVIT_USE_QNN}")
+message(STATUS "  HailoRT:        ${IVIT_USE_HAILORT}")
 message(STATUS "")
 message(STATUS "Components:")
 message(STATUS "  Python:         ${IVIT_BUILD_PYTHON}")
