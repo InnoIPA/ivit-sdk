@@ -217,18 +217,18 @@ ivit convert model.onnx -f tensorrt -o ./output/ \
 
 | 模型 | 參數量 | FPS (GPU) | mAP |
 |------|--------|-----------|-----|
-| YOLOv8n | 3.2M | 450 | 37.3 |
-| YOLOv8s | 11.2M | 280 | 44.9 |
-| YOLOv8m | 25.9M | 140 | 50.2 |
-| YOLOv8l | 43.7M | 85 | 52.9 |
-| YOLOv8x | 68.2M | 55 | 53.9 |
+| YOLOX-Nano | 3.2M | 450 | 37.3 |
+| YOLOX-S | 11.2M | 280 | 44.9 |
+| YOLOX-M | 25.9M | 140 | 50.2 |
+| YOLOX-L | 43.7M | 85 | 52.9 |
+| YOLOX-L | 68.2M | 55 | 53.9 |
 
 ```python
 # 邊緣裝置選擇輕量模型
-model = ivit.zoo.load("yolov8n")  # nano 版本
+model = ivit.zoo.load("yolox-nano")  # nano 版本
 
 # 伺服器選擇大模型
-model = ivit.zoo.load("yolov8x")  # extra-large 版本
+model = ivit.zoo.load("yolox-l")  # large 版本
 ```
 
 ## Level 5: 系統層級優化
@@ -376,21 +376,21 @@ print(f"Latency: {1000/fps.fps:.1f}ms")
 
 | 模型 | FP32 FPS | FP16 FPS |
 |------|----------|----------|
-| YOLOv8n | 25 | 45 |
-| YOLOv8s | 12 | 22 |
+| YOLOX-Nano | 25 | 45 |
+| YOLOX-S | 12 | 22 |
 | ResNet50 | 80 | 120 |
 
 ### NVIDIA RTX 4090 (GPU)
 
 | 模型 | FP32 FPS | FP16 FPS | INT8 FPS |
 |------|----------|----------|----------|
-| YOLOv8n | 450 | 680 | 920 |
-| YOLOv8s | 280 | 420 | 580 |
-| YOLOv8x | 55 | 90 | 140 |
+| YOLOX-Nano | 450 | 680 | 920 |
+| YOLOX-S | 280 | 420 | 580 |
+| YOLOX-L | 55 | 90 | 140 |
 
 ### Qualcomm Snapdragon 8 Gen 2 (DSP)（規劃中）
 
 | 模型 | FP16 FPS | INT8 FPS |
 |------|----------|----------|
-| YOLOv8n | 45 | 85 |
+| YOLOX-Nano | 45 | 85 |
 | MobileNetV3 | 120 | 200 |

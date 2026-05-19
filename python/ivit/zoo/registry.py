@@ -417,9 +417,9 @@ def list_models(task: Optional[str] = None) -> List[str]:
 
     Examples:
         >>> ivit.zoo.list_models()
-        ['yolov8n', 'yolov8s', 'yolov8m', ...]
+        ['yolox-s', 'yolox-m', 'resnet50', ...]
         >>> ivit.zoo.list_models(task="detect")
-        ['yolov8n', 'yolov8s', ...]
+        ['yolox-s', 'yolox-m', ...]
     """
     models = []
     for name, info in MODEL_REGISTRY.items():
@@ -440,9 +440,9 @@ def search(query: str) -> List[str]:
 
     Examples:
         >>> ivit.zoo.search("yolo")
-        ['yolov8n', 'yolov8s', 'yolov8m', ...]
+        ['yolox-s', 'yolox-m', 'yolox-l', ...]
         >>> ivit.zoo.search("edge")
-        ['yolov8n', 'yolov8n-seg', 'yolov8n-cls', ...]
+        ['yolox-nano', 'yolox-tiny', 'mobilenet_v3_small', ...]
     """
     query = query.lower()
     results = []
@@ -479,12 +479,67 @@ def get_model_info(name: str) -> ModelInfo:
         KeyError: If model not found
 
     Examples:
-        >>> info = ivit.zoo.get_model_info("yolov8n")
+        >>> info = ivit.zoo.get_model_info("yolox-s")
         >>> print(f"Task: {info.task}, Input: {info.input_size}")
     """
     if name not in MODEL_REGISTRY:
         raise KeyError(f"Model not found: {name}. Use ivit.zoo.list_models() to see available models.")
     return MODEL_REGISTRY[name]
+
+
+# ---------------------------------------------------------------------------
+# Training backend dispatch
+# ---------------------------------------------------------------------------
+
+# Registry 中可訓練的偵測模型（MODEL_REGISTRY 內 source==megvii）
+_YOLOX_TRAINABLE = {"yolox-nano", "yolox-tiny", "yolox-s", "yolox-m", "yolox-l"}
+
+# Registry 中可訓練的分類模型（torchvision）
+_TORCHVISION_CLS_TRAINABLE = {
+    "resnet18", "resnet34", "resnet50", "resnet101",
+    "efficientnet_b0", "efficientnet_b1", "efficientnet_b2",
+    "mobilenet_v2", "mobilenet_v3_small", "mobilenet_v3_large",
+    "vgg16", "vgg19", "densenet121",
+}
+
+# Registry 中可訓練的語意分割模型
+_TORCHVISION_SEG_TRAINABLE = {"deeplabv3-resnet50", "deeplabv3-mobilenetv3"}
+
+
+def is_trainable(name: str) -> bool:
+    """模型名是否能透過 ivit.train 訓練。"""
+    n = name.lower()
+    return (
+        n in _YOLOX_TRAINABLE
+        or n in _TORCHVISION_CLS_TRAINABLE
+        or n in _TORCHVISION_SEG_TRAINABLE
+    )
+
+
+def get_training_backend(name: str) -> str:
+    """
+    回傳訓練後端：
+        - "yolox"
+        - "torchvision-classify"
+        - "torchvision-segment"
+    """
+    n = name.lower()
+    if n in _YOLOX_TRAINABLE:
+        return "yolox"
+    if n in _TORCHVISION_CLS_TRAINABLE:
+        return "torchvision-classify"
+    if n in _TORCHVISION_SEG_TRAINABLE:
+        return "torchvision-segment"
+    raise ValueError(f"Model '{name}' is not registered as trainable.")
+
+
+def list_trainable_models() -> Dict[str, List[str]]:
+    """依 backend 分組列出所有可訓練模型名稱。"""
+    return {
+        "yolox": sorted(_YOLOX_TRAINABLE),
+        "torchvision-classify": sorted(_TORCHVISION_CLS_TRAINABLE),
+        "torchvision-segment": sorted(_TORCHVISION_SEG_TRAINABLE),
+    }
 
 
 def download(
@@ -1026,11 +1081,11 @@ def load(
         Loaded model ready for inference
 
     Examples:
-        >>> model = ivit.zoo.load("yolov8n")
+        >>> model = ivit.zoo.load("yolox-s")
         >>> results = model("image.jpg")
         >>>
-        >>> model = ivit.zoo.load("yolov8n", device="cuda:0")
-        >>> model = ivit.zoo.load("yolov8n", device="npu")
+        >>> model = ivit.zoo.load("yolox-s", device="cuda:0")
+        >>> model = ivit.zoo.load("yolox-s", device="npu")
     """
     import ivit
 

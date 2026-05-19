@@ -1,11 +1,11 @@
 {
-  "inference_time_ms": 15.034,
-  "device_used": "hailo",
+  "inference_time_ms": 14.008,
+  "device_used": "hailo:0",
   "image_size": [1080, 810],
   "detections": [
-    {"class_id": 0, "label": "person", "confidence": 0.888391, "bbox": {"x1": 221.082, "y1": 408.295, "x2": 345.383, "y2": 856.087}},
-    {"class_id": 0, "label": "person", "confidence": 0.884674, "bbox": {"x1": 49.614, "y1": 396.941, "x2": 245.17, "y2": 904.269}},
-    {"class_id": 0, "label": "person", "confidence": 0.884674, "bbox": {"x1": 671.597, "y1": 377.689, "x2": 810, "y2": 876.736}},
-    {"class_id": 0, "label": "person", "confidence": 0.421864, "bbox": {"x1": 0, "y1": 547.806, "x2": 57.602, "y2": 869.126}}
+    {"class_id": 5, "label": "bus", "confidence": 0.902941, "bbox": {"x1": 4.37192, "y1": 229.635, "x2": 803.987, "y2": 731.11}},
+    {"class_id": 0, "label": "person", "confidence": 0.876272, "bbox": {"x1": 51.4587, "y1": 396.523, "x2": 240.271, "y2": 904.05}},
+    {"class_id": 0, "label": "person", "confidence": 0.830553, "bbox": {"x1": 669.158, "y1": 394.622, "x2": 810, "y2": 880.426}},
+    {"class_id": 0, "label": "person", "confidence": 0.805341, "bbox": {"x1": 222.311, "y1": 403.029, "x2": 344.341, "y2": 862.672}}
   ]
 }

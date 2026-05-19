@@ -15,7 +15,7 @@ Usage:
     python data_analysis.py
     python data_analysis.py --image path/to/image.jpg
     python data_analysis.py --task classify --model resnet50
-    python data_analysis.py --task segment --model yolov8n-seg
+    python data_analysis.py --task segment --model deeplabv3-mobilenetv3
 """
 
 import argparse
@@ -53,8 +53,8 @@ def explore_model_zoo():
     print(f"  Search 'edge': {edge_models}")
 
     # Get model info
-    print("\nModel info example (yolov8n):")
-    info = ivit.zoo.get_model_info("yolov8n")
+    print("\nModel info example (yolox-s):")
+    info = ivit.zoo.get_model_info("yolox-s")
     print(f"  Task: {info.task}")
     print(f"  Input size: {info.input_size}")
     print(f"  Num classes: {info.num_classes}")
@@ -148,7 +148,7 @@ def analyze_segmentation_results(image):
     print("Step 4: Segmentation Results Analysis")
     print("=" * 60)
 
-    model = ivit.zoo.load("yolov8n-seg")
+    model = ivit.zoo.load("deeplabv3-mobilenetv3")
     results = model(image)
 
     print(f"Detection count: {len(results)}")
@@ -323,7 +323,7 @@ def main():
 
     # Load model based on task
     if args.task == "detect":
-        model_name = args.model or "yolov8n"
+        model_name = args.model or "yolox-s"
         print(f"\nLoading detection model: {model_name}")
         model = ivit.zoo.load(model_name)
 

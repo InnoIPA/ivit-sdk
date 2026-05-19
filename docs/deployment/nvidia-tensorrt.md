@@ -71,7 +71,7 @@ Devices:
 import ivit
 
 # 自動使用 GPU
-model = ivit.load("yolov8n.onnx", device="cuda:0")
+model = ivit.load("yolox-s.onnx", device="cuda:0")
 
 # 執行推論
 results = model("image.jpg")
@@ -82,10 +82,10 @@ results.show()
 
 ```python
 # 直接載入 TensorRT Engine（最快）
-model = ivit.load("yolov8n.engine", device="cuda:0")
+model = ivit.load("yolox-s.engine", device="cuda:0")
 
 # 或從 ONNX 自動轉換
-model = ivit.load("yolov8n.onnx", device="cuda:0")
+model = ivit.load("yolox-s.onnx", device="cuda:0")
 ```
 
 ## 模型轉換
@@ -331,7 +331,7 @@ def main():
             print(f"  - {d.id}: {d.name}")
 
     # 載入模型
-    model = ivit.load("yolov8n.onnx", device="cuda:0")
+    model = ivit.load("yolox-s.onnx", device="cuda:0")
 
     # 配置 TensorRT
     model.configure_tensorrt(

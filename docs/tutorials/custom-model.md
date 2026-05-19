@@ -101,14 +101,14 @@ for name, output in raw_outputs.items():
 
 ### 問題描述
 
-您使用 Ultralytics 訓練了一個 YOLOv8 模型，但匯出時使用了不同的正規化設定。
+您訓練了一個自定義 YOLO 模型，但匯出時使用了不同於 iVIT-SDK 預設的正規化設定。
 
 **症狀**：
 - 模型可以載入
 - 推論可以執行
 - 但偵測結果全錯或沒有偵測結果
 
-### 問題模型：custom_yolov8.onnx
+### 問題模型：custom_yolo.onnx
 
 假設您的模型有以下特性：
 - 輸入：BGR 格式（而非 RGB）
@@ -123,7 +123,7 @@ import numpy as np
 import cv2
 
 # 載入模型
-model = ivit.load("custom_yolov8.onnx")
+model = ivit.load("custom_yolo.onnx")
 
 # 檢查輸入
 print(model.input_info)
@@ -199,7 +199,7 @@ class CustomYOLOPreProcessor(BasePreProcessor):
 # 註冊並使用
 register_preprocessor("custom_yolo", CustomYOLOPreProcessor)
 
-model = ivit.load("custom_yolov8.onnx")
+model = ivit.load("custom_yolo.onnx")
 model.set_preprocessor(CustomYOLOPreProcessor(target_size=416))
 
 # 現在應該能正確推論

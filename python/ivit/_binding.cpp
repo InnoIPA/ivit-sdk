@@ -841,10 +841,10 @@ Args:
 
 Examples:
     # Convert to TensorRT engine
-    ivit.convert_model("yolov8n.onnx", "yolov8n.engine", "cuda:0", "fp16")
+    ivit.convert_model("yolox-s.onnx", "yolox-s.engine", "cuda:0", "fp16")
 
     # Convert to OpenVINO IR
-    ivit.convert_model("yolov8n.onnx", "yolov8n.xml", "cpu", "fp16")
+    ivit.convert_model("yolox-s.onnx", "yolox-s.xml", "cpu", "fp16")
 )doc");
 
     m.def("clear_cache", &ivit::clear_cache,

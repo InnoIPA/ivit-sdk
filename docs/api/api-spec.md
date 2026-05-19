@@ -51,13 +51,13 @@ ivit
     └── VideoStream
 ```
 
-### 1.2 快速 API (Ultralytics 風格)
+### 1.2 快速 API
 
 ```python
 import ivit
 
 # 一行載入並推論
-model = ivit.load("yolov8n.onnx")
+model = ivit.load("yolox-s.onnx")
 results = model("image.jpg")
 results.show()
 
@@ -67,7 +67,7 @@ model = ivit.load("model.onnx", device=ivit.devices.best())
 
 # Model Zoo
 ivit.zoo.list_models()            # 列出所有模型
-model = ivit.zoo.load("yolov8n")  # 自動下載並載入
+model = ivit.zoo.load("yolox-s")  # 自動下載並載入
 ```
 
 ---
@@ -96,8 +96,8 @@ def load_model(
 
     Args:
         path: 模型路徑。支援:
-            - 本地檔案路徑 (例如 "yolov8n.onnx")
-            - Model Zoo 名稱 (例如 "yolov8n")
+            - 本地檔案路徑 (例如 "yolox-s.onnx")
+            - Model Zoo 名稱 (例如 "yolox-s")
             - URL (例如 "https://...")
         device: 目標設備。選項:
             - "auto": 自動選擇最佳設備
@@ -138,18 +138,18 @@ def load_model(
 
     Examples:
         >>> # 基本用法
-        >>> model = ivit.load_model("yolov8n.onnx")
+        >>> model = ivit.load_model("yolox-s.onnx")
 
         >>> # 指定設備和後端
         >>> model = ivit.load_model(
-        ...     "yolov8n.onnx",
+        ...     "yolox-s.onnx",
         ...     device="cuda:0",
         ...     backend="tensorrt",
         ...     precision="fp16"
         ... )
 
         >>> # 從 Model Zoo 載入
-        >>> model = ivit.load_model("yolov8n", task="detection")
+        >>> model = ivit.load_model("yolox-s", task="detection")
     """
 ```
 
@@ -300,7 +300,7 @@ def set_log_level(level: str) -> None:
 
 ## 2.5 ivit.load (快速 API)
 
-簡化的模型載入函式，提供 Ultralytics 風格的單行 API。
+簡化的模型載入函式，提供 簡潔的單行 API。
 
 #### Python
 
@@ -314,12 +314,12 @@ def load(
     """
     載入模型（簡化 API）。
 
-    這是 iVIT-SDK 的主要入口點，提供類似 Ultralytics 的簡潔 API。
+    這是 iVIT-SDK 的主要入口點，提供單行載入、簡潔 API。
 
     Args:
         source: 模型來源
-            - 本地路徑 (例如 "yolov8n.onnx")
-            - Model Zoo 名稱 (例如 "yolov8n")
+            - 本地路徑 (例如 "yolox-s.onnx")
+            - Model Zoo 名稱 (例如 "yolox-s")
         device: 目標設備
             - "auto": 自動選擇最佳設備
             - "cpu": CPU
@@ -339,7 +339,7 @@ def load(
         >>> import ivit
         >>>
         >>> # 最簡單用法
-        >>> model = ivit.load("yolov8n.onnx")
+        >>> model = ivit.load("yolox-s.onnx")
         >>> results = model("image.jpg")
         >>> results.show()
         >>>
@@ -348,7 +348,7 @@ def load(
         >>> model = ivit.load("model.onnx", device=ivit.devices.best())
         >>>
         >>> # 從 Model Zoo 載入
-        >>> model = ivit.load("yolov8n")  # 自動下載
+        >>> model = ivit.load("yolox-s")  # 自動下載
     """
 ```
 
@@ -438,9 +438,9 @@ def zoo.list_models(task: Optional[str] = None) -> List[str]:
 
     Examples:
         >>> ivit.zoo.list_models()
-        ['yolov8n', 'yolov8s', 'yolov8m', 'resnet50', ...]
+        ['yolox-s', 'yolox-m', 'resnet50', ...]
         >>> ivit.zoo.list_models(task="detect")
-        ['yolov8n', 'yolov8s', 'yolov8m', 'yolov8l', 'yolov8x']
+        ['yolox-nano', 'yolox-tiny', 'yolox-s', 'yolox-m', 'yolox-l']
     """
 
 # 搜尋模型
@@ -456,9 +456,9 @@ def zoo.search(query: str) -> List[str]:
 
     Examples:
         >>> ivit.zoo.search("yolo")
-        ['yolov8n', 'yolov8s', ...]
+        ['yolox-nano', 'yolox-tiny', 'yolox-s', ...]
         >>> ivit.zoo.search("edge")  # 找邊緣裝置模型
-        ['yolov8n', 'yolov8n-seg', 'yolov8n-cls', ...]
+        ['yolox-nano', 'mobilenet_v3_small', ...]
     """
 
 # 取得模型資訊
@@ -473,7 +473,7 @@ def zoo.get_model_info(name: str) -> ModelInfo:
         ModelInfo: 模型資訊
 
     Examples:
-        >>> info = ivit.zoo.get_model_info("yolov8n")
+        >>> info = ivit.zoo.get_model_info("yolox-s")
         >>> print(f"Task: {info.task}, Input: {info.input_size}")
         Task: detect, Input: (640, 640)
     """
@@ -496,9 +496,9 @@ def zoo.download(
         Path: 下載的模型路徑
 
     Examples:
-        >>> path = ivit.zoo.download("yolov8n")
+        >>> path = ivit.zoo.download("yolox-s")
         >>> print(path)
-        /home/user/.cache/ivit/models/yolov8n.onnx
+        /home/user/.cache/ivit/models/yolox-s.onnx
     """
 
 # 載入模型（下載 + 載入）
@@ -520,7 +520,7 @@ def zoo.load(
         Model: 載入的模型
 
     Examples:
-        >>> model = ivit.zoo.load("yolov8n", device="cuda:0")
+        >>> model = ivit.zoo.load("yolox-s", device="cuda:0")
         >>> results = model("image.jpg")
     """
 
@@ -699,7 +699,7 @@ def __call__(
     **kwargs
 ) -> Results:
     """
-    呼叫模型進行推論（Ultralytics 風格）。
+    呼叫模型進行推論。
 
     允許直接呼叫模型物件：model(image)
 
@@ -711,7 +711,7 @@ def __call__(
         Results: 推論結果
 
     Examples:
-        >>> model = ivit.load("yolov8n.onnx")
+        >>> model = ivit.load("yolox-s.onnx")
         >>> results = model("image.jpg")  # 等同於 model.predict("image.jpg")
         >>> results.show()
     """
@@ -828,7 +828,7 @@ class Results:
 
 ### 4.2 方法
 
-#### 快速方法 (Ultralytics 風格) (NEW)
+#### 快速方法 (NEW)
 
 ```python
 class Results:
@@ -1114,8 +1114,8 @@ class Detector:
             device: 目標設備
 
         Examples:
-            >>> detector = Detector("yolov8n")
-            >>> detector = Detector("yolov8m", device="cuda:0")
+            >>> detector = Detector("yolox-s")
+            >>> detector = Detector("yolox-m", device="cuda:0")
         """
 
     def predict(
@@ -1312,7 +1312,7 @@ class SegmentationResults(Results):
 class PoseEstimator:
     def __init__(
         self,
-        model: Union[str, Model] = "yolov8n-pose",
+        model: Union[str, Model] = "rtmpose-s",
         device: str = "auto",
         **kwargs
     ):
@@ -1989,10 +1989,10 @@ import ivit
 from ivit.exceptions import ModelLoadError, DeviceNotFoundError
 
 try:
-    model = ivit.load_model("yolov8n.onnx", device="cuda:0")
+    model = ivit.load_model("yolox-s.onnx", device="cuda:0")
 except DeviceNotFoundError:
     print("CUDA 設備不可用，改用 CPU")
-    model = ivit.load_model("yolov8n.onnx", device="cpu")
+    model = ivit.load_model("yolox-s.onnx", device="cpu")
 except ModelLoadError as e:
     print(f"模型載入失敗: {e}")
     raise
@@ -2120,12 +2120,12 @@ ivit devices --json
 
 # 效能測試
 ivit benchmark <model> [options]
-ivit benchmark yolov8n.onnx -d cuda:0 -n 100
+ivit benchmark yolox-s.onnx -d cuda:0 -n 100
 
 # 執行推論
 ivit predict <model> <source> [options]
-ivit predict yolov8n.onnx image.jpg
-ivit predict yolov8n.onnx video.mp4 --save --show
+ivit predict yolox-s.onnx image.jpg
+ivit predict yolox-s.onnx video.mp4 --save --show
 ```
 
 ### 11.3 命令詳細說明
@@ -2192,13 +2192,13 @@ $ ivit devices --json
 執行效能基準測試。
 
 ```bash
-$ ivit benchmark yolov8n.onnx -d cuda:0 -n 100 -w 10
+$ ivit benchmark yolox-s.onnx -d cuda:0 -n 100 -w 10
 
 ============================================================
 iVIT-SDK Benchmark
 ============================================================
 
-Model:      yolov8n.onnx
+Model:      yolox-s.onnx
 Device:     cuda:0
 Iterations: 100
 Warmup:     10
@@ -2243,9 +2243,9 @@ Results:
 
 ```bash
 # 單張圖片
-$ ivit predict yolov8n.onnx image.jpg
+$ ivit predict yolox-s.onnx image.jpg
 
-Model:  yolov8n.onnx
+Model:  yolox-s.onnx
 Source: image.jpg
 Device: cuda:0
 
@@ -2261,7 +2261,7 @@ Detections: 3
   [2] dog: 76.32% @ [50, 300, 200, 450]
 
 # 影片處理
-$ ivit predict yolov8n.onnx video.mp4 --save --show
+$ ivit predict yolox-s.onnx video.mp4 --save --show
 
 Streaming inference...
 ----------------------------------------

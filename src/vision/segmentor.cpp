@@ -11,6 +11,8 @@
 #include <cmath>
 #include <fstream>
 #include <filesystem>
+#include <sstream>
+#include <limits>
 
 namespace ivit {
 namespace vision {
@@ -110,6 +112,25 @@ Segmentor::Segmentor(
 
     // Initialize colormap
     init_default_colormap();
+
+    // Auto-load a CPU classifier head for Hailo backbone-only HEFs. The
+    // head is produced by export_deeplab_classifier.py and lives next to
+    // the main model as "<stem>_head.onnx". See Bug #11 in
+    // docs/development/hailo-compile-bug-log.md.
+    if (model_ && model_->backend() == BackendType::HailoRT) {
+        namespace fs = std::filesystem;
+        fs::path model_fs(model_path);
+        fs::path head_path =
+            model_fs.parent_path() /
+            (model_fs.stem().string() + "_head.onnx");
+        if (fs::exists(head_path)) {
+            LoadConfig head_cfg;
+            head_cfg.device = "cpu";
+            head_cfg.task = "segmentation";
+            cpu_head_ = ModelManager::instance().load(
+                head_path.string(), head_cfg);
+        }
+    }
 }
 
 Segmentor::Segmentor(std::shared_ptr<Model> model)
@@ -212,9 +233,19 @@ cv::Mat Segmentor::preprocess(const cv::Mat& image) {
     // Convert to float and normalize
     processed.convertTo(processed, CV_32F, 1.0 / 255.0);
 
-    // Apply ImageNet normalization
-    std::vector<float> mean = {0.485f, 0.456f, 0.406f};
-    std::vector<float> std = {0.229f, 0.224f, 0.225f};
+    // Apply ImageNet normalization — but skip for Hailo backend, because
+    // the chip only takes UINT8 [0,255] and host-side float mean/std can't
+    // survive the *255→uint8 round-trip in hailort_runtime.cpp. For Hailo
+    // the mean/std must be baked into the HAR (via the `normalization`
+    // model-script command). See Bug #8 in docs/development/hailo-compile-bug-log.md.
+    bool skip_normalize =
+        (model_ && model_->backend() == BackendType::HailoRT);
+    std::vector<float> mean = skip_normalize
+        ? std::vector<float>{0.0f, 0.0f, 0.0f}
+        : std::vector<float>{0.485f, 0.456f, 0.406f};
+    std::vector<float> std = skip_normalize
+        ? std::vector<float>{1.0f, 1.0f, 1.0f}
+        : std::vector<float>{0.229f, 0.224f, 0.225f};
 
     std::vector<cv::Mat> channels(3);
     cv::split(processed, channels);
@@ -249,6 +280,14 @@ Results Segmentor::postprocess(
     const std::map<std::string, Tensor>& outputs,
     const cv::Size& orig_size
 ) {
+    // Hailo outputs tensors in NHWC by default, and the DeepLabV3-MobileNetV3
+    // HEF we compile today is truncated at backbone output (see Bug #11 in
+    // docs/development/hailo-compile-bug-log.md), so the shape is distinct
+    // enough that a dedicated branch is clearer than guessing NCHW vs NHWC.
+    if (model_ && model_->backend() == BackendType::HailoRT) {
+        return postprocess_hailo(outputs, orig_size);
+    }
+
     Results results;
 
     if (outputs.empty()) {
@@ -312,6 +351,135 @@ Results Segmentor::postprocess(
 
     results.segmentation_mask = mask;
 
+    return results;
+}
+
+Results Segmentor::postprocess_hailo(
+    const std::map<std::string, Tensor>& outputs,
+    const cv::Size& orig_size
+) {
+    Results results;
+    if (outputs.empty()) {
+        return results;
+    }
+
+    const Tensor& output = outputs.begin()->second;
+    const float* data = output.data_ptr<float>();
+    const auto& shape = output.shape();
+
+    // Hailo runtime may emit shape as [H, W, C] or [1, H, W, C]; normalize.
+    int H, W, C;
+    if (shape.size() == 4 && shape[0] == 1) {
+        H = static_cast<int>(shape[1]);
+        W = static_cast<int>(shape[2]);
+        C = static_cast<int>(shape[3]);
+    } else if (shape.size() == 3) {
+        H = static_cast<int>(shape[0]);
+        W = static_cast<int>(shape[1]);
+        C = static_cast<int>(shape[2]);
+    } else {
+        std::ostringstream msg;
+        msg << "Unexpected Hailo output shape for segmentation (expected "
+               "NHWC [H, W, C] or [1, H, W, C], got rank="
+            << shape.size() << ")";
+        throw InferenceError(msg.str());
+    }
+    const int num_classes = static_cast<int>(labels_.size());
+
+    // Distinguish mask output vs backbone feature map. A full segmentation
+    // HEF has C == num_classes (e.g. 21 for VOC). A backbone-only HEF
+    // (compile_deeplabv3.py --end-backbone-only) returns a wide feature map
+    // (e.g. C=960 for MobileNetV3) that needs a CPU classifier head.
+    if (num_classes <= 0 || C != num_classes) {
+        if (!cpu_head_) {
+            std::ostringstream msg;
+            msg << "Hailo HEF returned feature map [1, " << H << ", " << W
+                << ", " << C << "] (num_classes=" << num_classes
+                << "). This looks like a backbone-only HEF and no CPU "
+                   "classifier head was found next to the model "
+                   "(expected <model_stem>_head.onnx). Generate one with "
+                   "export_deeplab_classifier.py. "
+                   "See docs/development/hailo-compile-bug-log.md Bug #11.";
+            throw InferenceError(msg.str());
+        }
+
+        // NHWC [H, W, C] (Hailo) -> NCHW [1, C, H, W] (ONNX/OpenVINO input).
+        auto head_in_info = cpu_head_->input_info();
+        if (head_in_info.empty()) {
+            throw InferenceError("CPU classifier head has no inputs");
+        }
+        Shape head_in_shape = {1, C, H, W};
+        Tensor head_input(head_in_shape, DataType::Float32);
+        head_input.set_name(head_in_info[0].name);
+        float* dst = head_input.data_ptr<float>();
+        for (int c = 0; c < C; c++) {
+            for (int y = 0; y < H; y++) {
+                for (int x = 0; x < W; x++) {
+                    dst[c * H * W + y * W + x] = data[(y * W + x) * C + c];
+                }
+            }
+        }
+
+        std::map<std::string, Tensor> head_inputs;
+        head_inputs[head_in_info[0].name] = std::move(head_input);
+        auto head_outputs = cpu_head_->infer_raw(head_inputs);
+
+        const Tensor& head_out = head_outputs.begin()->second;
+        const auto& head_shape = head_out.shape();
+        if (head_shape.size() != 4) {
+            throw InferenceError(
+                "Unexpected CPU head output rank (expected NCHW)");
+        }
+        const int NC = static_cast<int>(head_shape[1]);
+        const int Hh = static_cast<int>(head_shape[2]);
+        const int Wh = static_cast<int>(head_shape[3]);
+        const float* hdata = head_out.data_ptr<float>();
+
+        // NCHW argmax.
+        cv::Mat mask(Hh, Wh, CV_32S);
+        for (int y = 0; y < Hh; y++) {
+            for (int x = 0; x < Wh; x++) {
+                int best_class = 0;
+                float best_score = -std::numeric_limits<float>::max();
+                for (int c = 0; c < NC; c++) {
+                    float score = hdata[c * Hh * Wh + y * Wh + x];
+                    if (score > best_score) {
+                        best_score = score;
+                        best_class = c;
+                    }
+                }
+                mask.at<int>(y, x) = best_class;
+            }
+        }
+        if (mask.size() != orig_size) {
+            cv::resize(mask, mask, orig_size, 0, 0, cv::INTER_NEAREST);
+        }
+        results.segmentation_mask = mask;
+        return results;
+    }
+
+    // NHWC argmax over channel axis (full segmentation HEF).
+    cv::Mat mask(H, W, CV_32S);
+    for (int y = 0; y < H; y++) {
+        for (int x = 0; x < W; x++) {
+            const float* px = data + (y * W + x) * C;
+            int best_class = 0;
+            float best_score = -std::numeric_limits<float>::max();
+            for (int c = 0; c < C; c++) {
+                if (px[c] > best_score) {
+                    best_score = px[c];
+                    best_class = c;
+                }
+            }
+            mask.at<int>(y, x) = best_class;
+        }
+    }
+
+    if (mask.size() != orig_size) {
+        cv::resize(mask, mask, orig_size, 0, 0, cv::INTER_NEAREST);
+    }
+
+    results.segmentation_mask = mask;
     return results;
 }
 

@@ -87,8 +87,8 @@ def load_model(model_source: str, device):
         model = ivit.load(model_source, device=device)
     else:
         # Load from Model Zoo (quick POC)
-        print("Loading model from Model Zoo: yolov8n")
-        model = ivit.zoo.load("yolov8n", device=device)
+        print("Loading model from Model Zoo: yolox-s")
+        model = ivit.zoo.load("yolox-s", device=device)
 
     print(f"Model loaded successfully!")
     print(f"  Device: {model.device}")

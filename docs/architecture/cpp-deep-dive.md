@@ -629,12 +629,12 @@ class Visualizer {
 
 ## 3. 完整呼叫流程
 
-以 YOLOv8 目標偵測推論為例：
+以 YOLOX 目標偵測推論為例：
 
 ```
 用戶代碼
 │
-├── ivit::load_model("yolov8n.onnx", {device="cuda:0"})
+├── ivit::load_model("yolox-s.onnx", {device="cuda:0"})
 │   │
 │   ├── ModelManager::instance().load()                     [model.cpp]
 │   │   │
@@ -644,8 +644,8 @@ class Visualizer {
 │   │   ├── RuntimeFactory::get_best_runtime("*.onnx", "cuda:0")  [runtime_factory.cpp]
 │   │   │   └── → TensorRTRuntime
 │   │   │
-│   │   └── TensorRTRuntime::load_model("yolov8n.onnx", cfg)      [tensorrt_runtime.cpp]
-│   │       ├── get_cache_path() → "yolov8n_trt_fp16_sm89.engine"
+│   │   └── TensorRTRuntime::load_model("yolox-s.onnx", cfg)      [tensorrt_runtime.cpp]
+│   │       ├── get_cache_path() → "yolox-s_trt_fp16_sm89.engine"
 │   │       ├── 快取存在且較新 → load_engine()（直接反序列化）
 │   │       ├── 否則 build_engine_from_onnx()
 │   │       │   ├── NvOnnxParser: ONNX → network definition
@@ -658,10 +658,10 @@ class Visualizer {
 │   │       ├── create CUDA stream
 │   │       └── return void* handle → TensorRTEngine*
 │   │
-│   └── InferenceModel(runtime, handle, "yolov8n", Detection, "cuda:0")
+│   └── InferenceModel(runtime, handle, "yolox-s", Detection, "cuda:0")
 │       ├── query input_info: [{name:"images", shape:[1,3,640,640]}]
 │       ├── query output_info
-│       └── load labels from yolov8n.txt
+│       └── load labels from yolox-s.txt
 │
 │   return shared_ptr<Model>
 │
@@ -693,8 +693,8 @@ class Visualizer {
 │   │   ├── trigger CallbackEvent::InferEnd
 │   │   │
 │   │   ├── Detector::postprocess(outputs, original_size, cfg) [detector.cpp]
-│   │   │   ├── 偵測 shape[1]<shape[2] → transpose (YOLOv8 轉置格式)
-│   │   │   ├── 解析 [cx, cy, w, h, cls0..cls79]
+│   │   │   ├── 解析 [cx, cy, w, h, obj_conf, cls0..cls79]
+│   │   │   ├── YOLOX grid decode（per-stride [8,16,32]，cx/cy 加 grid 偏移 × stride）
 │   │   │   ├── 過濾 confidence < threshold
 │   │   │   ├── 自訂 greedy NMS (per class, sorted by conf)
 │   │   │   ├── 座標恢復: (cx±w/2 - pad_w) / scale，clamp
@@ -1513,7 +1513,7 @@ TensorRTEngine::~TensorRTEngine() {
 
 ```
 {model_stem}_trt_{precision}_sm{major}{minor}.engine
-例：yolov8n_trt_fp16_sm89.engine（RTX 4090 = sm_89）
+例：yolox-s_trt_fp16_sm89.engine（RTX 4090 = sm_89）
 ```
 
 不同 GPU 算力（sm86/sm89/sm90）產生不同緩存，不可共用。
@@ -1692,9 +1692,9 @@ for (int c = 0; c < 3; ++c)
 #### 模型類型推斷
 
 ```cpp
-// 從檔名關鍵字推斷（預設 YOLOv8）
-if (name.find("yolov8") != npos)  model_type_ = YOLOv8;
-else if (name.find("yolox") != npos)  model_type_ = YOLOX;
+// 從檔名關鍵字推斷（預設 YOLOX）
+if (name.find("yolox") != npos)  model_type_ = YOLOX;
+else if (name.find("yolov5") != npos)  model_type_ = YOLOv5;
 // ...
 ```
 

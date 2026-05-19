@@ -46,6 +46,7 @@ class ModelExporter:
         opset_version: int = 17,
         class_names: Optional[List[str]] = None,
         calibration_data: Optional[List[np.ndarray]] = None,
+        task: str = "classify",
         **kwargs
     ) -> str:
         """
@@ -60,6 +61,8 @@ class ModelExporter:
             opset_version: ONNX opset version
             class_names: Class names for metadata
             calibration_data: Data for INT8 calibration
+            task: 任務型態 — "classify" / "detect" / "segment"，
+                  影響 ONNX 輸出 names 與 dynamic_axes
 
         Returns:
             Path to exported model
@@ -71,20 +74,47 @@ class ModelExporter:
 
         if format == "onnx":
             return self._export_onnx(
-                path, input_shape, opset_version, quantize, class_names
+                path, input_shape, opset_version, quantize, class_names, task
             )
         elif format == "torchscript":
             return self._export_torchscript(path, input_shape)
         elif format == "openvino":
             return self._export_openvino(
-                path, input_shape, quantize, calibration_data
+                path, input_shape, quantize, calibration_data, task
             )
         elif format == "tensorrt":
             return self._export_tensorrt(
-                path, input_shape, quantize
+                path, input_shape, quantize, task
             )
         else:
             raise ValueError(f"Unsupported format: {format}")
+
+    def _onnx_io_spec(self, task: str) -> Tuple[List[str], List[str], Dict[str, Dict[int, str]]]:
+        """依 task 回傳 (input_names, output_names, dynamic_axes)。"""
+        task = (task or "classify").lower()
+        if task == "detect":
+            # YOLOX raw output：(batch, num_dets, 5+num_classes) 或 backbone-style multi-head；
+            # 這裡先以單張量輸出為準（YOLOX 標準 export 形式），dynamic 包含 batch 與 anchors 數
+            return (
+                ["input"],
+                ["output"],
+                {"input": {0: "batch"}, "output": {0: "batch", 1: "num_dets"}},
+            )
+        if task == "segment":
+            return (
+                ["input"],
+                ["logits"],
+                {
+                    "input": {0: "batch", 2: "height", 3: "width"},
+                    "logits": {0: "batch", 2: "height", 3: "width"},
+                },
+            )
+        # classify
+        return (
+            ["input"],
+            ["output"],
+            {"input": {0: "batch"}, "output": {0: "batch"}},
+        )
 
     def _export_onnx(
         self,
@@ -93,6 +123,7 @@ class ModelExporter:
         opset_version: int,
         quantize: Optional[str],
         class_names: Optional[List[str]],
+        task: str = "classify",
     ) -> str:
         """Export to ONNX format."""
         import torch
@@ -102,34 +133,16 @@ class ModelExporter:
         # Create dummy input
         dummy_input = torch.randn(input_shape).to(self.device)
 
-        # Get input/output names
-        input_names = ["input"]
-        output_names = ["output"]
+        input_names, output_names, dynamic_axes = self._onnx_io_spec(task)
 
-        # Dynamic axes for batch size
-        dynamic_axes = {
-            "input": {0: "batch_size"},
-            "output": {0: "batch_size"},
-        }
-
-        # Export to ONNX
-        logger.info(f"Exporting to ONNX: {path}")
-        # torch.onnx.export(
-        #     self.model,
-        #     dummy_input,
-        #     path,
-        #     input_names=input_names,
-        #     output_names=output_names,
-        #     dynamic_axes=dynamic_axes,
-        #     opset_version=opset_version,
-        #     do_constant_folding=True,
-        # )
+        logger.info(f"Exporting to ONNX (task={task}): {path}")
         torch.onnx.export(
             self.model,
             dummy_input,
             path,
             input_names=input_names,
             output_names=output_names,
+            dynamic_axes=dynamic_axes,
             opset_version=opset_version,
             do_constant_folding=True,
         )
@@ -196,13 +209,14 @@ class ModelExporter:
         input_shape: tuple,
         quantize: Optional[str],
         calibration_data: Optional[List[np.ndarray]],
+        task: str = "classify",
     ) -> str:
         """Export to OpenVINO IR format."""
         import torch
 
         # First export to ONNX
         onnx_path = str(Path(path).with_suffix('.onnx'))
-        self._export_onnx(onnx_path, input_shape, 17, None, None)
+        self._export_onnx(onnx_path, input_shape, 17, None, None, task)
 
         try:
             import openvino as ov
@@ -266,11 +280,12 @@ class ModelExporter:
         path: str,
         input_shape: tuple,
         quantize: Optional[str],
+        task: str = "classify",
     ) -> str:
         """Export to TensorRT engine format."""
         # First export to ONNX
         onnx_path = str(Path(path).with_suffix('.onnx'))
-        self._export_onnx(onnx_path, input_shape, 17, None, None)
+        self._export_onnx(onnx_path, input_shape, 17, None, None, task)
 
         try:
             import tensorrt as trt

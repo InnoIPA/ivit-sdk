@@ -35,7 +35,7 @@ SKIP_TESTS=false
 SDK_DIR="/workspace/ivit-sdk"
 BUILD_DIR="/tmp/ivit-build"
 TEST_IMAGE="/opt/test-data/images/bus.jpg"
-TEST_MODEL="/opt/test-data/models/yolov8n.onnx"
+TEST_MODEL="/opt/test-data/models/yolox-s.onnx"
 
 # ============================================================================
 # 輔助函數

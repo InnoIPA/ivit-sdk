@@ -253,7 +253,7 @@ int main(int argc, char* argv[]) {
     std::cout << "SDK Version: " << ivit::version() << std::endl;
 
     std::string image_path = argc > 1 ? argv[1] : "test_images/bus.jpg";
-    std::string model_path = argc > 2 ? argv[2] : "models/yolov8n.onnx";
+    std::string model_path = argc > 2 ? argv[2] : "models/yolox-s.onnx";
 
     // Step 1: Discover devices
     discover_devices();

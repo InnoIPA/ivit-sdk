@@ -211,7 +211,7 @@ best_device = ivit.get_best_device()
 
 **支援模型**：
 - YOLOv5 (n/s/m/l/x)
-- YOLOv8 (n/s/m/l/x)
+- YOLOX (nano/tiny/s/m/l)
 - YOLOv9
 - YOLOv10
 - SSD (MobileNet/VGG)
@@ -250,7 +250,7 @@ best_device = ivit.get_best_device()
 **支援模型**：
 - Mask R-CNN
 - YOLACT/YOLACT++
-- YOLOv8-seg
+- DeepLabV3
 - SOLOv2
 
 #### 4.1.5 姿態估計 (Pose Estimation)
@@ -264,7 +264,7 @@ best_device = ivit.get_best_device()
 | POS-005 | 支援骨架視覺化 | P1 |
 
 **支援模型**：
-- YOLOv8-pose
+- RTMPose
 - HRNet
 - OpenPose
 - MediaPipe Pose
@@ -383,7 +383,7 @@ best_device = ivit.get_best_device()
 | 需求 ID | 需求描述 | 目標值 | 優先級 |
 |---------|----------|--------|--------|
 | PRF-001 | 模型載入時間 | < 5 秒 (首次) | P0 |
-| PRF-002 | 推論延遲 (YOLOv8n, 640x640) | < 10ms (GPU) | P0 |
+| PRF-002 | 推論延遲 (YOLOX-Nano, 640x640) | < 10ms (GPU) | P0 |
 | PRF-003 | 記憶體佔用 | < 500MB (典型模型) | P0 |
 | PRF-004 | CPU 利用率 | 支援多執行緒 | P0 |
 | PRF-005 | GPU 記憶體利用率 | 優化 VRAM 使用 | P0 |
@@ -435,7 +435,7 @@ import ivit
 
 # 方式 1: 通用模型載入
 model = ivit.load_model(
-    path="yolov8n.onnx",           # 模型路徑或 Model Zoo 名稱
+    path="yolox-s.onnx",           # 模型路徑或 Model Zoo 名稱
     device="auto",                  # auto, cpu, gpu:0, npu, cuda:0
     backend="auto",                 # auto, openvino, tensorrt, snpe
     task="detection",               # 任務類型提示 (可選)
@@ -473,7 +473,7 @@ print(f"Top-1: {result.top1.label} ({result.top1.score:.2%})")
 print(f"Top-5: {result.top5}")
 
 # 物件偵測
-detector = Detector("yolov8n", device="cuda:0")
+detector = Detector("yolox-s", device="cuda:0")
 detections = detector.predict("street.jpg")
 for det in detections:
     print(f"{det.label}: {det.confidence:.2%} @ {det.bbox}")
@@ -540,7 +540,7 @@ trainer.export(
 #include <ivit/ivit.hpp>
 
 // 載入模型
-auto model = ivit::load_model("yolov8n.onnx", {
+auto model = ivit::load_model("yolox-s.onnx", {
     .device = "cuda:0",
     .backend = "tensorrt"
 });
@@ -591,10 +591,6 @@ cv::imwrite("output.jpg", viz);
 | yolov5s | 7.2M | 37.4% | CPU, GPU | P0 |
 | yolov5m | 21.2M | 45.4% | GPU | P0 |
 | yolov5l | 46.5M | 49.0% | GPU | P1 |
-| yolov8n | 3.2M | 37.3% | CPU, NPU | P0 |
-| yolov8s | 11.2M | 44.9% | CPU, GPU | P0 |
-| yolov8m | 25.9M | 50.2% | GPU | P0 |
-| yolov8l | 43.7M | 52.9% | GPU | P1 |
 | yolov9c | 25.3M | 53.0% | GPU | P1 |
 | yolov10n | 2.3M | 38.5% | CPU, NPU | P1 |
 | ssd_mobilenet_v2 | 4.5M | 22.0% | CPU, NPU | P0 |
@@ -661,9 +657,9 @@ cv::imwrite("output.jpg", viz);
 
 ### 8.2 效能驗收
 
-- [ ] YOLOv8n (640x640) 在 RTX 4090 上 < 5ms
-- [ ] YOLOv8n (640x640) 在 Jetson Orin 上 < 15ms
-- [ ] YOLOv8n (640x640) 在 Intel Core Ultra 上 < 20ms
+- [ ] YOLOX-Nano (640x640) 在 RTX 4090 上 < 5ms
+- [ ] YOLOX-Nano (640x640) 在 Jetson Orin 上 < 15ms
+- [ ] YOLOX-Nano (640x640) 在 Intel Core Ultra 上 < 20ms
 
 ### 8.3 品質驗收
 

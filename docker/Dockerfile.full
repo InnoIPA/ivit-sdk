@@ -71,17 +71,15 @@ RUN pip3 install --upgrade pip setuptools wheel && \
 # ============================================================================
 RUN mkdir -p /opt/test-data/images /opt/test-data/models
 
-# 下載測試圖片
+# 下載測試圖片（COCO sample images）
 RUN wget -q -O /opt/test-data/images/bus.jpg \
-    "https://ultralytics.com/images/bus.jpg" && \
+    "http://images.cocodataset.org/val2017/000000000785.jpg" && \
     wget -q -O /opt/test-data/images/zidane.jpg \
-    "https://ultralytics.com/images/zidane.jpg"
+    "http://images.cocodataset.org/val2017/000000000139.jpg"
 
-# 下載預訓練模型（YOLOv8n ONNX）
-RUN pip3 install --no-cache-dir ultralytics && \
-    python3 -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='onnx', opset=17)" && \
-    mv yolov8n.onnx /opt/test-data/models/ && \
-    pip3 uninstall -y ultralytics
+# 下載預訓練模型（YOLOX-S ONNX）
+RUN wget -q -O /opt/test-data/models/yolox-s.onnx \
+    "https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/yolox-s.onnx"
 
 # ============================================================================
 # 工作目錄設定

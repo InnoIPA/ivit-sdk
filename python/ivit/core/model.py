@@ -31,7 +31,7 @@ def load_model(
         Model: C++ Model object ready for inference
 
     Examples:
-        >>> model = load_model("yolov8n.onnx", device="cuda:0", task="detection")
+        >>> model = load_model("yolox-s.onnx", device="cuda:0", task="detection")
         >>> results = model.predict("image.jpg")
     """
     config = LoadConfig()

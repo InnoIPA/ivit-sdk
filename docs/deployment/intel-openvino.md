@@ -58,7 +58,7 @@ Devices:
 import ivit
 
 # 載入模型（自動選擇最佳裝置）
-model = ivit.load("yolov8n.onnx")
+model = ivit.load("yolox-s.onnx")
 
 # 執行推論
 results = model("image.jpg")
@@ -153,7 +153,7 @@ model.configure_openvino(
 ```python
 import ivit
 
-model = ivit.load("yolov8n.onnx", device="cpu")
+model = ivit.load("yolox-s.onnx", device="cpu")
 
 # 處理影片串流
 for results in model.stream("video.mp4"):
@@ -263,7 +263,7 @@ def main():
         print(f"  - {d.id}: {d.name}")
 
     # 載入模型
-    model = ivit.load("yolov8n.onnx", device="cpu")
+    model = ivit.load("yolox-s.onnx", device="cpu")
 
     # 配置 OpenVINO
     model.configure_openvino(

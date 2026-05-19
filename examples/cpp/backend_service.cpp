@@ -321,7 +321,7 @@ void print_usage(const char* program) {
     std::cout << "  --demo             Run demo inferences" << std::endl;
     std::cout << std::endl;
     std::cout << "Example:" << std::endl;
-    std::cout << "  " << program << " yolov8n.onnx --device cuda:0 --demo" << std::endl;
+    std::cout << "  " << program << " yolox-s.onnx --device cuda:0 --demo" << std::endl;
 }
 
 int main(int argc, char* argv[]) {

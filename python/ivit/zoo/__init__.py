@@ -38,6 +38,9 @@ from .registry import (
     download,
     load,
     ModelInfo,
+    is_trainable,
+    get_training_backend,
+    list_trainable_models,
 )
 
 __all__ = [
@@ -47,4 +50,7 @@ __all__ = [
     "download",
     "load",
     "ModelInfo",
+    "is_trainable",
+    "get_training_backend",
+    "list_trainable_models",
 ]

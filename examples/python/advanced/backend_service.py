@@ -127,7 +127,7 @@ def inference_with_monitoring(
 ):
     """Step 2: Run inference with monitoring."""
     # Trigger infer_start event
-    ctx = CallbackContext(event="infer_start", model_name="yolov8n")
+    ctx = CallbackContext(event="infer_start", model_name="yolox-s")
     callback_manager.trigger("infer_start", ctx)
 
     # Execute inference
@@ -138,7 +138,7 @@ def inference_with_monitoring(
     # Trigger infer_end event
     ctx = CallbackContext(
         event="infer_end",
-        model_name="yolov8n",
+        model_name="yolox-s",
         latency_ms=latency,
         detections=len(results)
     )
@@ -176,7 +176,7 @@ def demonstrate_cli_tools():
     print("# Model Zoo operations")
     print("  ivit zoo list")
     print("  ivit zoo search yolo")
-    print("  ivit zoo download yolov8n")
+    print("  ivit zoo download yolox-s")
 
 
 def run_demo():
@@ -198,7 +198,7 @@ def run_demo():
     device = ivit.devices.best()
     print(f"Selected device: {device.id} ({device.name})")
 
-    model = ivit.zoo.load("yolov8n", device=device)
+    model = ivit.zoo.load("yolox-s", device=device)
     model.warmup(10)
     print("Model loaded and warmed up!")
 
@@ -280,7 +280,7 @@ def create_fastapi_app(model_path: Optional[str] = None):
         if model_path:
             state["model"] = ivit.load(model_path, device=device)
         else:
-            state["model"] = ivit.zoo.load("yolov8n", device=device)
+            state["model"] = ivit.zoo.load("yolox-s", device=device)
 
         # Warmup
         state["model"].warmup(10)

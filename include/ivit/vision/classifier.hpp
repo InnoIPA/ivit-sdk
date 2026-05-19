@@ -115,6 +115,11 @@ public:
 
 private:
     std::shared_ptr<Model> model_;
+    // Optional CPU-side head for Hailo backbone-only HEFs (e.g.
+    // mambavision-t whose SSM/Transformer can't translate to Hailo).
+    // Auto-loaded from "<model_stem>_head.onnx" next to the main model.
+    // See Bug #15 in docs/development/hailo-compile-bug-log.md.
+    std::shared_ptr<Model> cpu_head_;
     std::vector<std::string> labels_;
     cv::Size input_size_;
     std::vector<float> mean_;
@@ -122,6 +127,8 @@ private:
 
     cv::Mat preprocess(const cv::Mat& image);
     Results postprocess(const std::map<std::string, Tensor>& outputs, int top_k);
+    Results postprocess_hailo(
+        const std::map<std::string, Tensor>& outputs, int top_k);
 };
 
 } // namespace vision

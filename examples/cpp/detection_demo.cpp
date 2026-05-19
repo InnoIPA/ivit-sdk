@@ -63,7 +63,7 @@ void print_usage(const char* program) {
     std::cout << "  conf_threshold  Confidence threshold [default: 0.5]\n";
     std::cout << "\n";
     std::cout << "Example:\n";
-    std::cout << "  " << program << " yolov8n.onnx street.jpg gpu:0 0.5\n";
+    std::cout << "  " << program << " yolox-s.onnx street.jpg gpu:0 0.5\n";
 }
 
 int main(int argc, char* argv[]) {

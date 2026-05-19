@@ -978,11 +978,11 @@ TensorRT 需要建置 engine，SNPE 需要轉換 DLC，這些操作耗時。
 ~/.cache/ivit/
 ├── models/                     # 下載的原始模型
 ├── engines/                    # TensorRT engines
-│   └── yolov8n_fp16_rtx4090.engine
+│   └── yolox-s_fp16_rtx4090.engine
 ├── dlc/                        # SNPE DLC 檔案
-│   └── yolov8n_int8_qcs8550.dlc
+│   └── yolox-s_int8_qcs8550.dlc
 └── openvino/                   # OpenVINO 快取
-    └── yolov8n_int8_npu/
+    └── yolox-s_int8_npu/
 ```
 
 **快取 Key 包含**:
@@ -1191,9 +1191,9 @@ class Results:
 |------|------|----------|
 | 模型載入 | < 3 秒 | 首次載入（含轉換） |
 | 模型載入（快取）| < 500 ms | 從快取載入 |
-| 推論延遲 (YOLOv8n) | < 5 ms | RTX 4090, FP16, 640x640 |
-| 推論延遲 (YOLOv8n) | < 10 ms | Jetson Orin, FP16, 640x640 |
-| 推論延遲 (YOLOv8n) | < 15 ms | Intel Core Ultra NPU, INT8, 640x640 |
+| 推論延遲 (YOLOX-Nano) | < 5 ms | RTX 4090, FP16, 640x640 |
+| 推論延遲 (YOLOX-Nano) | < 10 ms | Jetson Orin, FP16, 640x640 |
+| 推論延遲 (YOLOX-Nano) | < 15 ms | Intel Core Ultra NPU, INT8, 640x640 |
 | 記憶體佔用 | < 500 MB | 典型模型 |
 | API 開銷 | < 1 ms | Python wrapper 開銷 |
 
@@ -1223,7 +1223,7 @@ from ivit.utils import Profiler
 profiler = Profiler()
 
 # 載入模型
-model = ivit.load_model("yolov8n.onnx", device="cuda:0")
+model = ivit.load_model("yolox-s.onnx", device="cuda:0")
 
 # 執行 benchmark
 report = profiler.benchmark(
@@ -1238,7 +1238,7 @@ print(report)
 # ┌─────────────────────────────────────────────────────────────┐
 # │                    Benchmark Report                         │
 # ├─────────────────────────────────────────────────────────────┤
-# │ Model: yolov8n.onnx                                         │
+# │ Model: yolox-s.onnx                                         │
 # │ Device: NVIDIA GeForce RTX 4090 (cuda:0)                    │
 # │ Backend: TensorRT 9.2                                       │
 # │ Precision: FP16                                             │

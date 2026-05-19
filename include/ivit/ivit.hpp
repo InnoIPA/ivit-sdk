@@ -57,16 +57,16 @@ inline const char* version() {
  * @example
  * @code
  * // Load from file
- * auto model = ivit::load_model("yolov8n.onnx");
+ * auto model = ivit::load_model("yolox-s.onnx");
  *
  * // Load with specific device
- * auto model = ivit::load_model("yolov8n.onnx", {
+ * auto model = ivit::load_model("yolox-s.onnx", {
  *     .device = "cuda:0",
  *     .backend = "tensorrt"
  * });
  *
  * // Load from Model Zoo
- * auto model = ivit::load_model("yolov8n", {.task = "detection"});
+ * auto model = ivit::load_model("yolox-s", {.task = "detection"});
  * @endcode
  */
 std::shared_ptr<Model> load_model(
@@ -143,10 +143,10 @@ std::string get_cache_dir();
  * @example
  * @code
  * // Convert to TensorRT engine
- * ivit::convert_model("yolov8n.onnx", "yolov8n.engine", "cuda:0", "fp16");
+ * ivit::convert_model("yolox-s.onnx", "yolox-s.engine", "cuda:0", "fp16");
  *
  * // Convert to OpenVINO IR
- * ivit::convert_model("yolov8n.onnx", "yolov8n.xml", "cpu", "fp16");
+ * ivit::convert_model("yolox-s.onnx", "yolox-s.xml", "cpu", "fp16");
  * @endcode
  */
 void convert_model(

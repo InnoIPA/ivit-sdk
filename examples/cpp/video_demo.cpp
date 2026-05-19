@@ -58,8 +58,8 @@ void print_usage(const char* program) {
     std::cout << "  conf_threshold  Confidence threshold [default: 0.5]\n";
     std::cout << "\n";
     std::cout << "Examples:\n";
-    std::cout << "  " << program << " yolov8n.onnx video.mp4 gpu:0 0.5\n";
-    std::cout << "  " << program << " yolov8n.onnx 0 gpu:0 0.5  # Use camera 0\n";
+    std::cout << "  " << program << " yolox-s.onnx video.mp4 gpu:0 0.5\n";
+    std::cout << "  " << program << " yolox-s.onnx 0 gpu:0 0.5  # Use camera 0\n";
 }
 
 int main(int argc, char* argv[]) {

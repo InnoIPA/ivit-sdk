@@ -50,7 +50,7 @@ make -j$(nproc)
 import ivit
 
 # 物件偵測
-detector = ivit.Detector("yolov8n.onnx", device="npu")
+detector = ivit.Detector("yolox-s.onnx", device="npu")
 results = detector.predict("image.jpg")
 
 for det in results.detections:
@@ -62,7 +62,7 @@ for det in results.detections:
 ```cpp
 #include "ivit/vision/detector.hpp"
 
-Detector detector("yolov8n.onnx", "npu");
+Detector detector("yolox-s.onnx", "npu");
 auto results = detector.predict(image, 0.5f);
 
 for (const auto& det : results.detections) {
@@ -79,7 +79,7 @@ for (const auto& det : results.detections) {
 | 分類 | ResNet、EfficientNet、MobileNet |
 | 物件偵測 | YOLOv5/v8、SSD、Faster R-CNN |
 | 語意分割 | DeepLabV3、U-Net、SegFormer |
-| 姿態估計 | YOLOv8-Pose、HRNet |
+| 姿態估計 | RTMPose、HRNet |
 | 人臉分析 | RetinaFace、ArcFace |
 
 ## 文件

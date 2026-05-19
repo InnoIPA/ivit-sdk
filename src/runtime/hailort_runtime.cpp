@@ -111,6 +111,23 @@ void* HailoRTRuntime::load_model(
     // Configure batch size
     model_handle->infer_model->set_batch_size(batch_size);
 
+    // Request FLOAT32 output for non-NMS streams BEFORE configure(), so Hailo
+    // dequantizes on-chip output (UINT8) to meaningful logits. Without this
+    // the downstream Classifier/Segmentor would reinterpret raw uint8 bytes
+    // as floats and produce NaN. set_format_type must be called on the
+    // InferModel's output stream before configure() bakes the pipeline.
+    for (const auto& output : model_handle->infer_model->outputs()) {
+        auto order = output.format().order;
+        if (order != HAILO_FORMAT_ORDER_HAILO_NMS_BY_CLASS &&
+            order != HAILO_FORMAT_ORDER_HAILO_NMS_ON_CHIP &&
+            order != HAILO_FORMAT_ORDER_HAILO_NMS_BY_SCORE) {
+            auto mut = model_handle->infer_model->output(output.name());
+            if (mut) {
+                mut->set_format_type(HAILO_FORMAT_TYPE_FLOAT32);
+            }
+        }
+    }
+
     // Configure and obtain a ConfiguredInferModel
     auto configured = model_handle->infer_model->configure();
     if (!configured) {
@@ -137,7 +154,8 @@ void* HailoRTRuntime::load_model(
         model_handle->input_infos.push_back(info);
         model_handle->input_hailo_dtypes.push_back(hailort_to_dtype(input.format().type));
     }
-    // Outputs: use real HailoRT format + frame_size for correct buffer allocation.
+    // Read outputs AFTER set_format_type + configure() so tensor_info
+    // and frame_size reflect the requested FLOAT32 format.
     for (const auto& output : model_handle->infer_model->outputs()) {
         model_handle->output_infos.push_back(make_tensor_info(output));
         model_handle->output_frame_sizes.push_back(output.get_frame_size());
@@ -285,6 +303,13 @@ std::map<std::string, Tensor> HailoRTRuntime::infer(
             // byte_size() == frame_size so the memcpy below is safe.
             t = Tensor(info.shape, DataType::Float32);
             t.set_layout(Layout::HailoNMS);
+        } else if (info.dtype == DataType::Float32) {
+            // Dequantized classification/feature output. We asked HailoRT
+            // to produce FLOAT32 at load_model(); use the NHWC shape so
+            // downstream Vision layers (Classifier etc.) can call
+            // data_ptr<float>() directly and get real logits.
+            t = Tensor(info.shape, DataType::Float32);
+            t.set_layout(Layout::NHWC);
         } else {
             t = Tensor(Shape{static_cast<int64_t>(frame_size)}, DataType::UInt8);
         }

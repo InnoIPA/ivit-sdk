@@ -27,7 +27,7 @@ namespace vision {
  * @example
  * @code
  * // Create detector
- * auto detector = Detector("yolov8n", "cuda:0");
+ * auto detector = Detector("yolox-s", "cuda:0");
  *
  * // Detect objects
  * auto results = detector.predict("image.jpg");
@@ -143,7 +143,7 @@ private:
     std::shared_ptr<Model> model_;
     std::vector<std::string> labels_;
     cv::Size input_size_;
-    std::string model_type_;  // "yolov8", "yolov5", "ssd", etc.
+    std::string model_type_;  // "yolox", "yolov5", "ssd", etc.
 
     cv::Mat preprocess(const cv::Mat& image, float& scale, int& pad_w, int& pad_h);
     Results postprocess(

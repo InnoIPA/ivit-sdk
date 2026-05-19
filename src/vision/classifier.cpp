@@ -13,6 +13,8 @@
 #include <chrono>
 #include <fstream>
 #include <filesystem>
+#include <sstream>
+#include <limits>
 
 namespace ivit {
 namespace vision {
@@ -66,6 +68,16 @@ Classifier::Classifier(
     mean_ = {0.485f, 0.456f, 0.406f};
     std_ = {0.229f, 0.224f, 0.225f};
 
+    // Hailo backend bakes ImageNet normalization into the HAR (via the
+    // Hailo "normalization" model-script command at compile time), because
+    // the chip only accepts UINT8 [0, 255] input — float mean/std cannot
+    // survive the host-side → uint8 conversion. Skip host-side normalize
+    // here so we don't double-apply it.
+    if (model_ && model_->backend() == BackendType::HailoRT) {
+        mean_ = {0.0f, 0.0f, 0.0f};
+        std_ = {1.0f, 1.0f, 1.0f};
+    }
+
     // Try to load labels
     // Priority: 1) model built-in  2) {model_stem}.txt  3) labels.txt  4) IMAGENET_LABELS
     labels_ = model_->labels();
@@ -99,6 +111,24 @@ Classifier::Classifier(
             labels_ = IMAGENET_LABELS;
         }
     }
+
+    // Auto-load a CPU classifier head for Hailo backbone-only HEFs (e.g.
+    // mambavision-t whose SSM/Transformer can't translate to Hailo). Same
+    // pattern as Segmentor for DeepLabV3-MobileNetV3. See Bug #15.
+    if (model_ && model_->backend() == BackendType::HailoRT) {
+        namespace fs = std::filesystem;
+        fs::path model_fs(model_path);
+        fs::path head_path =
+            model_fs.parent_path() /
+            (model_fs.stem().string() + "_head.onnx");
+        if (fs::exists(head_path)) {
+            LoadConfig head_cfg;
+            head_cfg.device = "cpu";
+            head_cfg.task = "classification";
+            cpu_head_ = ModelManager::instance().load(
+                head_path.string(), head_cfg);
+        }
+    }
 }
 
 Classifier::Classifier(std::shared_ptr<Model> model)
@@ -124,6 +154,16 @@ Classifier::Classifier(std::shared_ptr<Model> model)
 
     mean_ = {0.485f, 0.456f, 0.406f};
     std_ = {0.229f, 0.224f, 0.225f};
+
+    // Hailo backend bakes ImageNet normalization into the HAR (via the
+    // Hailo "normalization" model-script command at compile time), because
+    // the chip only accepts UINT8 [0, 255] input — float mean/std cannot
+    // survive the host-side → uint8 conversion. Skip host-side normalize
+    // here so we don't double-apply it.
+    if (model_ && model_->backend() == BackendType::HailoRT) {
+        mean_ = {0.0f, 0.0f, 0.0f};
+        std_ = {1.0f, 1.0f, 1.0f};
+    }
     labels_ = model_->labels();
 }
 
@@ -325,6 +365,13 @@ Results Classifier::postprocess(
     const std::map<std::string, Tensor>& outputs,
     int top_k
 ) {
+    // Hailo backend may emit either a final logits vector OR a backbone
+    // feature map (when SSM/Transformer head was cut from the HEF). Route
+    // through the dedicated branch so it can run the CPU head if needed.
+    if (model_ && model_->backend() == BackendType::HailoRT) {
+        return postprocess_hailo(outputs, top_k);
+    }
+
     Results results;
 
     if (outputs.empty()) {
@@ -384,6 +431,147 @@ Results Classifier::postprocess(
         results.classifications.push_back(cls);
     }
 
+    return results;
+}
+
+Results Classifier::postprocess_hailo(
+    const std::map<std::string, Tensor>& outputs,
+    int top_k
+) {
+    Results results;
+    if (outputs.empty()) {
+        return results;
+    }
+
+    const Tensor& output = outputs.begin()->second;
+    const float* data = output.data_ptr<float>();
+    const auto& shape = output.shape();
+    int64_t numel = output.numel();
+
+    // Three possibilities:
+    //   (a) Final logits — shape is [N] or [1, N] with N == num_classes
+    //       (e.g. ResNet50, EfficientNet-B0 full HEF). Run softmax + top-k.
+    //   (b) Backbone feature map — multi-D shape, num elements != labels
+    //       (e.g. mambavision_t with SSM/Transformer cut to CPU). Need to
+    //       run cpu_head_ to produce final logits.
+    //   (c) Backbone feature map but no cpu_head_ available -> hard error.
+    const int n_labels = static_cast<int>(labels_.size());
+    const bool looks_like_logits =
+        (shape.size() == 1 && static_cast<int>(numel) == n_labels) ||
+        (shape.size() == 2 && shape[0] == 1 &&
+         static_cast<int>(shape[1]) == n_labels);
+
+    if (looks_like_logits) {
+        // Reuse the standard softmax + top-k path.
+        std::vector<float> probs(n_labels);
+        float max_val = *std::max_element(data, data + n_labels);
+        float sum = 0.0f;
+        for (int i = 0; i < n_labels; i++) {
+            probs[i] = std::exp(data[i] - max_val);
+            sum += probs[i];
+        }
+        for (int i = 0; i < n_labels; i++) probs[i] /= sum;
+
+        std::vector<std::pair<float, int>> scores;
+        scores.reserve(n_labels);
+        for (int i = 0; i < n_labels; i++) {
+            scores.emplace_back(probs[i], i);
+        }
+        int k = std::min(top_k, n_labels);
+        std::partial_sort(scores.begin(), scores.begin() + k, scores.end(),
+            [](const auto& a, const auto& b) { return a.first > b.first; });
+        for (int i = 0; i < k; i++) {
+            auto [score, class_id] = scores[i];
+            ClassificationResult cls;
+            cls.class_id = class_id;
+            cls.score = score;
+            cls.label = (class_id < n_labels)
+                ? labels_[class_id]
+                : "class_" + std::to_string(class_id);
+            results.classifications.push_back(cls);
+        }
+        return results;
+    }
+
+    // Backbone feature map path.
+    if (!cpu_head_) {
+        std::ostringstream msg;
+        msg << "Hailo HEF returned a feature map of " << numel << " elems "
+               "(num_classes=" << n_labels << ") instead of class logits. "
+               "This looks like a backbone-only HEF and no CPU classifier "
+               "head was found next to the model (expected "
+               "<model_stem>_head.onnx). For mambavision-t use "
+               "compile_mambavision_t.py + extract_mambavision_head.py. "
+               "See docs/development/hailo-compile-bug-log.md Bug #15.";
+        throw InferenceError(msg.str());
+    }
+
+    // Hailo NHWC [H, W, C] (or [1, H, W, C]) -> NCHW [1, C, H, W] for ONNX.
+    int H, W, C;
+    if (shape.size() == 4 && shape[0] == 1) {
+        H = static_cast<int>(shape[1]);
+        W = static_cast<int>(shape[2]);
+        C = static_cast<int>(shape[3]);
+    } else if (shape.size() == 3) {
+        H = static_cast<int>(shape[0]);
+        W = static_cast<int>(shape[1]);
+        C = static_cast<int>(shape[2]);
+    } else {
+        throw InferenceError(
+            "Unsupported Hailo backbone output rank for classifier hybrid");
+    }
+
+    auto head_in_info = cpu_head_->input_info();
+    if (head_in_info.empty()) {
+        throw InferenceError("CPU classifier head has no inputs");
+    }
+    Shape head_in_shape = {1, C, H, W};
+    Tensor head_input(head_in_shape, DataType::Float32);
+    head_input.set_name(head_in_info[0].name);
+    float* dst = head_input.data_ptr<float>();
+    for (int c = 0; c < C; c++) {
+        for (int y = 0; y < H; y++) {
+            for (int x = 0; x < W; x++) {
+                dst[c * H * W + y * W + x] = data[(y * W + x) * C + c];
+            }
+        }
+    }
+
+    std::map<std::string, Tensor> head_inputs;
+    head_inputs[head_in_info[0].name] = std::move(head_input);
+    auto head_outputs = cpu_head_->infer_raw(head_inputs);
+
+    const Tensor& head_out = head_outputs.begin()->second;
+    const float* hdata = head_out.data_ptr<float>();
+    int64_t hn = head_out.numel();
+
+    std::vector<float> probs(hn);
+    float max_val = *std::max_element(hdata, hdata + hn);
+    float sum = 0.0f;
+    for (int64_t i = 0; i < hn; i++) {
+        probs[i] = std::exp(hdata[i] - max_val);
+        sum += probs[i];
+    }
+    for (int64_t i = 0; i < hn; i++) probs[i] /= sum;
+
+    std::vector<std::pair<float, int>> scores;
+    scores.reserve(hn);
+    for (int64_t i = 0; i < hn; i++) {
+        scores.emplace_back(probs[i], static_cast<int>(i));
+    }
+    int k = std::min(top_k, static_cast<int>(hn));
+    std::partial_sort(scores.begin(), scores.begin() + k, scores.end(),
+        [](const auto& a, const auto& b) { return a.first > b.first; });
+    for (int i = 0; i < k; i++) {
+        auto [score, class_id] = scores[i];
+        ClassificationResult cls;
+        cls.class_id = class_id;
+        cls.score = score;
+        cls.label = (class_id < static_cast<int>(labels_.size()))
+            ? labels_[class_id]
+            : "class_" + std::to_string(class_id);
+        results.classifications.push_back(cls);
+    }
     return results;
 }
 

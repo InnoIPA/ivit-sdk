@@ -103,6 +103,14 @@ class Resize:
                 boxes[:, [0, 2]] = boxes[:, [0, 2]] * scale + pad_w
                 boxes[:, [1, 3]] = boxes[:, [1, 3]] * scale + pad_h
                 target = {**target, 'boxes': boxes}
+            # Update segmentation mask if present
+            if target is not None and 'mask' in target:
+                mask = target['mask']
+                resized_mask = cv2.resize(mask, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+                # 255 = ignore，當作 padding 值
+                out_mask = np.full((h, w), 255, dtype=mask.dtype)
+                out_mask[pad_h:pad_h + new_h, pad_w:pad_w + new_w] = resized_mask
+                target = {**target, 'mask': out_mask}
         else:
             output = cv2.resize(image, (w, h))
 
@@ -113,6 +121,10 @@ class Resize:
                 boxes[:, [0, 2]] = boxes[:, [0, 2]] * w / orig_w
                 boxes[:, [1, 3]] = boxes[:, [1, 3]] * h / orig_h
                 target = {**target, 'boxes': boxes}
+            # Resize segmentation mask with nearest-neighbor to preserve class indices
+            if target is not None and 'mask' in target:
+                mask = target['mask']
+                target = {**target, 'mask': cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST)}
 
         if target is not None:
             return output, target
@@ -148,6 +160,8 @@ class RandomHorizontalFlip:
                 boxes = target['boxes'].copy()
                 boxes[:, [0, 2]] = w - boxes[:, [2, 0]]
                 target = {**target, 'boxes': boxes}
+            if target is not None and 'mask' in target:
+                target = {**target, 'mask': np.ascontiguousarray(target['mask'][:, ::-1])}
 
         if target is not None:
             return image, target
@@ -179,6 +193,8 @@ class RandomVerticalFlip:
                 boxes = target['boxes'].copy()
                 boxes[:, [1, 3]] = h - boxes[:, [3, 1]]
                 target = {**target, 'boxes': boxes}
+            if target is not None and 'mask' in target:
+                target = {**target, 'mask': np.ascontiguousarray(target['mask'][::-1, :])}
 
         if target is not None:
             return image, target
@@ -361,6 +377,9 @@ class ToTensor:
         image = np.expand_dims(image, 0)
 
         if target is not None:
+            # Mark mask for downstream wrappers to cast to torch.long.
+            # 我們不在這裡 import torch（augmentation 應與 torch 解耦），
+            # 由各 task 的 DataLoader wrapper 處理 dtype 轉換。
             return image, target
         return image
 

@@ -19,7 +19,6 @@
 
 | SDK | 定位 | iVIT 的機會 |
 |-----|------|------------|
-| **Ultralytics** | YOLO 訓練 + 推論 | iVIT 專注部署，不做訓練 |
 | **OpenVINO** | Intel 硬體專用 | iVIT 跨平台統一 |
 | **TensorRT** | NVIDIA 硬體專用 | iVIT 跨平台統一 |
 
@@ -29,7 +28,7 @@
 
 ## 功能優化路線圖
 
-### Phase 1：API 簡化（學習 Ultralytics）✅
+### Phase 1：API 簡化 ✅
 
 #### 1.1 極簡 API（L1）
 
@@ -38,12 +37,12 @@
 ```python
 # 現在
 from ivit.vision import Detector
-detector = Detector("yolov8n.onnx", device="cuda:0")
+detector = Detector("yolox-s.onnx", device="cuda:0")
 results = detector.predict(image)
 
 # 優化後
 import ivit
-model = ivit.load("yolov8n.onnx")
+model = ivit.load("yolox-s.onnx")
 results = model("image.jpg")  # 自動偵測任務類型
 results.show()
 ```
@@ -54,7 +53,7 @@ results.show()
 - [x] 支援直接傳入檔案路徑
 - [x] `results.show()` 快速視覺化
 - [x] `results.save()` 快速儲存
-- [x] `model()` 直接呼叫推論（Ultralytics 風格）
+- [x] `model()` 直接呼叫推論
 
 #### 1.2 參數配置（L2）
 
@@ -260,27 +259,27 @@ ivit.ModelLoadError: 無法載入模型 'model.onnx'
 
 ```python
 # 從 Model Zoo 載入
-model = ivit.zoo.load("yolov8n")  # 自動下載 + 轉換
-model = ivit.zoo.load("yolov8n", device="cuda:0")
+model = ivit.zoo.load("yolox-s")  # 自動下載 + 轉換
+model = ivit.zoo.load("yolox-s", device="cuda:0")
 
 # 列出可用模型
-ivit.zoo.list_models()              # 14 個預設模型
+ivit.zoo.list_models()              # 預設模型
 ivit.zoo.list_models(task="detect") # 按任務過濾
 ivit.zoo.search("yolo")             # 搜尋模型
 ivit.zoo.search("edge")             # 找邊緣裝置模型
 
 # 取得模型資訊
-info = ivit.zoo.get_model_info("yolov8n")
+info = ivit.zoo.get_model_info("yolox-s")
 print(f"Task: {info.task}, Input: {info.input_size}")
 ```
 
 **已支援模型**：
 | 類型 | 模型 |
 |------|------|
-| Detection | yolov8n/s/m/l/x |
-| Classification | yolov8n-cls, yolov8s-cls, resnet50, mobilenetv3, efficientnet-b0 |
-| Segmentation | yolov8n-seg, yolov8s-seg |
-| Pose | yolov8n-pose, yolov8s-pose |
+| Detection | yolox-{nano,tiny,s,m,l} |
+| Classification | resnet18/34/50/101, mobilenet_v2/v3, efficientnet_b0/b1/b2, vgg16/19, densenet121 |
+| Segmentation | deeplabv3-resnet50, deeplabv3-mobilenetv3 |
+| Pose | rtmpose-s |
 
 #### 4.2 模型訓練 ✅
 
@@ -422,6 +421,5 @@ trainer.export("my_model.onnx", format="onnx", quantize="fp16")
 
 ## 參考資料
 
-- [Ultralytics API 設計](https://docs.ultralytics.com/)
 - [OpenVINO Python API](https://docs.openvino.ai/latest/api/ie_python_api.html)
 - [TensorRT Python API](https://docs.nvidia.com/deeplearning/tensorrt/api/python_api/)

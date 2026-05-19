@@ -426,7 +426,7 @@ def main():
     if args.model:
         model = ivit.load(args.model, device=device)
     else:
-        model = ivit.zoo.load("yolov8n", device=device)
+        model = ivit.zoo.load("yolox-s", device=device)
     print("Model loaded successfully!")
 
     # Step 1: Configure runtime

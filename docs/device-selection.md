@@ -122,7 +122,7 @@ dGPU:     0.10
 import ivit
 
 # 自動選擇最佳裝置
-model = ivit.load("yolov8n.onnx")  # device="auto" 是預設值
+model = ivit.load("yolox-s.onnx")  # device="auto" 是預設值
 ```
 
 ### 策略選擇

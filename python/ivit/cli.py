@@ -242,7 +242,11 @@ def cmd_predict(args):
     else:
         # Image inference
         print("Running inference...")
-        results = model.predict(source, conf=conf, iou=iou)
+        from ivit.core import InferConfig
+        cfg = InferConfig()
+        cfg.conf_threshold = conf
+        cfg.iou_threshold = iou
+        results = model.predict(source, cfg)
 
         print()
         print(f"Inference time: {results.inference_time_ms:.2f} ms")
@@ -905,6 +909,134 @@ def cmd_serve(args):
         server.shutdown()
 
 
+def cmd_eval(args):
+    """Evaluate detection model accuracy on a COCO-format dataset."""
+    import json
+    from pathlib import Path
+    from ivit.vision.yolox_predictor import YoloxPredictor
+
+    print(f"[ivit eval] model: {args.model}")
+    print(f"[ivit eval] annotation: {args.ann}")
+    print(f"[ivit eval] images: {args.images}")
+    print(f"[ivit eval] device: {args.device}  conf: {args.conf}  iou: {args.iou}")
+    print()
+
+    predictor = YoloxPredictor(args.model, device=args.device)
+    report = predictor.evaluate(
+        annotation_file=args.ann,
+        images_dir=args.images,
+        conf=args.conf,
+        iou=args.iou,
+        max_detections=args.max_det,
+        verbose=True,
+    )
+
+    print()
+    print("=" * 50)
+    print(f"  mAP @ IoU=0.50:0.95  : {report.mAP:.4f}")
+    print(f"  mAP @ IoU=0.50       : {report.mAP_50:.4f}")
+    print(f"  mAP @ IoU=0.75       : {report.mAP_75:.4f}")
+    print(f"  AR  @ maxDets=100    : {report.AR_100:.4f}")
+    print(f"  images: {report.num_images}  detections: {report.num_detections}")
+    print("=" * 50)
+    if report.per_class_AP:
+        print("Per-class AP (IoU=0.50:0.95):")
+        for name, ap in sorted(report.per_class_AP.items(), key=lambda x: -x[1])[:10]:
+            print(f"  {name:20s} {ap:.4f}")
+        if len(report.per_class_AP) > 10:
+            print(f"  ... ({len(report.per_class_AP) - 10} more classes)")
+
+    if args.output:
+        out = Path(args.output)
+        out.parent.mkdir(parents=True, exist_ok=True)
+        with open(out, "w") as f:
+            json.dump(report.to_dict(), f, indent=2)
+        print(f"\n[ivit eval] saved metrics to {out}")
+
+
+def cmd_train(args):
+    """Train a model (classify / detect / segment)."""
+    from pathlib import Path
+
+    task = args.task
+    model_name = args.model
+    img_size = args.img_size or {"classify": 224, "detect": 640, "segment": 520}[task]
+    output_dir = Path(args.output)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    print(f"[ivit train] task={task} model={model_name} data={args.data}")
+    print(f"             epochs={args.epochs} batch={args.batch_size} img={img_size} device={args.device}")
+
+    if task == "classify":
+        from ivit.train import ClassificationTrainer, ImageFolderDataset
+
+        train_ds = ImageFolderDataset(args.data, train_split=0.8, split="train")
+        val_ds = ImageFolderDataset(args.data, train_split=0.8, split="val")
+        lr = args.learning_rate if args.learning_rate is not None else 1e-3
+        trainer = ClassificationTrainer(
+            model=model_name,
+            dataset=train_ds,
+            val_dataset=val_ds,
+            epochs=args.epochs,
+            learning_rate=lr,
+            batch_size=args.batch_size,
+            device=args.device,
+            num_workers=args.num_workers,
+            image_size=img_size,
+            freeze_backbone=not args.no_pretrained,
+        )
+
+    elif task == "segment":
+        from ivit.train import SegmentationTrainer, SegmentationDataset
+
+        if args.masks is None:
+            raise SystemExit("--masks is required for segmentation")
+        train_ds = SegmentationDataset(args.data, args.masks, train_split=0.8, split="train")
+        val_ds = SegmentationDataset(args.data, args.masks, train_split=0.8, split="val")
+        lr = args.learning_rate if args.learning_rate is not None else 1e-4
+        trainer = SegmentationTrainer(
+            model=model_name,
+            dataset=train_ds,
+            val_dataset=val_ds,
+            epochs=args.epochs,
+            learning_rate=lr,
+            batch_size=args.batch_size,
+            device=args.device,
+            num_workers=args.num_workers,
+            image_size=img_size,
+            freeze_backbone=args.no_pretrained is False,  # 預設凍結 backbone
+        )
+
+    elif task == "detect":
+        from ivit.train import DetectionTrainer
+
+        train_ann = args.ann or "instances_train2017.json"
+        val_ann = args.val_ann or "instances_val2017.json"
+        trainer = DetectionTrainer(
+            model=model_name,
+            data_dir=args.data,
+            train_ann=train_ann,
+            val_ann=val_ann,
+            epochs=args.epochs,
+            batch_size=args.batch_size,
+            image_size=img_size,
+            device=args.device,
+            output_dir=str(output_dir),
+        )
+    else:
+        raise SystemExit(f"Unknown task: {task}")
+
+    history = trainer.fit()
+    if history:
+        last = history[-1] if isinstance(history, list) else history
+        print(f"[ivit train] final metrics: {last}")
+
+    if args.export_onnx:
+        out_path = output_dir / f"{model_name.replace('/', '_')}.{args.export_format}"
+        produced = trainer.export(str(out_path), format=args.export_format)
+        print(f"[ivit train] exported model: {produced}")
+
+
 def cmd_zoo(args):
     """Model Zoo commands."""
     # Import directly from registry to avoid C++ binding requirement
@@ -1065,6 +1197,55 @@ Examples:
                                      help="Download original weights and convert locally instead of using pre-converted ONNX")
 
     zoo_parser.set_defaults(func=cmd_zoo)
+
+    # train command
+    train_parser = subparsers.add_parser("train", help="Train a model")
+    train_parser.add_argument("--task", required=True, choices=["classify", "detect", "segment"],
+                              help="Training task type")
+    train_parser.add_argument("--model", required=True,
+                              help="Model name (e.g. resnet50 / yolox-s / deeplabv3-mobilenetv3)")
+    train_parser.add_argument("--data", required=True,
+                              help="Dataset path (image folder / COCO root / seg folder)")
+    train_parser.add_argument("--data-format",
+                              choices=["imagefolder", "coco", "yolo", "segfolder"],
+                              help="Data layout (auto-inferred from --task if omitted)")
+    train_parser.add_argument("--masks", help="Mask folder (segmentation only)")
+    train_parser.add_argument("--ann", help="COCO annotation file (yolox detection)")
+    train_parser.add_argument("--val-ann", help="COCO val annotation (yolox detection)")
+    train_parser.add_argument("--epochs", type=int, default=10)
+    train_parser.add_argument("--batch-size", type=int, default=16)
+    train_parser.add_argument("--img-size", type=int, default=None,
+                              help="Training image size (default: 224 classify / 640 detect / 520 segment)")
+    train_parser.add_argument("--learning-rate", type=float, default=None)
+    train_parser.add_argument("--device", default="cuda:0")
+    train_parser.add_argument("--num-workers", type=int, default=4)
+    train_parser.add_argument("--output", default="runs/train", help="Output directory")
+    train_parser.add_argument("--no-pretrained", action="store_true")
+    train_parser.add_argument("--export-onnx", action="store_true",
+                              help="Export model to ONNX after training")
+    train_parser.add_argument("--export-format", default="onnx",
+                              choices=["onnx", "openvino", "tensorrt", "torchscript"])
+    train_parser.set_defaults(func=cmd_train)
+
+    # eval command
+    eval_parser = subparsers.add_parser("eval", help="Evaluate detection model accuracy (COCO mAP)")
+    eval_parser.add_argument("model", help="Model path (.onnx)")
+    eval_parser.add_argument("--task", default="detect", choices=["detect"],
+                             help="Evaluation task (only detect supported)")
+    eval_parser.add_argument("--ann", required=True,
+                             help="COCO annotation JSON (e.g. instances_val2017.json)")
+    eval_parser.add_argument("--images", required=True,
+                             help="Images directory matching the annotation file")
+    eval_parser.add_argument("-d", "--device", default="cuda:0")
+    eval_parser.add_argument("--conf", type=float, default=0.001,
+                             help="Detection confidence threshold (default 0.001 for full PR sweep)")
+    eval_parser.add_argument("--iou", type=float, default=0.65,
+                             help="NMS IoU threshold (default 0.65, YOLOX eval convention)")
+    eval_parser.add_argument("--max-det", type=int, default=300,
+                             help="Max detections per image (default 300)")
+    eval_parser.add_argument("--output", default=None,
+                             help="Optional path to save metrics JSON")
+    eval_parser.set_defaults(func=cmd_eval)
 
     args = parser.parse_args()
 

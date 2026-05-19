@@ -83,7 +83,7 @@ void explore_system(Model& model) {
     std::cout << "\nFor Model Zoo, use Python API:" << std::endl;
     std::cout << "  import ivit" << std::endl;
     std::cout << "  ivit.zoo.list()           # List all models" << std::endl;
-    std::cout << "  ivit.zoo.load('yolov8n')  # Load pre-trained model" << std::endl;
+    std::cout << "  ivit.zoo.load('yolox-s')  # Load pre-trained model" << std::endl;
 }
 
 /**
@@ -326,8 +326,8 @@ void print_usage(const char* program) {
     std::cout << "  --device       Target device (auto, cpu, cuda:0)" << std::endl;
     std::cout << std::endl;
     std::cout << "Example:" << std::endl;
-    std::cout << "  " << program << " yolov8n.onnx image.jpg" << std::endl;
-    std::cout << "  " << program << " yolov8n.onnx --batch" << std::endl;
+    std::cout << "  " << program << " yolox-s.onnx image.jpg" << std::endl;
+    std::cout << "  " << program << " yolox-s.onnx --batch" << std::endl;
 }
 
 int main(int argc, char* argv[]) {

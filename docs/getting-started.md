@@ -12,6 +12,7 @@ iVIT-SDK (Innodisk Vision Intelligence Toolkit) 是一個統一的電腦視覺�
 - [API 使用指南](#api-使用指南)
 - [裝置選擇](#裝置選擇)
 - [模型格式](#模型格式)
+- [Hailo 模型編譯（ONNX → HEF）](#hailo-模型編譯onnx--hef)
 - [效能優化](#效能優化)
 - [常見問題](#常見問題)
 
@@ -207,7 +208,9 @@ cmake .. \
     -DIVIT_BUILD_PYTHON=ON
 make -j$(nproc)
 ```
+
 ### 安裝至site-package
+
 ```bash
 cd ..
 python -m build
@@ -227,7 +230,6 @@ python3 -m venv .venv
 source .venv/bin/activate
 pip install -e ".[zoo]"
 ```
-
 
 > **注意**：Ubuntu 24.04 的系統 Python 不允許直接 `pip install`（PEP 668），必須使用 venv。
 > 之後每次開新 terminal 需先執行 `source .venv/bin/activate`。
@@ -296,7 +298,7 @@ using namespace ivit::vision;
 
 int main() {
     // 載入模型（使用 NPU）
-    Detector detector("yolov8n.onnx", "npu");
+    Detector detector("yolox-s.onnx", "npu");
 
     // 讀取影像
     cv::Mat image = cv::imread("image.jpg");
@@ -675,7 +677,7 @@ FP16 壓縮**不會提升推論速度**，唯一好處是模型檔案大小減�
 - **NPU**：硬體原生以 FP16 計算，不論輸入模型是 FP32 或 FP16，NPU 編譯器會自動處理精度轉換。使用 FP16 IR 反而因額外的 Convert 節點可能略慢。
 - **CPU**：x86 CPU 原生以 FP32 計算，FP16 權重會在推論時解壓回 FP32，無效能增益。
 
-以下為 YOLOv8n 在 Intel AIPC 平台的實測數據（100 次迭代）：
+以下為 YOLOX-Nano 在 Intel AIPC 平台的實測數據（100 次迭代）：
 
 | 模型格式    | 裝置 | 平均延遲 | 吞吐量  | 檔案大小 |
 | ----------- | ---- | -------- | ------- | -------- |
@@ -704,14 +706,87 @@ FP16 壓縮**不會提升推論速度**，唯一好處是模型檔案大小減�
 // C++
 #include "ivit/ivit.hpp"
 
-ivit::convert_model("yolov8n.onnx", "yolov8n.xml", "cpu", "fp16");
+ivit::convert_model("yolox-s.onnx", "yolox-s.xml", "cpu", "fp16");
 ```
 
 ```python
 # Python
 import ivit
-ivit.convert_model("yolov8n.onnx", "yolov8n.xml", "cpu", "fp16")
+ivit.convert_model("yolox-s.onnx", "yolox-s.xml", "cpu", "fp16")
 ```
+
+---
+
+## Hailo 模型編譯（ONNX → HEF）
+
+`scripts/compile/` 內提供針對各家骨幹的 Hailo 編譯腳本，可將 ONNX 編譯為 Hailo-8 上跑的 `.hef` 權重。
+
+### 前置依賴
+
+需先安裝 Hailo Dataflow Compiler（`hailo_sdk_client`）。請參考 Hailo 官方文件取得對應版本的 whl 並安裝：
+
+```bash
+pip install hailo_dataflow_compiler-*.whl
+```
+
+> 校準資料集預設指向 `/home/dos/coco_val2017/val2017`，請依實際路徑用 `--calib-dir` 覆寫。
+
+### 執行位置
+
+所有指令請在**專案根目錄** (`ivit-sdk/`) 執行，腳本內路徑（`models/onnx/`、`models/hailo/`）皆為相對於根目錄。
+
+### 一鍵編譯（使用預設參數）
+
+| 模型               | 指令                                                  |
+| ------------------ | ----------------------------------------------------- |
+| ResNet50           | `python scripts/compile/compile_resnet50.py`        |
+| EfficientNet-B0    | `python scripts/compile/compile_efficientnet_b0.py` |
+| MambaVision-T head | `python scripts/compile/compile_mambavision_t.py`   |
+| DeepLabV3-ResNet50 | `python scripts/compile/compile_deeplabv3.py`       |
+
+輸出統一寫到 `models/hailo/{name}.har`（中間檔）和 `models/hailo/{name}.hef`（最終權重）。
+
+### 常用覆寫參數
+
+```bash
+python scripts/compile/compile_resnet50.py \
+    --onnx models/onnx/resnet50.onnx \
+    --hef  models/hailo/resnet50.hef \
+    --calib-dir /path/to/calib_images \
+    --calib-size 512 \
+    --input-hw 224 \
+    --hw-arch hailo8        # hailo8 | hailo8r | hailo8l
+```
+
+部分模型有專屬旗標，例如：
+
+- `compile_efficientnet_b0.py`：`--gap-fix`（修 SE GAP shift delta）、`--se-a16`（SE 區塊 a16_w8 量化）
+- `compile_deeplabv3.py`：`--mbv3-gap-fix`、`--end-backbone-only`（backbone-only HEF + CPU head）
+- `compile_mambavision_t.py`：`--end-node`（指定截斷節點，預設取 levels.2 之前）
+
+完整旗標可用 `-h` 查詢：
+
+```bash
+python scripts/compile/compile_resnet50.py -h
+```
+
+### YOLOX → HAR
+
+```bash
+python scripts/compile/onnx_to_hef.py    # 產出 models/hailo/yolox_s.har
+```
+
+> `onnx_to_hef.py` 目前 hard-code 為 `yolox-s`，要改別的模型請複製腳本或自行調整 `model_name` / `onnx_path`。
+
+### 輸出位置
+
+| 類型           | 路徑                                   |
+| -------------- | -------------------------------------- |
+| ONNX 原檔      | `models/onnx/`                       |
+| 中間 HAR       | `models/hailo/{name}.har`            |
+| 編譯後 HEF     | `models/hailo/{name}.hef`            |
+| Hailo 設定檔   | `scripts/compile/configs/*.json`     |
+| Hailo 編譯日誌 | `logs/compile/*.txt`、`logs/*.log` |
 
 ---
 
@@ -752,7 +827,7 @@ Detector detector("model.onnx", "npu", config);
 ### 5. 效能測試
 
 ```bash
-./bin/simple_inference benchmark yolov8n.onnx npu 100
+./bin/simple_inference benchmark yolox-s.onnx npu 100
 ```
 
 ---
@@ -773,7 +848,7 @@ Detector detector("model.onnx", "npu", config);
 ./bin/simple_inference devices
 
 # 物件偵測（使用 NPU）
-./bin/simple_inference detect yolov8n.onnx image.jpg npu output.jpg
+./bin/simple_inference detect yolox-s.onnx image.jpg npu output.jpg
 
 # 影像分類
 ./bin/simple_inference classify resnet50.onnx cat.jpg cpu
@@ -782,7 +857,7 @@ Detector detector("model.onnx", "npu", config);
 ./bin/simple_inference segment deeplabv3.onnx scene.jpg npu segmented.jpg
 
 # 效能測試
-./bin/simple_inference benchmark yolov8n.onnx npu 100
+./bin/simple_inference benchmark yolox-s.onnx npu 100
 ```
 
 ### Python 範例

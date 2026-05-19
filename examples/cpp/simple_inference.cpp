@@ -396,9 +396,9 @@ void print_usage(const char* program) {
     std::cout << "Examples:\n";
     std::cout << "  " << program << " devices\n";
     std::cout << "  " << program << " classify resnet50.onnx cat.jpg cpu\n";
-    std::cout << "  " << program << " detect yolov8n.onnx street.jpg cuda:0 output.jpg\n";
+    std::cout << "  " << program << " detect yolox-s.onnx street.jpg cuda:0 output.jpg\n";
     std::cout << "  " << program << " segment deeplabv3.onnx scene.jpg gpu:0\n";
-    std::cout << "  " << program << " benchmark yolov8n.onnx cuda:0 100\n";
+    std::cout << "  " << program << " benchmark yolox-s.onnx cuda:0 100\n";
     std::cout << "  " << program << " convert model.onnx model.engine cuda:0 fp16\n";
     std::cout << "  " << program << " convert model.onnx model.xml cpu fp32\n";
     std::cout << "  " << program << " clear-cache\n";

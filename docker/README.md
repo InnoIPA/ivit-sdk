@@ -127,7 +127,7 @@ make -j$(nproc)
 # 執行範例
 ./bin/simple_inference devices
 ./bin/simple_inference detect \
-    /opt/test-data/models/yolov8n.onnx \
+    /opt/test-data/models/yolox-s.onnx \
     /opt/test-data/images/bus.jpg \
     cpu \
     output.jpg
@@ -143,7 +143,7 @@ make -j$(nproc)
 │   ├── bus.jpg        # 公車圖片（物件偵測）
 │   └── zidane.jpg     # 人物圖片（物件偵測）
 └── models/
-    └── yolov8n.onnx   # YOLOv8 Nano 模型
+    └── yolox-s.onnx   # YOLOX-S 模型
 ```
 
 ## GPU 環境驗證

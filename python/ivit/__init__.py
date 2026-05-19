@@ -10,12 +10,12 @@ Example:
     >>> import ivit
     >>>
     >>> # One-liner inference (auto device selection)
-    >>> model = ivit.load("yolov8n.onnx")
+    >>> model = ivit.load("yolox-s.onnx")
     >>> results = model("image.jpg")
     >>> results.show()
     >>>
     >>> # Task-specific classes
-    >>> detector = ivit.Detector("yolov8n.onnx", device="cuda:0")
+    >>> detector = ivit.Detector("yolox-s.onnx", device="cuda:0")
     >>> results = detector.predict("image.jpg")
 """
 

@@ -235,7 +235,7 @@ class TestXXXBackend:
         assert model is not None
 
     def test_inference(self):
-        model = ivit.load("yolov8n.onnx", device="xxx:0")
+        model = ivit.load("yolox-s.onnx", device="xxx:0")
         results = model("test_image.jpg")
         assert len(results.detections) >= 0
 ```

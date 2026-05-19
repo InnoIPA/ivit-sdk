@@ -55,9 +55,7 @@ Detector::Detector(
     std::string name_lower = model_path;
     std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
 
-    if (name_lower.find("yolov8") != std::string::npos) {
-        model_type_ = "yolov8";
-    } else if (name_lower.find("yolov5") != std::string::npos) {
+    if (name_lower.find("yolov5") != std::string::npos) {
         model_type_ = "yolov5";
     } else if (name_lower.find("yolov7") != std::string::npos) {
         model_type_ = "yolov7";
@@ -69,7 +67,7 @@ Detector::Detector(
                name_lower.find("faster_rcnn") != std::string::npos) {
         model_type_ = "fasterrcnn";
     } else {
-        model_type_ = "yolov8";  // Default
+        model_type_ = "yolox";  // Default
     }
 
     // Get input size from model (guard against dynamic dims: -1)
@@ -115,7 +113,7 @@ Detector::Detector(
 
 Detector::Detector(std::shared_ptr<Model> model)
     : model_(model)
-    , model_type_("yolov8")
+    , model_type_("yolox")
 {
     auto input_info = model_->input_info();
     if (!input_info.empty()) {
@@ -355,23 +353,12 @@ Results Detector::postprocess_yolo(
 
     std::vector<Detection> detections;
 
-    // YOLOv8 output format: [1, 84, 8400] (transposed) or [1, 8400, 84]
-    // YOLOv5 output format: [1, 25200, 85]
-
-    bool is_yolov8_format = false;
+    // YOLOv5 / YOLOX output format: [1, N, 4+1+num_classes]
     int num_predictions, num_values;
 
     if (shape.size() == 3) {
-        if (shape[1] < shape[2]) {
-            // YOLOv8 format: [1, 84, 8400]
-            is_yolov8_format = true;
-            num_values = static_cast<int>(shape[1]);
-            num_predictions = static_cast<int>(shape[2]);
-        } else {
-            // YOLOv5 format: [1, 8400, 85]
-            num_predictions = static_cast<int>(shape[1]);
-            num_values = static_cast<int>(shape[2]);
-        }
+        num_predictions = static_cast<int>(shape[1]);
+        num_values = static_cast<int>(shape[2]);
     } else if (shape.size() == 2) {
         num_predictions = static_cast<int>(shape[0]);
         num_values = static_cast<int>(shape[1]);
@@ -379,13 +366,10 @@ Results Detector::postprocess_yolo(
         return results;
     }
 
-    int num_classes = num_values - 4;  // YOLOv8: 4 bbox + num_classes
-    if (num_values >= 5 && !is_yolov8_format) {
-        num_classes = num_values - 5;  // YOLOv5: 4 bbox + 1 obj_conf + num_classes
-    }
+    int num_classes = num_values - 5;  // 4 bbox + 1 obj_conf + num_classes
 
     // YOLOX grid decode table: strides [8, 16, 32] → grids [80, 40, 20] for 640
-    bool is_yolox = (model_type_ == "yolox" && !is_yolov8_format);
+    bool is_yolox = (model_type_ == "yolox");
     struct StrideLevel { int grid_w; int offset; int stride; };
     std::vector<StrideLevel> stride_levels;
     if (is_yolox) {
@@ -402,64 +386,48 @@ Results Detector::postprocess_yolo(
     for (int i = 0; i < num_predictions; i++) {
         float cx, cy, w, h;
         float obj_conf = 1.0f;
-        const float* class_scores;
         int class_offset;
 
-        if (is_yolov8_format) {
-            // YOLOv8: transposed format [84, 8400]
-            cx = data[0 * num_predictions + i];
-            cy = data[1 * num_predictions + i];
-            w = data[2 * num_predictions + i];
-            h = data[3 * num_predictions + i];
-            class_offset = 4;
-        } else {
-            // YOLOv5 / YOLOX: [8400, 85]
-            const float* pred = data + i * num_values;
-            cx = pred[0];
-            cy = pred[1];
-            w = pred[2];
-            h = pred[3];
-            obj_conf = pred[4];
-            class_offset = 5;
+        // YOLOv5 / YOLOX: [N, 85]
+        const float* pred = data + i * num_values;
+        cx = pred[0];
+        cy = pred[1];
+        w = pred[2];
+        h = pred[3];
+        obj_conf = pred[4];
+        class_offset = 5;
 
-            // YOLOX: decode grid-relative predictions to pixel coordinates
-            if (is_yolox) {
-                int stride = stride_levels.back().stride;
-                int grid_w = stride_levels.back().grid_w;
-                int local_idx = i;
-                for (size_t s = 0; s < stride_levels.size(); s++) {
-                    int next_offset = (s + 1 < stride_levels.size())
-                        ? stride_levels[s + 1].offset : num_predictions;
-                    if (i < next_offset) {
-                        stride = stride_levels[s].stride;
-                        grid_w = stride_levels[s].grid_w;
-                        local_idx = i - stride_levels[s].offset;
-                        break;
-                    }
+        // YOLOX: decode grid-relative predictions to pixel coordinates
+        if (is_yolox) {
+            int stride = stride_levels.back().stride;
+            int grid_w = stride_levels.back().grid_w;
+            int local_idx = i;
+            for (size_t s = 0; s < stride_levels.size(); s++) {
+                int next_offset = (s + 1 < stride_levels.size())
+                    ? stride_levels[s + 1].offset : num_predictions;
+                if (i < next_offset) {
+                    stride = stride_levels[s].stride;
+                    grid_w = stride_levels[s].grid_w;
+                    local_idx = i - stride_levels[s].offset;
+                    break;
                 }
-                int gx = local_idx % grid_w;
-                int gy = local_idx / grid_w;
-                cx = (cx + gx) * stride;
-                cy = (cy + gy) * stride;
-                w = std::exp(w) * stride;
-                h = std::exp(h) * stride;
             }
-
-            if (obj_conf < config.conf_threshold) continue;
+            int gx = local_idx % grid_w;
+            int gy = local_idx / grid_w;
+            cx = (cx + gx) * stride;
+            cy = (cy + gy) * stride;
+            w = std::exp(w) * stride;
+            h = std::exp(h) * stride;
         }
+
+        if (obj_conf < config.conf_threshold) continue;
 
         // Find best class
         int best_class = 0;
         float best_score = 0;
 
         for (int c = 0; c < num_classes; c++) {
-            float score;
-            if (is_yolov8_format) {
-                score = data[(class_offset + c) * num_predictions + i];
-            } else {
-                score = data[i * num_values + class_offset + c];
-            }
-
+            float score = data[i * num_values + class_offset + c];
             if (score > best_score) {
                 best_score = score;
                 best_class = c;
@@ -539,12 +507,19 @@ Results Detector::postprocess_hailo_nms(
     const float* fdata = output.data_ptr<float>();
     std::vector<Detection> detections;
 
-    // HAILO_FORMAT_ORDER_HAILO_NMS_BY_CLASS layout:
-    //   for each class: [ bbox_count (float32), y1,x1,y2,x2,score × max_bboxes ]
-    // Coordinates are in model input space (e.g. 640×640 letterboxed).
+    // HAILO_FORMAT_ORDER_HAILO_NMS_BY_CLASS layout is VARIABLE-LENGTH and
+    // tightly packed per class:
+    //   for each class in sequence: [count (float32), y1,x1,y2,x2,score × count]
+    // The buffer is allocated for the worst case (num_classes * (1 +
+    // max_bboxes * 5) floats) but classes with fewer detections only consume
+    // 1 + count*5 floats, and the next class immediately follows. We must
+    // walk the pointer sequentially; indexing by `cls * floats_per_class`
+    // would be wrong (only class 0 would read the correct count).
     // NMS is already performed on-chip — no second NMS needed.
+    const float* cls_ptr = fdata;
+    const float* fdata_end = fdata + num_classes * floats_per_class;
     for (size_t cls = 0; cls < num_classes; cls++) {
-        const float* cls_ptr = fdata + cls * floats_per_class;
+        if (cls_ptr >= fdata_end) break;
         int count = static_cast<int>(cls_ptr[0]);
         count = std::min(count, static_cast<int>(max_bboxes));
 
@@ -583,6 +558,7 @@ Results Detector::postprocess_hailo_nms(
             det.label      = (cls < labels_.size()) ? labels_[cls] : "class_" + std::to_string(cls);
             detections.push_back(det);
         }
+        cls_ptr += 1 + count * 5;
     }
 
     // Sort by confidence and apply max_detections limit (NMS already done on chip)

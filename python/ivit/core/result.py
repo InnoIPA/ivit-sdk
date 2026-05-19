@@ -298,7 +298,7 @@ class Results:
         return contours
 
     # =========================================================================
-    # Quick Visualization (Ultralytics-style)
+    # Quick Visualization
     # =========================================================================
 
     def show(
@@ -309,7 +309,7 @@ class Results:
         """
         Display results in a window.
 
-        Quick visualization method similar to Ultralytics results.show().
+        Quick visualization method.
 
         Args:
             wait: Wait for key press to close window
@@ -344,7 +344,7 @@ class Results:
         """
         Plot results on image and return.
 
-        Similar to Ultralytics results.plot().
+        Render annotated image.
 
         Args:
             show_labels: Show class labels

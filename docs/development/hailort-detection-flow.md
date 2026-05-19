@@ -179,7 +179,7 @@ orig_coord  = (pixel_coord − pad) / scale
 Hailo 路徑 **不走** 此函式。一般後端（OpenVINO / TensorRT）的後處理包含：
 
 1. 信心度過濾（`obj_conf × class_score < conf_threshold`）
-2. 格式解碼（YOLOX grid decode / YOLOv8 transposed format）
+2. 格式解碼（YOLOX grid decode）
 3. Center format → Corner format
 4. **CPU NMS**：Greedy IoU suppression，per-class
 

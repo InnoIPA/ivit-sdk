@@ -196,22 +196,6 @@ class TestHailoRTRuntimeAvailability:
             f"Unexpected HailoRT devices: {[d.id for d in hailo_devices]}"
         )
 
-    @pytest.mark.slow
-    def test_hailo_load_and_infer(self):
-        """Requires physical Hailo-8 card: load HEF and run inference."""
-        if not os.path.exists("/dev/hailo0"):
-            pytest.skip("Hailo-8 card not present")
-        import ivit
-        import numpy as np
-        hef_path = os.path.join(_ROOT, "tests", "data", "yolov8n.hef")
-        if not os.path.isfile(hef_path):
-            pytest.skip(f"Test HEF not found: {hef_path}")
-        model = ivit.load(hef_path, device="hailo:0")
-        # yolov8n expects UINT8 NHWC(640x640x3)
-        dummy = np.zeros((1, 640, 640, 3), dtype=np.uint8)
-        results = model.infer({"yolov8n/input_layer1": dummy})
-        assert isinstance(results, dict)
-
 
 # ──────────────────────────────────────────────────────────────────────────────
 # convert_model without DFC installed

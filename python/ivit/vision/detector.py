@@ -23,7 +23,7 @@ class Detector:
     Supports YOLO, SSD, and other detection models.
 
     Examples:
-        >>> detector = Detector("yolov8n.onnx", device="cuda:0")
+        >>> detector = Detector("yolox-s.onnx", device="cuda:0")
         >>> results = detector.predict("image.jpg")
         >>> for det in results.detections:
         ...     print(f"{det.label}: {det.confidence:.2%}")

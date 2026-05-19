@@ -244,7 +244,7 @@ void print_usage(const char* program) {
     std::cout << "  --iterations <n>      Benchmark iterations (default: 100)" << std::endl;
     std::cout << std::endl;
     std::cout << "Example:" << std::endl;
-    std::cout << "  " << program << " yolov8n.onnx --device cuda:0 --benchmark" << std::endl;
+    std::cout << "  " << program << " yolox-s.onnx --device cuda:0 --benchmark" << std::endl;
 }
 
 int main(int argc, char* argv[]) {

@@ -36,7 +36,7 @@
 | 特色 | 說明 |
 |------|------|
 | **統一 API** | 無論 Intel 或 NVIDIA，使用相同的程式碼（Qualcomm 規劃中） |
-| **極簡設計** | 類似 Ultralytics 的一行載入、一行推論風格 |
+| **極簡設計** | 單行載入、一行載入、一行推論風格 |
 | **遷移式學習** | 內建訓練模組，支援模型微調 |
 | **多任務支援** | 分類、偵測、分割、姿態估計 |
 | **雙語 API** | Python 和 C++ 功能對等 |
@@ -105,8 +105,6 @@ pip install "ivit-sdk[tensorrt]"    # NVIDIA TensorRT
 ```
 
 > **注意**：目前套件尚未發布至 PyPI，請使用方法 1 從原始碼安裝。
-
-> **Model Zoo 說明**：使用 `ivit.zoo.load()` 自動下載模型時，需要安裝 `ultralytics` 套件來進行模型轉換。若使用本地 ONNX 檔案則不需要。
 
 ### C++ 建置
 
@@ -269,7 +267,7 @@ Available devices: 3
 import ivit
 
 # 從 Model Zoo 載入模型（自動下載）
-model = ivit.zoo.load("yolov8n")
+model = ivit.zoo.load("yolox-s")
 
 # 執行推論
 results = model("image.jpg")
@@ -278,7 +276,7 @@ results = model("image.jpg")
 results.show()
 ```
 
-> **可用模型**：`yolov8n`, `yolov8s`, `yolov8m`, `yolov8l`, `yolov8x`, `yolov8n-cls`, `yolov8s-cls`, `resnet50`, `mobilenetv3`, `efficientnet-b0`, `yolov8n-seg`, `yolov8s-seg`, `yolov8n-pose`, `yolov8s-pose`
+> **可用模型**：`yolox-nano`, `yolox-tiny`, `yolox-s`, `yolox-m`, `yolox-l`, `resnet50`, `mobilenet_v3_small`, `efficientnet_b0`, `deeplabv3-resnet50`, `deeplabv3-mobilenetv3`, `rtmpose-s`
 >
 > 完整清單與效能指標請參考 [Model Zoo 完整清單](#model-zoo-完整清單)。
 
@@ -357,7 +355,7 @@ print("可用模型:")
 print(ivit.zoo.list_models())
 
 # 4. 從 Model Zoo 載入模型（自動下載 + 指定裝置）
-model = ivit.zoo.load("yolov8n", device=best_device)
+model = ivit.zoo.load("yolox-s", device=best_device)
 
 # 5. 執行推論
 results = model("image.jpg")
@@ -411,7 +409,7 @@ print(f"自動選擇: {best.id} ({best.name})")
 
 # 步驟 3：載入模型
 # 方式 A：使用 Model Zoo（快速驗證）
-model = ivit.zoo.load("yolov8n", device=best)
+model = ivit.zoo.load("yolox-s", device=best)
 
 # 方式 B：使用客戶提供的模型檔案
 # model = ivit.load("customer_model.onnx", device=best)
@@ -542,7 +540,7 @@ int main() {
     // Step 2: 載入模型（使用 load_model API）
     LoadConfig config;
     config.device = best.id;
-    auto model = load_model("yolov8n.onnx", config);
+    auto model = load_model("yolox-s.onnx", config);
 
     // Step 3: 安全推論
     try {
@@ -831,8 +829,8 @@ import ivit
 # ============================================================
 
 # 載入模型（使用 Model Zoo 或本地檔案皆可）
-model = ivit.zoo.load("yolov8n", device="cuda:0")
-# 或使用本地檔案: model = ivit.load("yolov8n.onnx", device="cuda:0")
+model = ivit.zoo.load("yolox-s", device="cuda:0")
+# 或使用本地檔案: model = ivit.load("yolox-s.onnx", device="cuda:0")
 
 # --- OpenVINO 配置（Intel 硬體）---
 model.configure_openvino(
@@ -1095,7 +1093,7 @@ int main() {
     // 載入模型（使用 load_model API）
     LoadConfig config;
     config.device = device.id;
-    auto model = load_model("yolov8n.onnx", config);
+    auto model = load_model("yolox-s.onnx", config);
 
     // Step 1: 模型預熱（重要！）
     std::cout << "Warming up..." << std::endl;
@@ -1177,7 +1175,7 @@ ivit export model.onnx --info
 # Model Zoo 操作
 ivit zoo list
 ivit zoo search yolo
-ivit zoo download yolov8n
+ivit zoo download yolox-s
 ```
 
 #### Callback 系統（監控整合）
@@ -1198,7 +1196,7 @@ from ivit.core.callbacks import (
 # ============================================================
 
 # 載入模型（使用 Model Zoo 方便示範）
-model = ivit.zoo.load("yolov8n", device="cuda:0")
+model = ivit.zoo.load("yolox-s", device="cuda:0")
 
 # 建立 Callback Manager
 callback_manager = CallbackManager()
@@ -1243,7 +1241,7 @@ callback_manager.register("infer_end", alert_callback)
 def inference_with_monitoring(image):
     """帶監控的推論函數"""
     # 觸發推論開始事件
-    ctx = CallbackContext(event="infer_start", model_name="yolov8n")
+    ctx = CallbackContext(event="infer_start", model_name="yolox-s")
     callback_manager.trigger("infer_start", ctx)
 
     # 執行推論
@@ -1255,7 +1253,7 @@ def inference_with_monitoring(image):
     # 觸發推論結束事件
     ctx = CallbackContext(
         event="infer_end",
-        model_name="yolov8n",
+        model_name="yolox-s",
         latency_ms=latency,
         detections=len(results)
     )
@@ -1308,7 +1306,7 @@ async def startup():
     global model, fps_counter
     from ivit.core.callbacks import FPSCounter
 
-    model = ivit.zoo.load("yolov8n", device=ivit.devices.best())
+    model = ivit.zoo.load("yolox-s", device=ivit.devices.best())
     model.warmup(10)
 
     fps_counter = FPSCounter(window_size=100)
@@ -1430,7 +1428,7 @@ private:
 
 int main() {
     auto device = get_best_device();
-    InferenceService service("yolov8n.onnx", device);
+    InferenceService service("yolox-s.onnx", device);
 
     cv::Mat image = cv::imread("test.jpg");
     auto results = service.infer(image);
@@ -1474,7 +1472,7 @@ import ivit
 # ============================================================
 
 # 從 Model Zoo 載入預訓練模型（推薦）
-model = ivit.zoo.load("yolov8n", device="cuda:0")
+model = ivit.zoo.load("yolox-s", device="cuda:0")
 
 # 執行推論
 results = model("image.jpg")
@@ -1499,7 +1497,7 @@ from ivit.core.result import Results
 # ============================================================
 
 # 載入模型（使用 Model Zoo）
-model = ivit.zoo.load("yolov8n")
+model = ivit.zoo.load("yolox-s")
 results = model("image.jpg")
 
 # --- 基本資訊 ---
@@ -1587,7 +1585,7 @@ topk = results.topk(10)
 #### 分割結果處理
 
 ```python
-model = ivit.zoo.load("yolov8n-seg")
+model = ivit.zoo.load("deeplabv3-mobilenetv3")
 results = model("street.jpg")
 
 # 取得分割遮罩
@@ -1662,7 +1660,7 @@ int main() {
     auto device = get_best_device();
     LoadConfig config;
     config.device = device.id;
-    auto model = load_model("yolov8n.onnx", config);
+    auto model = load_model("yolox-s.onnx", config);
 
     // Step 3: 結果分析
     cv::Mat image = cv::imread("test.jpg");
@@ -1831,7 +1829,7 @@ results.save(path)               # 儲存
 1. **使用正確的裝置**
    ```python
    # 自動選擇最佳裝置
-   model = ivit.zoo.load("yolov8n", device=ivit.devices.best())
+   model = ivit.zoo.load("yolox-s", device=ivit.devices.best())
    # 或使用本地檔案
    # model = ivit.load("model.onnx", device=ivit.devices.best())
    ```
@@ -1931,37 +1929,34 @@ iVIT Model Zoo 提供 14 個預訓練模型，涵蓋四種電腦視覺任務。
 
 ### 物件偵測 (Detection)
 
-| 模型名稱 | 輸入尺寸 | mAP50-95 | 參數量 | FLOPs | 適用場景 |
-|----------|----------|----------|--------|-------|----------|
-| `yolov8n` | 640×640 | 37.3% | 3.2M | 8.7G | 邊緣裝置、即時偵測 |
-| `yolov8s` | 640×640 | 44.9% | 11.2M | 28.6G | 平衡速度與準確率 |
-| `yolov8m` | 640×640 | 50.2% | 25.9M | 78.9G | 中等準確率需求 |
-| `yolov8l` | 640×640 | 52.9% | 43.7M | 165.2G | 高準確率需求 |
-| `yolov8x` | 640×640 | 53.9% | 68.2M | 257.8G | 最高準確率、伺服器部署 |
+| 模型名稱 | 輸入尺寸 | 來源 | 適用場景 |
+|----------|----------|------|----------|
+| `yolox-nano` | 416×416 | Megvii (Apache-2.0) | 超輕量邊緣裝置 |
+| `yolox-tiny` | 416×416 | Megvii (Apache-2.0) | 邊緣裝置、即時偵測 |
+| `yolox-s` | 640×640 | Megvii (Apache-2.0) | 平衡速度與準確率 |
+| `yolox-m` | 640×640 | Megvii (Apache-2.0) | 中等準確率需求 |
+| `yolox-l` | 640×640 | Megvii (Apache-2.0) | 高準確率需求 |
 
 ### 圖像分類 (Classification)
 
 | 模型名稱 | 輸入尺寸 | Top-1 | Top-5 | 來源 | 適用場景 |
 |----------|----------|-------|-------|------|----------|
-| `yolov8n-cls` | 224×224 | 69.0% | 88.3% | Ultralytics | 邊緣裝置分類 |
-| `yolov8s-cls` | 224×224 | 73.8% | 91.7% | Ultralytics | 平衡效能分類 |
 | `resnet50` | 224×224 | 76.1% | 92.9% | TorchVision | 經典分類模型 |
-| `mobilenetv3` | 224×224 | 74.0% | 91.3% | TorchVision | 行動裝置分類 |
-| `efficientnet-b0` | 224×224 | 77.1% | 93.3% | TorchVision | 高效率分類 |
+| `mobilenet_v3_small` | 224×224 | 67.7% | 87.4% | TorchVision | 行動裝置分類 |
+| `efficientnet_b0` | 224×224 | 77.1% | 93.3% | TorchVision | 高效率分類 |
 
 ### 語意分割 (Segmentation)
 
-| 模型名稱 | 輸入尺寸 | mAP (Box) | mAP (Mask) | 適用場景 |
-|----------|----------|-----------|------------|----------|
-| `yolov8n-seg` | 640×640 | 36.7% | 30.5% | 邊緣裝置分割 |
-| `yolov8s-seg` | 640×640 | 44.6% | 36.8% | 平衡效能分割 |
+| 模型名稱 | 輸入尺寸 | 來源 | 適用場景 |
+|----------|----------|------|----------|
+| `deeplabv3-resnet50` | 520×520 | TorchVision | 高精度分割 |
+| `deeplabv3-mobilenetv3` | 520×520 | TorchVision | 行動裝置分割 |
 
 ### 姿態估計 (Pose Estimation)
 
-| 模型名稱 | 輸入尺寸 | mAP (Pose) | 適用場景 |
-|----------|----------|------------|----------|
-| `yolov8n-pose` | 640×640 | 50.4% | 邊緣裝置姿態 |
-| `yolov8s-pose` | 640×640 | 60.0% | 平衡效能姿態 |
+| 模型名稱 | 輸入尺寸 | 來源 | 適用場景 |
+|----------|----------|------|----------|
+| `rtmpose-s` | 256×192 | MMPose | 邊緣裝置姿態 |
 
 ### Model Zoo API 參考
 
@@ -1974,7 +1969,7 @@ import ivit
 
 # 列出所有模型
 models = ivit.zoo.list_models()
-# ['efficientnet-b0', 'mobilenetv3', 'resnet50', 'yolov8l', ...]
+# ['efficientnet_b0', 'mobilenet_v3_small', 'resnet50', 'yolox-s', ...]
 
 # 按任務過濾
 ivit.zoo.list_models(task="detect")    # 偵測模型 (5)
@@ -1990,7 +1985,7 @@ ivit.zoo.search("fast")     # 搜尋標籤含 "fast" 的模型
 
 # ===== 查詢模型資訊 =====
 
-info = ivit.zoo.get_model_info("yolov8n")
+info = ivit.zoo.get_model_info("yolox-s")
 print(f"任務: {info.task}")           # detect
 print(f"輸入尺寸: {info.input_size}") # (640, 640)
 print(f"類別數: {info.num_classes}")  # 80
@@ -1999,21 +1994,21 @@ print(f"標籤: {info.tags}")           # ['yolo', 'detection', 'fast', 'edge']
 
 # ===== 載入模型（指定裝置）=====
 
-model = ivit.zoo.load("yolov8n", device="cuda:0")   # 指定 GPU
-model = ivit.zoo.load("yolov8n", device="cpu")      # 指定 CPU
-model = ivit.zoo.load("yolov8n", device="npu")      # 指定 NPU
+model = ivit.zoo.load("yolox-s", device="cuda:0")   # 指定 GPU
+model = ivit.zoo.load("yolox-s", device="cpu")      # 指定 CPU
+model = ivit.zoo.load("yolox-s", device="npu")      # 指定 NPU
 ```
 
 ### 模型選擇建議
 
 | 場景 | 推薦模型 | 理由 |
 |------|----------|------|
-| 邊緣裝置即時偵測 | `yolov8n` | 最小、最快 |
-| 一般偵測應用 | `yolov8s` | 平衡速度與準確率 |
-| 高準確率需求 | `yolov8m` 或 `yolov8l` | 準確率更高 |
-| 行動裝置分類 | `mobilenetv3` | 專為行動裝置優化 |
-| 高精度分類 | `efficientnet-b0` | Top-1 最高 |
-| 人體姿態追蹤 | `yolov8n-pose` | 即時姿態估計 |
+| 邊緣裝置即時偵測 | `yolox-nano` 或 `yolox-tiny` | 最小、最快 |
+| 一般偵測應用 | `yolox-s` | 平衡速度與準確率 |
+| 高準確率需求 | `yolox-m` 或 `yolox-l` | 準確率更高 |
+| 行動裝置分類 | `mobilenet_v3_small` | 專為行動裝置優化 |
+| 高精度分類 | `efficientnet_b0` | Top-1 最高 |
+| 人體姿態追蹤 | `rtmpose-s` | 即時姿態估計 |
 
 ---
 

@@ -121,12 +121,20 @@ public:
 
 private:
     std::shared_ptr<Model> model_;
+    // Optional CPU-side head for Hailo backbone-only HEFs. Auto-loaded from
+    // "<model_stem>_head.onnx" next to the main model. See Bug #11 in
+    // docs/development/hailo-compile-bug-log.md.
+    std::shared_ptr<Model> cpu_head_;
     std::vector<std::string> labels_;
     cv::Size input_size_;
     std::map<int, cv::Vec3b> colormap_;
 
     cv::Mat preprocess(const cv::Mat& image);
     Results postprocess(
+        const std::map<std::string, Tensor>& outputs,
+        const cv::Size& orig_size
+    );
+    Results postprocess_hailo(
         const std::map<std::string, Tensor>& outputs,
         const cv::Size& orig_size
     );

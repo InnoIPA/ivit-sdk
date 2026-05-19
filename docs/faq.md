@@ -63,7 +63,7 @@ model = ivit.load("model.onnx")
 model = ivit.load("model.onnx", device="cuda:0")
 
 # 從 Model Zoo 載入
-model = ivit.zoo.load("yolov8n")
+model = ivit.zoo.load("yolox-s")
 ```
 
 ### Q: 模型載入失敗怎麼辦？
@@ -347,7 +347,7 @@ TensorRT 的 FP16/INT8 可透過 `ivit convert --precision fp16` 或 `--precisio
 
 ### Q: FP16 轉換會提升推論速度嗎？
 
-**不會**。FP16 壓縮的唯一好處是模型檔案大小減半（例如 YOLOv8n 從 13MB 縮小至 6MB），不影響推論速度：
+**不會**。FP16 壓縮的唯一好處是模型檔案大小減半（例如 YOLOX-Nano 從 13MB 縮小至 6MB），不影響推論速度：
 
 - **NPU**：硬體原生以 FP16 計算，不論模型是 FP32 或 FP16，最終執行相同的編譯結果。FP16 IR 因額外的 Convert 節點反而可能略慢。
 - **CPU**：x86 CPU 以 FP32 計算，FP16 權重會在推論時解壓回 FP32，無效能增益。
@@ -380,7 +380,7 @@ import ivit
 ivit.zoo.list_models()
 
 # 載入模型（自動下載）
-model = ivit.zoo.load("yolov8n")
+model = ivit.zoo.load("yolox-s")
 
 # 搜尋模型
 ivit.zoo.search("yolo")
@@ -390,16 +390,16 @@ ivit.zoo.search("yolo")
 
 | 任務 | 模型 |
 |------|------|
-| 偵測 | yolov8n/s/m/l/x |
-| 分類 | yolov8n-cls, resnet50, mobilenetv3 |
-| 分割 | yolov8n-seg, yolov8s-seg |
-| 姿態 | yolov8n-pose, yolov8s-pose |
+| 偵測 | yolox-{nano,tiny,s,m,l} |
+| 分類 | resnet50, mobilenet_v3_small, efficientnet_b0 |
+| 分割 | deeplabv3-resnet50, deeplabv3-mobilenetv3 |
+| 姿態 | rtmpose-s |
 
 ### Q: 如何下載模型到本地？
 
 ```python
 # 下載到指定目錄
-ivit.zoo.download("yolov8n", path="./models/")
+ivit.zoo.download("yolox-s", path="./models/")
 ```
 
 ---
