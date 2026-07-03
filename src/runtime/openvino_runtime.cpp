@@ -10,8 +10,19 @@
 #include <algorithm>
 #include <filesystem>
 #include <cstdio>
+#if defined(_WIN32)
+#include <io.h>
+#include <fcntl.h>
+#define STDERR_FILENO 2
+#define dup      _dup
+#define dup2     _dup2
+#define close    _close
+static inline int open_devnull() { return _open("NUL", _O_WRONLY); }
+#else
 #include <unistd.h>
 #include <fcntl.h>
+static inline int open_devnull() { return open("/dev/null", O_WRONLY); }
+#endif
 
 namespace ivit {
 
@@ -60,7 +71,7 @@ std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
         // Suppress stderr noise from Intel OpenCL compiler (IGC) during device enumeration
         fflush(stderr);
         int saved_stderr = dup(STDERR_FILENO);
-        int devnull = open("/dev/null", O_WRONLY);
+        int devnull = open_devnull();
         dup2(devnull, STDERR_FILENO);
         close(devnull);
 

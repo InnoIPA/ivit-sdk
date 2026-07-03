@@ -1,16 +1,16 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """
 MambaVision Classification Demo
 
 Runs MambaVision (Hybrid Mamba+Transformer) image classification
 using onnxruntime, following the same style as 02_classification.py.
 
-Note: Does not require iVIT C++ bindings — uses onnxruntime directly.
+Note: Does not require iVIT C++ bindings â€” uses onnxruntime directly.
 
 Usage:
     # Export model first (one-time)
     python -c "
-    import sys; sys.path.insert(0,'python')
+    import sys; sys.path.append('python')
     from ivit.train.exporter import load_mambavision_for_export
     import torch, os
     model = load_mambavision_for_export('t')
@@ -50,7 +50,7 @@ import os
 import numpy as np
 import cv2
 
-# ImageNet 1K labels (abbreviated — first 10 and last 10 shown, full list loaded from file)
+# ImageNet 1K labels (abbreviated â€” first 10 and last 10 shown, full list loaded from file)
 IMAGENET_LABELS_URL = (
     "https://raw.githubusercontent.com/anishathalye/imagenet-simple-labels"
     "/master/imagenet-simple-labels.json"
@@ -58,7 +58,7 @@ IMAGENET_LABELS_URL = (
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'python'))
+sys.path.append( os.path.join(PROJECT_ROOT, 'python'))
 
 
 def load_imagenet_labels():
@@ -84,7 +84,7 @@ def load_imagenet_labels():
 
 
 def preprocess(image: np.ndarray, input_size=(224, 224)) -> np.ndarray:
-    """Standard ImageNet preprocessing: resize → RGB → normalize → NCHW."""
+    """Standard ImageNet preprocessing: resize â†’ RGB â†’ normalize â†’ NCHW."""
     img = cv2.resize(image, input_size)
     img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
     mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
@@ -141,7 +141,7 @@ def main():
         print("Error: onnxruntime not installed. Run: pip install onnxruntime")
         return 1
 
-    # ── Model info ──────────────────────────────────────────────────────────
+    # â”€â”€ Model info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     print("=" * 50)
     print("  MambaVision Classification Demo")
     print("=" * 50)
@@ -150,13 +150,13 @@ def main():
     print(f"  onnxruntime: {ort.__version__}")
     print()
 
-    # ── Load labels ──────────────────────────────────────────────────────────
+    # â”€â”€ Load labels â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     labels = load_imagenet_labels()
     print(f"  Labels : {len(labels)} classes")
     print(f"  Sample : {labels[:3]} ...")
     print()
 
-    # ── Load model ───────────────────────────────────────────────────────────
+    # â”€â”€ Load model â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     providers = get_providers(args.device)
     print(f"Loading model... (providers: {[p if isinstance(p,str) else p[0] for p in providers]})")
     t0 = time.perf_counter()
@@ -171,7 +171,7 @@ def main():
     print(f"  Output : {out_name}")
     print()
 
-    # ── Load image ───────────────────────────────────────────────────────────
+    # â”€â”€ Load image â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     image = cv2.imread(args.image)
     if image is None:
         print(f"Error: Failed to load image: {args.image}")
@@ -180,7 +180,7 @@ def main():
 
     inp_tensor = preprocess(image)
 
-    # ── Inference ────────────────────────────────────────────────────────────
+    # â”€â”€ Inference â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     if args.benchmark:
         print(f"\nRunning benchmark ({args.iterations} iterations)...")
         times = []
@@ -217,7 +217,7 @@ def main():
         print(f"\nTop-{args.top_k} Predictions:")
         for rank, idx in enumerate(top_indices):
             label = labels[idx] if idx < len(labels) else f"class_{idx}"
-            bar = "█" * int(probs[idx] * 40)
+            bar = "â–ˆ" * int(probs[idx] * 40)
             print(f"  {rank+1}. {label:30s}  {probs[idx]:6.2%}  {bar}")
 
     print("\nDone!")

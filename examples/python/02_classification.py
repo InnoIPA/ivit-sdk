@@ -32,11 +32,15 @@ import time
 import sys
 import os
 
+# Windows PowerShell defaults to cp1252; force UTF-8 for label output
+if sys.platform == 'win32' and hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+
 # Get project root directory
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
 
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'python'))
+sys.path.append(os.path.join(PROJECT_ROOT, 'python'))
 
 import ivit
 from ivit.vision import Classifier

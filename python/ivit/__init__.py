@@ -22,23 +22,62 @@ Example:
 __version__ = "1.0.0"
 __author__ = "Innodisk AI Team"
 
-# Pre-load libivit.so if it exists in the package directory
+# Pre-load native library if it exists in the package directory
 import os as _os
+import sys as _sys
 import ctypes as _ctypes
 
 _package_dir = _os.path.dirname(_os.path.abspath(__file__))
-_libivit_path = _os.path.join(_package_dir, "libivit.so")
 
-if _os.path.exists(_libivit_path):
-    try:
-        # Use RTLD_LOCAL (not RTLD_GLOBAL) to avoid polluting the global symbol
-        # table with OpenVINO / libcudart symbols, which conflict with PyTorch's
-        # own CUDA runtime and cause munmap heap-corruption in torch.jit.load.
-        # _ivit_core.so has a RUNPATH pointing to the build lib dir, so it
-        # resolves libivit.so independently without RTLD_GLOBAL.
-        _ctypes.CDLL(_libivit_path, mode=_ctypes.RTLD_LOCAL)
-    except OSError:
-        pass
+if _sys.platform == 'win32':
+    # Windows: use os.add_dll_directory() so Python can find ivit.dll and OpenCV DLLs
+    _dll_dirs = [
+        _package_dir,                          # ivit.dll installed here (RUNTIME DESTINATION .)
+        _os.path.join(_package_dir, "bin"),   # fallback for older wheels
+        _os.path.join(_package_dir, "lib"),   # fallback
+    ]
+    # Also search OpenCV_DIR env if set
+    _opencv_dir = _os.environ.get("OpenCV_DIR", "")
+    if _opencv_dir:
+        for _sub in ["bin\\Release", "bin\\Debug", "bin", "x64\\vc17\\bin", "x64\\vc18\\bin"]:
+            _dll_dirs.append(_os.path.join(_opencv_dir, _sub))
+
+    # Conda environments: add base env Library\bin for avif.dll and other conda-packaged libs
+    # Active env's Library\bin (sibling of Python.exe's Scripts/)
+    _python_prefix = _os.path.dirname(_sys.executable)  # e.g. envs\OpenV\
+    _dll_dirs.append(_os.path.join(_python_prefix, "Library", "bin"))
+    # Anaconda base Library\bin (parent of envs\)
+    _conda_base = _os.environ.get("CONDA_ROOT", "") or _os.environ.get("CONDA_PREFIX_1", "")
+    if not _conda_base:
+        # Heuristic: base env is 3 levels up from envs/<name>/ → base/Library/bin
+        _candidate = _os.path.dirname(_os.path.dirname(_python_prefix))
+        if _os.path.isdir(_os.path.join(_candidate, "Library", "bin")):
+            _conda_base = _candidate
+    if _conda_base:
+        _dll_dirs.append(_os.path.join(_conda_base, "Library", "bin"))
+
+    # OpenVINO pip package: openvino.dll + device plugins live in openvino/libs/
+    import site as _site
+    for _sp in _site.getsitepackages():
+        _ov_libs = _os.path.join(_sp, "openvino", "libs")
+        if _os.path.isdir(_ov_libs):
+            _dll_dirs.append(_ov_libs)
+            break
+
+    for _d in _dll_dirs:
+        if _os.path.isdir(_d):
+            try:
+                _os.add_dll_directory(_d)
+            except (OSError, AttributeError):
+                pass
+else:
+    # Linux/macOS: pre-load libivit.so with RTLD_LOCAL to avoid symbol conflicts
+    _libivit_path = _os.path.join(_package_dir, "libivit.so")
+    if _os.path.exists(_libivit_path):
+        try:
+            _ctypes.CDLL(_libivit_path, mode=_ctypes.RTLD_LOCAL)
+        except OSError:
+            pass
 
 # C++ bindings - optional for some use cases (e.g., zoo commands)
 _CPP_AVAILABLE = False
@@ -93,8 +132,6 @@ try:
 
         # Functions
         version,
-        list_devices,
-        get_best_device,
         set_log_level,
         set_cache_dir,
 
@@ -117,64 +154,13 @@ def is_cpp_available():
     return _CPP_AVAILABLE
 
 
-# ── Python-only device discovery (used when C++ bindings are unavailable) ────
+# ── Device discovery ──────────────────────────────────────────────────────────
+# devices.py has the full Device dataclass and DeviceManager (OpenVINO-based
+# discovery that works with or without C++ bindings). Always import it so both
+# paths return the same Device type with all attributes (available, type, etc.)
+from .devices import DeviceManager as _DeviceManager, Device, devices, D
 
-class _DeviceInfo:
-    """Minimal DeviceInfo for the Python fallback path."""
-    __slots__ = ("id", "name", "backend", "memory_total")
-
-    def __init__(self, id: str, name: str, backend: str, memory_total: int = 0):
-        self.id = id
-        self.name = name
-        self.backend = backend
-        self.memory_total = memory_total
-
-    def __repr__(self):
-        return f"DeviceInfo(id={self.id!r}, name={self.name!r}, backend={self.backend!r})"
-
-
-def _py_list_devices():
-    """Return available devices using onnxruntime provider discovery."""
-    try:
-        import onnxruntime as ort
-        available = ort.get_available_providers()
-    except ImportError:
-        available = []
-
-    devs = [_DeviceInfo("cpu", "CPU", "cpu", 0)]
-
-    if "CUDAExecutionProvider" in available:
-        try:
-            import subprocess
-            out = subprocess.check_output(
-                ["nvidia-smi", "--query-gpu=name,memory.total",
-                 "--format=csv,noheader,nounits"],
-                text=True, timeout=5,
-            ).strip().splitlines()
-            for i, line in enumerate(out):
-                parts = [p.strip() for p in line.split(",")]
-                name = parts[0] if parts else "NVIDIA GPU"
-                mem  = int(parts[1]) * 1024 * 1024 if len(parts) > 1 else 0
-                devs.append(_DeviceInfo(f"cuda:{i}", name, "tensorrt", mem))
-        except Exception:
-            devs.append(_DeviceInfo("cuda:0", "NVIDIA GPU", "tensorrt", 0))
-
-    if "OpenVINOExecutionProvider" in available:
-        devs.append(_DeviceInfo("npu", "Intel NPU/iGPU", "openvino", 0))
-
-    return devs
-
-
-def _py_get_best_device():
-    """Return best available device (GPU > NPU > CPU)."""
-    devs = _py_list_devices()
-    for dev in devs:
-        if dev.id.startswith("cuda"):
-            return dev
-    for dev in devs:
-        if dev.id == "npu":
-            return dev
-    return devs[0]
+_device_manager = _DeviceManager()
 
 
 def _require_cpp():
@@ -213,18 +199,13 @@ except ImportError:
 
 # Import devices module for device discovery (requires C++ bindings)
 devices = None
-Device = None
-D = None
-if _CPP_AVAILABLE:
-    try:
-        from .devices import devices, Device, D
-    except ImportError:
-        pass
-
-# When C++ is unavailable, expose Python-only list_devices / get_best_device
-if not _CPP_AVAILABLE:
-    list_devices = _py_list_devices
-    get_best_device = _py_get_best_device
+# Always use DeviceManager for list_devices / get_best_device.
+# DeviceManager wraps C++ DeviceInfo → Python Device (normalising is_available
+# → available, adding vendor/type/is_discrete) and falls back to OpenVINO
+# Python API when C++ bindings are unavailable. This gives a single, consistent
+# Device type regardless of backend availability.
+list_devices = _device_manager
+get_best_device = _device_manager.best
 
 # Import Model Zoo (works without C++ bindings)
 from . import zoo

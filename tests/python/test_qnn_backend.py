@@ -264,7 +264,7 @@ class TestCMakeQNNOption:
     )
 
     def _read_cmake(self):
-        with open(self._cmake_path) as f:
+        with open(self._cmake_path, encoding='utf-8') as f:
             return f.read()
 
     def test_qnn_option_defined(self):

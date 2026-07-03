@@ -1,11 +1,14 @@
 {
-  "inference_time_ms": 14.008,
-  "device_used": "hailo:0",
+  "inference_time_ms": 21.831,
+  "device_used": "gpu:0",
   "image_size": [1080, 810],
   "detections": [
-    {"class_id": 5, "label": "bus", "confidence": 0.902941, "bbox": {"x1": 4.37192, "y1": 229.635, "x2": 803.987, "y2": 731.11}},
-    {"class_id": 0, "label": "person", "confidence": 0.876272, "bbox": {"x1": 51.4587, "y1": 396.523, "x2": 240.271, "y2": 904.05}},
-    {"class_id": 0, "label": "person", "confidence": 0.830553, "bbox": {"x1": 669.158, "y1": 394.622, "x2": 810, "y2": 880.426}},
-    {"class_id": 0, "label": "person", "confidence": 0.805341, "bbox": {"x1": 222.311, "y1": 403.029, "x2": 344.341, "y2": 862.672}}
+    {"class_id": 5, "label": "bus", "confidence": 0.936756, "bbox": {"x1": 27.5345, "y1": 225.672, "x2": 804.192, "y2": 735.016}},
+    {"class_id": 0, "label": "person", "confidence": 0.898267, "bbox": {"x1": 663.281, "y1": 388.701, "x2": 809.353, "y2": 878.533}},
+    {"class_id": 0, "label": "person", "confidence": 0.887446, "bbox": {"x1": 47.0432, "y1": 396.902, "x2": 245.382, "y2": 895.526}},
+    {"class_id": 0, "label": "person", "confidence": 0.882301, "bbox": {"x1": 224.013, "y1": 409.902, "x2": 345.729, "y2": 849.078}},
+    {"class_id": 0, "label": "person", "confidence": 0.250164, "bbox": {"x1": 1.97584, "y1": 552.497, "x2": 70.6394, "y2": 883.934}},
+    {"class_id": 26, "label": "handbag", "confidence": 0.187157, "bbox": {"x1": 223.403, "y1": 614.55, "x2": 294.554, "y2": 705.998}},
+    {"class_id": 1, "label": "bicycle", "confidence": 0.109629, "bbox": {"x1": 0.684968, "y1": 719.942, "x2": 26.1041, "y2": 867.943}}
   ]
 }

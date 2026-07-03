@@ -19,7 +19,7 @@ set(IVIT_DEPS_DIR "${CMAKE_SOURCE_DIR}/deps" CACHE PATH "Dependencies directory"
 # ============================================================================
 # C++ Standard
 # ============================================================================
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -74,18 +74,29 @@ if(IVIT_USE_OPENVINO)
     find_package(OpenVINO QUIET COMPONENTS Runtime)
 
     # 若未找到，嘗試偵測 pip 安裝的 OpenVINO
+    # 使用 cmake 傳入的 Python 執行檔（scikit-build-core 設 Python3_EXECUTABLE），
+    # 再回退到 python3 / python（支援 Windows 無 python3 alias 的環境）
     if(NOT OpenVINO_FOUND)
-        execute_process(
-            COMMAND python3 -c "import openvino; import os; print(os.path.dirname(openvino.__file__))"
-            OUTPUT_VARIABLE _OV_PIP_DIR
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-            ERROR_QUIET
-            RESULT_VARIABLE _OV_PIP_RESULT
-        )
-        if(_OV_PIP_RESULT EQUAL 0 AND EXISTS "${_OV_PIP_DIR}/cmake")
-            set(OpenVINO_DIR "${_OV_PIP_DIR}/cmake")
-            message(STATUS "Using pip-installed OpenVINO from: ${OpenVINO_DIR}")
-            find_package(OpenVINO QUIET COMPONENTS Runtime)
+        if(Python3_EXECUTABLE)
+            set(_OV_PY_EXE "${Python3_EXECUTABLE}")
+        elseif(Python_EXECUTABLE)
+            set(_OV_PY_EXE "${Python_EXECUTABLE}")
+        else()
+            find_program(_OV_PY_EXE NAMES python3 python)
+        endif()
+        if(_OV_PY_EXE)
+            execute_process(
+                COMMAND "${_OV_PY_EXE}" -c "import openvino; import os; print(os.path.dirname(openvino.__file__))"
+                OUTPUT_VARIABLE _OV_PIP_DIR
+                OUTPUT_STRIP_TRAILING_WHITESPACE
+                ERROR_QUIET
+                RESULT_VARIABLE _OV_PIP_RESULT
+            )
+            if(_OV_PIP_RESULT EQUAL 0 AND EXISTS "${_OV_PIP_DIR}/cmake")
+                set(OpenVINO_DIR "${_OV_PIP_DIR}/cmake")
+                message(STATUS "Using pip-installed OpenVINO from: ${OpenVINO_DIR}")
+                find_package(OpenVINO QUIET COMPONENTS Runtime)
+            endif()
         endif()
     endif()
     if(OpenVINO_FOUND)
@@ -277,6 +288,10 @@ if(IVIT_USE_TENSORRT)
     list(APPEND IVIT_SOURCES src/runtime/tensorrt_runtime.cpp)
 endif()
 
+if(IVIT_USE_QNN)
+    list(APPEND IVIT_SOURCES src/runtime/qnn_runtime.cpp)
+endif()
+
 if(IVIT_USE_HAILORT)
     list(APPEND IVIT_SOURCES src/runtime/hailort_runtime.cpp)
 endif()
@@ -285,6 +300,11 @@ endif()
 # Create library
 # ============================================================================
 add_library(ivit SHARED ${IVIT_SOURCES})
+
+# Windows: auto-export all symbols so MSVC generates ivit.lib (import library)
+if(WIN32)
+    set_target_properties(ivit PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+endif()
 
 target_include_directories(ivit
     PUBLIC
@@ -311,6 +331,16 @@ if(IVIT_USE_TENSORRT)
         ${TENSORRT_LIBRARY}
         ${NVONNXPARSER_LIBRARY}
         CUDA::cudart
+    )
+endif()
+
+if(IVIT_USE_QNN)
+    target_include_directories(ivit PRIVATE ${QNN_INCLUDE_DIR})
+    target_link_libraries(ivit PRIVATE
+        ${QNN_HTP_LIBRARY}
+        ${QNN_CPU_LIBRARY}
+        ${QNN_SYSTEM_LIBRARY}
+        ${CMAKE_DL_LIBS}
     )
 endif()
 
@@ -342,7 +372,71 @@ if(IVIT_BUILD_PYTHON)
     if(SKBUILD)
         # scikit-build-core controls the output directory
         install(TARGETS _ivit_core LIBRARY DESTINATION .)
-        install(TARGETS ivit LIBRARY DESTINATION .)
+        # On Windows, DLL = RUNTIME; on Linux, .so = LIBRARY
+        install(TARGETS ivit
+            RUNTIME DESTINATION .   # ivit.dll  (Windows)
+            LIBRARY DESTINATION .   # libivit.so (Linux/macOS)
+            ARCHIVE DESTINATION .   # ivit.lib  (Windows import lib)
+        )
+
+        # ── Windows: bundle OpenCV runtime DLLs into the wheel ──────────────
+        # ivit.dll links against OpenCV shared libs; without bundling, users
+        # must have matching OpenCV DLLs on their PATH or OpenCV_DIR set.
+        # We collect the RUNTIME DLLs from the OpenCV install tree and place
+        # them next to ivit.dll so the wheel is self-contained on Windows.
+        if(WIN32)
+            foreach(_opencv_lib ${OpenCV_LIBS})
+                # get_target_property returns the .lib (import lib) location;
+                # replace lib\ with bin\ and .lib with .dll to get the DLL path
+                get_target_property(_imp "${_opencv_lib}" IMPORTED_LOCATION_RELEASE)
+                if(NOT _imp)
+                    get_target_property(_imp "${_opencv_lib}" IMPORTED_LOCATION)
+                endif()
+                if(_imp AND EXISTS "${_imp}")
+                    # Accept both .dll and paths under bin/
+                    if(_imp MATCHES "\\.dll$")
+                        install(FILES "${_imp}" DESTINATION .)
+                    else()
+                        # Convert .lib → .dll: lib\opencv_*.lib → bin\Release\opencv_*.dll
+                        string(REPLACE ".lib" ".dll" _dll "${_imp}")
+                        string(REPLACE "\\lib\\" "\\bin\\Release\\" _dll "${_dll}")
+                        string(REPLACE "/lib/" "/bin/Release/" _dll "${_dll}")
+                        if(EXISTS "${_dll}")
+                            install(FILES "${_dll}" DESTINATION .)
+                        endif()
+                    endif()
+                endif()
+            endforeach()
+
+            # ── Bundle transitive OpenCV dependencies ────────────────────────
+            # opencv_imgcodecs depends on avif.dll (AVIF image support).
+            # Search in conda/Python Library\bin and OpenCV bin directories.
+            if(Python3_EXECUTABLE)
+                get_filename_component(_py_prefix "${Python3_EXECUTABLE}" DIRECTORY)
+            elseif(Python_EXECUTABLE)
+                get_filename_component(_py_prefix "${Python_EXECUTABLE}" DIRECTORY)
+            endif()
+
+            set(_avif_search_dirs "")
+            if(_py_prefix)
+                # conda env: <env>/Library/bin
+                list(APPEND _avif_search_dirs "${_py_prefix}/Library/bin")
+                # conda base: two levels up from <env>
+                get_filename_component(_conda_base "${_py_prefix}" DIRECTORY)
+                get_filename_component(_conda_base "${_conda_base}" DIRECTORY)
+                list(APPEND _avif_search_dirs "${_conda_base}/Library/bin")
+            endif()
+            # Also search alongside the OpenCV DLLs we just bundled
+            list(APPEND _avif_search_dirs "${OpenCV_DIR}/bin/Release" "${OpenCV_DIR}/bin")
+
+            find_file(_avif_dll avif.dll HINTS ${_avif_search_dirs} NO_DEFAULT_PATH)
+            if(_avif_dll)
+                install(FILES "${_avif_dll}" DESTINATION .)
+                message(STATUS "Bundling avif.dll from: ${_avif_dll}")
+            else()
+                message(WARNING "avif.dll not found — opencv_imgcodecs may fail on machines without Anaconda")
+            endif()
+        endif()
     else()
         set_target_properties(_ivit_core PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/python/ivit

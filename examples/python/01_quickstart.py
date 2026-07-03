@@ -19,7 +19,8 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
 
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'python'))
+# Append source path as fallback only — installed package takes precedence
+sys.path.append(os.path.join(PROJECT_ROOT, 'python'))
 
 import ivit
 from ivit.vision import Detector

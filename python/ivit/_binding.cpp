@@ -10,6 +10,11 @@
 
 #include <opencv2/opencv.hpp>
 
+#if defined(_WIN32)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
+
 // Include iVIT headers
 #include "ivit/ivit.hpp"
 #include "ivit/core/callback.hpp"

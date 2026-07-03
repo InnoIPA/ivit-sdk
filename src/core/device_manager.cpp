@@ -12,8 +12,24 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
+#if defined(_WIN32)
+#include <io.h>
+#include <process.h>
+#include <fcntl.h>
+// POSIX compatibility shims for Windows
+#define STDERR_FILENO 2
+#define dup      _dup
+#define dup2     _dup2
+#define close    _close
+static inline int open_devnull() { return _open("NUL", _O_WRONLY); }
+static inline int setenv(const char* name, const char* value, int) {
+    return _putenv_s(name, value);
+}
+#else
 #include <unistd.h>
 #include <fcntl.h>
+static inline int open_devnull() { return open("/dev/null", O_WRONLY); }
+#endif
 
 #ifdef IVIT_HAS_OPENVINO
 #include <openvino/openvino.hpp>
@@ -24,7 +40,9 @@
 #endif
 
 #ifdef IVIT_HAS_QNN
+#if !defined(_WIN32)
 #include <dlfcn.h>
+#endif
 #endif
 
 #ifdef IVIT_HAS_HAILORT
@@ -330,7 +348,7 @@ void DeviceManager::discover_openvino_devices() {
         // Suppress stderr noise from Intel OpenCL compiler (IGC) during device enumeration
         fflush(stderr);
         int saved_stderr = dup(STDERR_FILENO);
-        int devnull = open("/dev/null", O_WRONLY);
+        int devnull = open_devnull();
         dup2(devnull, STDERR_FILENO);
         close(devnull);
 
