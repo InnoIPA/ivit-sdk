@@ -4,11 +4,11 @@
 
 ## 支援硬體
 
-| 硬體類型 | 架構 | 說明 |
-|----------|------|------|
-| Intel CPU | x86_64 / ARM64 | Core, Xeon, Atom |
-| Intel iGPU | x86_64 | Iris Xe, UHD Graphics |
-| Intel NPU | x86_64 | Meteor Lake, Lunar Lake |
+| 硬體類型   | 架構           | 說明                    |
+| ---------- | -------------- | ----------------------- |
+| Intel CPU  | x86_64 / ARM64 | Core, Xeon, Atom        |
+| Intel iGPU | x86_64         | Iris Xe, UHD Graphics   |
+| Intel NPU  | x86_64         | Meteor Lake, Lunar Lake |
 
 ## 環境準備
 
@@ -35,6 +35,7 @@ ivit info
 ```
 
 預期輸出：
+
 ```
 iVIT-SDK v1.0.0
 ============================================================
@@ -131,11 +132,11 @@ results = model("image.jpg")
 
 ### 效能模式說明
 
-| 模式 | 說明 | 適用場景 |
-|------|------|----------|
-| LATENCY | 最低延遲 | 即時應用、邊緣裝置 |
-| THROUGHPUT | 最高吞吐量 | 批次處理、伺服器 |
-| CUMULATIVE_THROUGHPUT | 多裝置吞吐量 | 多裝置推論 |
+| 模式                  | 說明         | 適用場景           |
+| --------------------- | ------------ | ------------------ |
+| LATENCY               | 最低延遲     | 即時應用、邊緣裝置 |
+| THROUGHPUT            | 最高吞吐量   | 批次處理、伺服器   |
+| CUMULATIVE_THROUGHPUT | 多裝置吞吐量 | 多裝置推論         |
 
 ### NPU 特定優化
 
@@ -224,6 +225,7 @@ for d in devices:
 ### Q: OpenVINO IR 模型載入失敗？
 
 確認 `.xml` 和 `.bin` 檔案在同一目錄：
+
 ```
 model.xml  # 模型結構
 model.bin  # 模型權重

@@ -50,11 +50,22 @@ def cmd_info(args):
 
     # Backend availability
     print("Backends:")
+    # OpenVINO inference is provided by the C++ backend (_ivit_core), not the
+    # Python openvino package, which the project no longer depends on.
     try:
-        import openvino
-        print(f"  OpenVINO:       {openvino.__version__}")
+        import ivit
+        if ivit.is_cpp_available():
+            print("  OpenVINO:       via C++ backend (_ivit_core)")
+        else:
+            print("  OpenVINO:       C++ backend not built")
+    except Exception:
+        print("  OpenVINO:       Unknown")
+
+    try:
+        import onnxruntime
+        print(f"  ONNX Runtime:   {onnxruntime.__version__}")
     except ImportError:
-        print("  OpenVINO:       Not installed")
+        print("  ONNX Runtime:   Not installed")
 
     try:
         import tensorrt
@@ -349,20 +360,6 @@ def _get_onnx_input_shape(input_path: Path):
     except Exception:
         pass
 
-    # Strategy 2: Try OpenVINO read_model
-    try:
-        import openvino as ov
-        core = ov.Core()
-        model = core.read_model(str(input_path))
-        shape = model.input(0).get_partial_shape()
-        if shape.rank.get_length() == 4:
-            h = shape[2].get_length()
-            w = shape[3].get_length()
-            if h > 0 and w > 0:
-                return (h, w)
-    except Exception:
-        pass
-
     return None
 
 
@@ -425,15 +422,20 @@ def _load_calibration_images(cal_dir: Path, input_hw):
 
 def _convert_to_openvino_int8(input_path: Path, output_dir: Path,
                                calibration_data_path: str):
-    """Convert ONNX model to OpenVINO IR with INT8 quantization using NNCF."""
+    """Quantize an ONNX model to INT8 using NNCF's ONNX backend.
+
+    Produces a quantized ONNX model (with QuantizeLinear/DequantizeLinear
+    nodes). The C++ OpenVINO backend loads this ONNX directly for INT8
+    inference, so no Python ``openvino`` package is required.
+    """
     import numpy as np
 
-    # Check dependencies
+    # Check dependencies (nncf ONNX backend needs onnx + nncf, not openvino)
     try:
-        import openvino as ov
+        import onnx
     except ImportError:
-        print("Error: OpenVINO is required for INT8 quantization.")
-        print("Install with: pip install openvino>=2024.0")
+        print("Error: onnx is required for INT8 quantization.")
+        print("Install with: pip install onnx>=1.14")
         sys.exit(1)
 
     try:
@@ -445,44 +447,44 @@ def _convert_to_openvino_int8(input_path: Path, output_dir: Path,
         sys.exit(1)
 
     model_name = input_path.stem
-    output_xml = output_dir / f"{model_name}.xml"
-    output_bin = output_dir / f"{model_name}.bin"
+    output_onnx = output_dir / f"{model_name}_int8.onnx"
 
-    print("Converting to OpenVINO IR with INT8 quantization...")
+    print("Quantizing to INT8 (NNCF ONNX backend)...")
     print()
 
-    # Get input shape
+    # Load ONNX model and determine its input tensor name
+    onnx_model = onnx.load(str(input_path))
+    input_name = onnx_model.graph.input[0].name
+
+    # Get input shape for calibration preprocessing
     input_hw = _get_onnx_input_shape(input_path)
     if input_hw is None:
         input_hw = (640, 640)
         print(f"  Warning: Could not determine input shape, using default {input_hw}")
 
-    # Load calibration images
+    # Load calibration images (each returned as (C, H, W) float32, no batch dim)
     cal_dir = Path(calibration_data_path)
     cal_images = _load_calibration_images(cal_dir, input_hw)
 
-    # Convert ONNX to OpenVINO model
-    print("  Converting ONNX to OpenVINO model...")
-    ov_model = ov.convert_model(str(input_path))
+    # Build NNCF dataset; transform each sample into a {input_name: NCHW} feed dict
+    def transform_fn(image):
+        return {input_name: np.expand_dims(image, axis=0)}
 
-    # Prepare calibration dataset for NNCF
-    cal_data = [np.expand_dims(img, axis=0) for img in cal_images]
-    calibration_dataset = nncf.Dataset(cal_data)
+    calibration_dataset = nncf.Dataset(cal_images, transform_fn)
 
     # Quantize
     print("  Running INT8 quantization (this may take a while)...")
     quantized_model = nncf.quantize(
-        ov_model,
+        onnx_model,
         calibration_dataset,
         preset=nncf.QuantizationPreset.MIXED,
     )
 
-    # Save
-    ov.save_model(quantized_model, str(output_xml))
+    # Save quantized ONNX
+    onnx.save(quantized_model, str(output_onnx))
 
     print()
-    print(f"  Created: {output_xml}")
-    print(f"  Created: {output_bin}")
+    print(f"  Created: {output_onnx}")
     print()
     print("INT8 quantization complete!")
 
@@ -541,35 +543,11 @@ def _convert_to_openvino(input_path: Path, output_dir: Path, precision: str,
         print("Conversion complete!")
         return
 
-    # Strategy 3: Try OpenVINO Python API (works with pip or APT python3-openvino)
-    try:
-        import openvino as ov
-
-        print("Converting to OpenVINO IR format (using Python API)...")
-        ov_model = ov.convert_model(str(input_path))
-
-        if precision.lower() == "fp16":
-            print("  Compressing to FP16...")
-            ov.save_model(ov_model, str(output_xml), compress_to_fp16=True)
-        else:
-            ov.save_model(ov_model, str(output_xml))
-
-        print(f"  Created: {output_xml}")
-        print(f"  Created: {output_bin}")
-        print()
-        print("Conversion complete!")
-        return
-    except ImportError:
-        pass
-    except Exception as e:
-        print(f"Error: OpenVINO Python API conversion failed: {e}")
-        sys.exit(1)
-
-    # No conversion tool available
+    # No conversion tool available (Python openvino is intentionally not used)
     print("Error: OpenVINO conversion tools not found.")
     print("Install one of the following:")
-    print("  pip install -e .                          # Build C++ binding")
-    print("  pip install openvino                      # Python API (convert_model)")
+    print("  pip install -e .    # Build the C++ binding (provides convert_model)")
+    print("  # or install the OpenVINO 'ovc' CLI tool (e.g. via APT openvino package)")
     sys.exit(1)
 
 

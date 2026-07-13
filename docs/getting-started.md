@@ -187,6 +187,14 @@ cd ivit-sdk
 
 ### C++ 編譯（不含 Python 綁定）
 
+此編譯後以下的功能將無法使用：
+
+* ivit cli指令
+* 訓練
+* 模型匯出
+* int8量化
+* model zoo 下載
+
 ```bash
 mkdir build && cd build
 cmake .. \

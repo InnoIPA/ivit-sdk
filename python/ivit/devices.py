@@ -134,53 +134,13 @@ class DeviceManager:
                     memory_total=getattr(dev, 'memory_total', 0),
                 ))
         except ImportError:
-            # Fallback to Python-based discovery
-            self._discover_openvino_devices()
+            # C++ binding unavailable. Intel/OpenVINO device enumeration requires
+            # the C++ backend (the project no longer depends on Python openvino),
+            # so fall back to CUDA discovery plus a generic CPU entry.
             self._discover_cuda_devices()
             self._add_cpu_fallback()
 
         self._cache_valid = True
-
-    def _discover_openvino_devices(self) -> None:
-        """Discover OpenVINO devices (Intel hardware)."""
-        try:
-            from openvino import Core
-            core = Core()
-
-            for device_name in core.available_devices:
-                try:
-                    full_name = core.get_property(device_name, "FULL_DEVICE_NAME")
-                except:
-                    full_name = device_name
-
-                # Determine type, ID, and check if discrete
-                is_discrete = False
-                if "CPU" in device_name:
-                    dev_id = "cpu"
-                    dev_type = "cpu"
-                elif "GPU" in device_name:
-                    dev_id = "gpu:0"
-                    dev_type = "gpu"
-                    # Check for discrete GPU (Arc)
-                    name_lower = full_name.lower()
-                    is_discrete = any(x in name_lower for x in ["arc", "a770", "a750", "a380"])
-                elif "NPU" in device_name:
-                    dev_id = "npu"
-                    dev_type = "npu"
-                else:
-                    continue
-
-                self._cache.append(Device(
-                    id=dev_id,
-                    name=full_name,
-                    type=dev_type,
-                    backend="openvino",
-                    vendor="intel",
-                    available=True,
-                    is_discrete=is_discrete,
-                ))
-        except ImportError:
-            pass
 
     def _discover_cuda_devices(self) -> None:
         """Discover CUDA devices (NVIDIA hardware)."""

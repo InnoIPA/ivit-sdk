@@ -211,69 +211,76 @@ class ModelExporter:
         calibration_data: Optional[List[np.ndarray]],
         task: str = "classify",
     ) -> str:
-        """Export to OpenVINO IR format."""
-        import torch
+        """Export to an OpenVINO-compatible model without the Python openvino package.
 
+        - INT8: quantize via NNCF's ONNX backend -> quantized ONNX (loadable by
+          the C++ OpenVINO backend for INT8 inference).
+        - FP16/FP32: delegate IR generation to the C++ binding (which bundles
+          OpenVINO). If the binding is unavailable, return the plain ONNX path.
+        """
         # First export to ONNX
         onnx_path = str(Path(path).with_suffix('.onnx'))
         self._export_onnx(onnx_path, input_shape, 17, None, None, task)
 
-        try:
-            import openvino as ov
-            from openvino import Core
-            from openvino.runtime import serialize
-
-            core = Core()
-            logger.info(f"Converting to OpenVINO IR: {path}")
-
-            # Read ONNX model
-            model = core.read_model(onnx_path)
-
-            # Apply quantization if requested
-            if quantize == "int8" and calibration_data is not None:
-                model = self._quantize_openvino_int8(model, calibration_data)
-            elif quantize == "fp16":
-                # Compress weights to FP16 during serialization
-                xml_path = str(Path(path).with_suffix('.xml'))
-                ov.save_model(model, xml_path, compress_to_fp16=True)
-                logger.info(f"OpenVINO IR export complete (FP16): {xml_path}")
-                return xml_path
-
-            # Serialize to IR format
-            xml_path = str(Path(path).with_suffix('.xml'))
-            serialize(model, xml_path)
-
-            logger.info(f"OpenVINO IR export complete: {xml_path}")
-            return xml_path
-
-        except ImportError:
-            logger.warning("OpenVINO not installed, returning ONNX path")
+        # INT8 quantization via NNCF ONNX backend (no openvino dependency)
+        if quantize == "int8" and calibration_data is not None:
+            quantized = self._quantize_openvino_int8(onnx_path, calibration_data)
+            if quantized is not None:
+                import onnx
+                int8_path = str(Path(path).with_name(Path(path).stem + "_int8.onnx"))
+                onnx.save(quantized, int8_path)
+                logger.info(f"INT8 quantized ONNX export complete: {int8_path}")
+                return int8_path
             return onnx_path
 
-    def _quantize_openvino_int8(self, model, calibration_data: List[np.ndarray]):
-        """Apply INT8 quantization using NNCF."""
+        # FP16/FP32: produce OpenVINO IR via the C++ binding if available
         try:
-            import nncf
+            from ivit._ivit_core import convert_model
 
-            # Create calibration dataset
-            def transform_fn(data_item):
-                return np.expand_dims(data_item, 0)
-
-            calibration_dataset = nncf.Dataset(calibration_data, transform_fn)
-
-            # Quantize model
-            quantized_model = nncf.quantize(
-                model,
-                calibration_dataset,
-                preset=nncf.QuantizationPreset.MIXED,
-            )
-
-            logger.info("INT8 quantization complete")
-            return quantized_model
-
+            xml_path = str(Path(path).with_suffix('.xml'))
+            precision = "fp16" if quantize == "fp16" else "fp32"
+            logger.info(f"Converting to OpenVINO IR via C++ backend ({precision})")
+            convert_model(onnx_path, xml_path, "cpu", precision)
+            logger.info(f"OpenVINO IR export complete ({precision}): {xml_path}")
+            return xml_path
         except ImportError:
-            logger.warning("NNCF not installed, skipping INT8 quantization")
-            return model
+            logger.warning("C++ binding not available, returning ONNX path")
+            return onnx_path
+
+    def _quantize_openvino_int8(self, onnx_path: str, calibration_data: List[np.ndarray]):
+        """Apply INT8 quantization using NNCF's ONNX backend.
+
+        Args:
+            onnx_path: Path to the FP32 ONNX model.
+            calibration_data: List of preprocessed samples, each shaped (C, H, W).
+
+        Returns:
+            Quantized ONNX ModelProto, or None if nncf/onnx are unavailable.
+        """
+        try:
+            import onnx
+            import nncf
+        except ImportError:
+            logger.warning("nncf/onnx not installed, skipping INT8 quantization")
+            return None
+
+        onnx_model = onnx.load(onnx_path)
+        input_name = onnx_model.graph.input[0].name
+
+        # Each calibration sample is (C, H, W); feed as {input_name: NCHW}
+        def transform_fn(image):
+            return {input_name: np.expand_dims(image, axis=0)}
+
+        calibration_dataset = nncf.Dataset(calibration_data, transform_fn)
+
+        quantized_model = nncf.quantize(
+            onnx_model,
+            calibration_dataset,
+            preset=nncf.QuantizationPreset.MIXED,
+        )
+
+        logger.info("INT8 quantization complete")
+        return quantized_model
 
     def _export_tensorrt(
         self,

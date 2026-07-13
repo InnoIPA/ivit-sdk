@@ -67,13 +67,15 @@ def get_runtime(backend: str):
 
 
 def _create_openvino_runtime():
-    """Create OpenVINO runtime."""
-    try:
-        from .openvino_runtime import OpenVINORuntime
-        return OpenVINORuntime()
-    except ImportError as e:
-        logger.warning(f"OpenVINO not available: {e}")
-        return None
+    """The pure-Python OpenVINO runtime has been removed.
+
+    OpenVINO inference now runs through the C++ backend (``_ivit_core``).
+    """
+    logger.warning(
+        "The pure-Python OpenVINO runtime has been removed. "
+        "OpenVINO inference now uses the C++ backend (_ivit_core)."
+    )
+    return None
 
 
 def _create_tensorrt_runtime():
@@ -103,12 +105,6 @@ _create_snpe_runtime = _create_qnn_runtime
 def list_available_backends():
     """List available backends."""
     available = []
-
-    try:
-        from openvino import Core
-        available.append("openvino")
-    except ImportError:
-        pass
 
     try:
         import tensorrt

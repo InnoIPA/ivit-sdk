@@ -85,9 +85,10 @@ training-yolox-deps = [
 training-all = [
     "ivit-sdk[training-yolox-deps]",
 ]
+# INT8 quantization via NNCF's ONNX backend — does NOT require the openvino package.
 quantize = [
     "nncf>=2.7",
-    "openvino>=2024.0",
+    "onnx>=1.14",
 ]
 dev = [
     "pytest>=7.0",
@@ -101,7 +102,7 @@ dev = [
 # Combined installations
 # 注意：YOLOX 仍需另外用 `pip install --no-build-isolation 'git+https://github.com/Megvii-BaseDetection/YOLOX.git'` 安裝
 all = [
-    "ivit-sdk[openvino,tensorrt,zoo,train,training-all,quantize,dev]",
+    "ivit-sdk[tensorrt,zoo,train,training-all,quantize,dev]",
 ]
 # Alias for backward compatibility
 cuda = [

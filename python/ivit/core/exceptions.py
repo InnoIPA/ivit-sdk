@@ -148,7 +148,7 @@ class BackendNotAvailableError(IVITError):
     """Error raised when a backend is not installed or available."""
 
     BACKEND_INSTALL_HINTS = {
-        "openvino": "pip install openvino",
+        "openvino": "pip install -e .  # 建置 C++ binding（提供 OpenVINO 推論）",
         "tensorrt": "請參考 NVIDIA TensorRT 安裝指南",
         "snpe": "請參考 Qualcomm SNPE SDK 安裝指南",
     }
@@ -322,8 +322,8 @@ class ModelConversionError(IVITError):
             suggestions.append("確認已安裝 TensorRT 和 CUDA")
             suggestions.append("確認 NVIDIA GPU 可用")
         elif target_format.lower() == "openvino":
-            suggestions.append("確認已安裝 OpenVINO Development Tools")
-            suggestions.append("pip install openvino-dev")
+            suggestions.append("確認已建置 C++ binding（pip install -e .）以取得 convert_model")
+            suggestions.append("INT8 量化改用 NNCF ONNX backend：pip install -e '.[quantize]'")
 
         suggestions.append("確認來源模型格式正確")
         suggestions.append("查看轉換日誌了解詳細錯誤")
