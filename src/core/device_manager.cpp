@@ -12,8 +12,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
-#include <unistd.h>
-#include <fcntl.h>
+#include "ivit/core/platform_compat.hpp"
 
 #ifdef IVIT_HAS_OPENVINO
 #include <openvino/openvino.hpp>
@@ -329,18 +328,18 @@ void DeviceManager::discover_openvino_devices() {
     try {
         // Suppress stderr noise from Intel OpenCL compiler (IGC) during device enumeration
         fflush(stderr);
-        int saved_stderr = dup(STDERR_FILENO);
-        int devnull = open("/dev/null", O_WRONLY);
-        dup2(devnull, STDERR_FILENO);
-        close(devnull);
+        int saved_stderr = ivit_dup(IVIT_STDERR_FILENO);
+        int devnull = ivit_open(IVIT_DEVNULL, O_WRONLY);
+        ivit_dup2(devnull, IVIT_STDERR_FILENO);
+        ivit_close(devnull);
 
         ov::Core core;
         auto available = core.get_available_devices();
 
         // Restore stderr
         fflush(stderr);
-        dup2(saved_stderr, STDERR_FILENO);
-        close(saved_stderr);
+        ivit_dup2(saved_stderr, IVIT_STDERR_FILENO);
+        ivit_close(saved_stderr);
 
         for (const auto& device_name : available) {
             DeviceInfo info;
@@ -656,19 +655,19 @@ static void configure_openvino_logging([[maybe_unused]] LogLevel level) {
     // Set environment variable to control OpenVINO logging level
     switch (level) {
         case LogLevel::DEBUG:
-            setenv("OPENVINO_LOG_LEVEL", "0", 1);  // TRACE/DEBUG
+            ivit_setenv("OPENVINO_LOG_LEVEL", "0", 1);  // TRACE/DEBUG
             break;
         case LogLevel::INFO:
-            setenv("OPENVINO_LOG_LEVEL", "1", 1);  // INFO
+            ivit_setenv("OPENVINO_LOG_LEVEL", "1", 1);  // INFO
             break;
         case LogLevel::WARNING:
-            setenv("OPENVINO_LOG_LEVEL", "2", 1);  // WARNING
+            ivit_setenv("OPENVINO_LOG_LEVEL", "2", 1);  // WARNING
             break;
         case LogLevel::ERROR:
-            setenv("OPENVINO_LOG_LEVEL", "3", 1);  // ERROR
+            ivit_setenv("OPENVINO_LOG_LEVEL", "3", 1);  // ERROR
             break;
         case LogLevel::OFF:
-            setenv("OPENVINO_LOG_LEVEL", "4", 1);  // NO_LOG
+            ivit_setenv("OPENVINO_LOG_LEVEL", "4", 1);  // NO_LOG
             break;
     }
 #endif

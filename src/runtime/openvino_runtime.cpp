@@ -10,8 +10,7 @@
 #include <algorithm>
 #include <filesystem>
 #include <cstdio>
-#include <unistd.h>
-#include <fcntl.h>
+#include "ivit/core/platform_compat.hpp"
 
 namespace ivit {
 
@@ -59,18 +58,18 @@ std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
     try {
         // Suppress stderr noise from Intel OpenCL compiler (IGC) during device enumeration
         fflush(stderr);
-        int saved_stderr = dup(STDERR_FILENO);
-        int devnull = open("/dev/null", O_WRONLY);
-        dup2(devnull, STDERR_FILENO);
-        close(devnull);
+        int saved_stderr = ivit_dup(IVIT_STDERR_FILENO);
+        int devnull = ivit_open(IVIT_DEVNULL, O_WRONLY);
+        ivit_dup2(devnull, IVIT_STDERR_FILENO);
+        ivit_close(devnull);
 
         ov::Core core;
         auto available = core.get_available_devices();
 
         // Restore stderr
         fflush(stderr);
-        dup2(saved_stderr, STDERR_FILENO);
-        close(saved_stderr);
+        ivit_dup2(saved_stderr, IVIT_STDERR_FILENO);
+        ivit_close(saved_stderr);
 
         for (const auto& device_name : available) {
             DeviceInfo info;

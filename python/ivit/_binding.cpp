@@ -21,6 +21,11 @@
 
 namespace py = pybind11;
 
+#ifdef _WIN32
+// MSVC lacks the POSIX ssize_t type; use pybind11's portable equivalent.
+using ssize_t = py::ssize_t;
+#endif
+
 // ============================================================================
 // OpenCV Mat <-> NumPy conversion helpers
 // ============================================================================
