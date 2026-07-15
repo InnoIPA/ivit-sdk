@@ -39,7 +39,13 @@ class _Results:
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _get_providers(device: str):
-    import onnxruntime as ort
+    try:
+        import onnxruntime as ort
+    except ImportError as e:
+        raise ImportError(
+            "The pure-Python classifier fallback requires onnxruntime. Install it "
+            "with `pip install onnxruntime`, or build the C++ bindings."
+        ) from e
     available = ort.get_available_providers()
 
     if device.startswith("cuda") or device == "gpu":
@@ -103,7 +109,13 @@ class Classifier:
     """
 
     def __init__(self, model: str, device: str = "auto", **kwargs):
-        import onnxruntime as ort
+        try:
+            import onnxruntime as ort
+        except ImportError as e:
+            raise ImportError(
+                "The pure-Python classifier fallback requires onnxruntime. Install "
+                "it with `pip install onnxruntime`, or build the C++ bindings."
+            ) from e
 
         if device == "auto":
             device = "cpu"
