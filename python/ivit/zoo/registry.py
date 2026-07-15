@@ -610,6 +610,20 @@ def download(
         if format == "onnx":
             model_path = _export_torchvision_onnx(name, model_path, info)
 
+    # Guard against silent failure: never return a path to a file that no
+    # downloader/exporter actually produced.
+    if not Path(model_path).exists():
+        if format != "onnx":
+            raise NotImplementedError(
+                f"zoo.download does not build the '{format}' format for '{name}'. "
+                f"Download ONNX (the default) and convert it, e.g. "
+                f"`ivit convert {name}.onnx -f {format}`."
+            )
+        raise RuntimeError(
+            f"Failed to produce '{name}' (source='{info.source}'): no exporter "
+            f"handles this model. See the model's documentation for how to obtain it."
+        )
+
     return model_path
 
 
