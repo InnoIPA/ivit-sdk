@@ -22,23 +22,38 @@ Example:
 __version__ = "1.0.0"
 __author__ = "Innodisk AI Team"
 
-# Pre-load libivit.so if it exists in the package directory
+# Pre-load the native core library so the _ivit_core extension can resolve it.
 import os as _os
+import sys as _sys
 import ctypes as _ctypes
 
 _package_dir = _os.path.dirname(_os.path.abspath(__file__))
-_libivit_path = _os.path.join(_package_dir, "libivit.so")
 
-if _os.path.exists(_libivit_path):
-    try:
-        # Use RTLD_LOCAL (not RTLD_GLOBAL) to avoid polluting the global symbol
-        # table with OpenVINO / libcudart symbols, which conflict with PyTorch's
-        # own CUDA runtime and cause munmap heap-corruption in torch.jit.load.
-        # _ivit_core.so has a RUNPATH pointing to the build lib dir, so it
-        # resolves libivit.so independently without RTLD_GLOBAL.
-        _ctypes.CDLL(_libivit_path, mode=_ctypes.RTLD_LOCAL)
-    except OSError:
-        pass
+if _sys.platform == "win32":
+    # Windows: extension-module dependencies are NOT resolved via PATH on
+    # Python 3.8+. Register the directory holding ivit.dll plus every directory
+    # already on PATH (OpenVINO / OpenCV runtimes set up by setupvars) so the
+    # loader can find ivit.dll and its transitive dependencies at import time.
+    _dll_dirs = [_os.path.join(_package_dir, "bin"), _package_dir]
+    _dll_dirs += _os.environ.get("PATH", "").split(_os.pathsep)
+    for _d in _dll_dirs:
+        if _d and _os.path.isdir(_d):
+            try:
+                _os.add_dll_directory(_d)
+            except OSError:
+                pass
+else:
+    _libivit_path = _os.path.join(_package_dir, "libivit.so")
+    if _os.path.exists(_libivit_path):
+        try:
+            # Use RTLD_LOCAL (not RTLD_GLOBAL) to avoid polluting the global
+            # symbol table with OpenVINO / libcudart symbols, which conflict
+            # with PyTorch's own CUDA runtime and cause munmap heap-corruption
+            # in torch.jit.load. _ivit_core.so has a RUNPATH pointing to the
+            # build lib dir, so it resolves libivit.so without RTLD_GLOBAL.
+            _ctypes.CDLL(_libivit_path, mode=_ctypes.RTLD_LOCAL)
+        except OSError:
+            pass
 
 # C++ bindings - optional for some use cases (e.g., zoo commands)
 _CPP_AVAILABLE = False

@@ -113,7 +113,7 @@ def cmd_devices(args):
     print("-" * 60)
 
     for d in device_list:
-        status = "OK" if d.available else "N/A"
+        status = "OK" if d.is_available else "N/A"
         print(f"{d.id:<12} {d.name[:28]:<30} {d.backend:<12} {d.type:<8}")
 
     print("-" * 60)
