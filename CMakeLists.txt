@@ -19,7 +19,7 @@ set(IVIT_DEPS_DIR "${CMAKE_SOURCE_DIR}/deps" CACHE PATH "Dependencies directory"
 # ============================================================================
 # C++ Standard
 # ============================================================================
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
@@ -127,10 +127,12 @@ if(IVIT_USE_TENSORRT)
         find_path(TENSORRT_INCLUDE_DIR NvInfer.h
             HINTS ${TENSORRT_ROOT} ${CUDAToolkit_LIBRARY_DIR}/.. /usr/local/tensorrt
             PATH_SUFFIXES include)
-        find_library(TENSORRT_LIBRARY nvinfer
+        # Windows TensorRT 10.x ships version-suffixed import libs (nvinfer_10.lib);
+        # Linux uses the unversioned soname (libnvinfer.so). List both.
+        find_library(TENSORRT_LIBRARY NAMES nvinfer nvinfer_10
             HINTS ${TENSORRT_ROOT} ${CUDAToolkit_LIBRARY_DIR} /usr/local/tensorrt
             PATH_SUFFIXES lib lib64)
-        find_library(NVONNXPARSER_LIBRARY nvonnxparser
+        find_library(NVONNXPARSER_LIBRARY NAMES nvonnxparser nvonnxparser_10
             HINTS ${TENSORRT_ROOT} ${CUDAToolkit_LIBRARY_DIR} /usr/local/tensorrt
             PATH_SUFFIXES lib lib64)
 
@@ -285,6 +287,11 @@ endif()
 # Create library
 # ============================================================================
 add_library(ivit SHARED ${IVIT_SOURCES})
+
+# On Windows/MSVC the SDK sources have no __declspec(dllexport) annotations
+# (they target GCC/Linux default visibility), so no import library is produced
+# and dependents cannot link. Auto-export all symbols to generate ivit.lib.
+set_target_properties(ivit PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
 target_include_directories(ivit
     PUBLIC

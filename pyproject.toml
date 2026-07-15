@@ -119,7 +119,7 @@ Issues = "https://github.com/innodisk-mannywang/ivit-sdk/issues"
 ivit = "ivit.cli:main"
 
 [tool.scikit-build]
-cmake.minimum-version = "3.18"
+cmake.version = ">=3.18"
 cmake.build-type = "Release"
 wheel.packages = ["python/ivit"]
 wheel.install-dir = "ivit"
