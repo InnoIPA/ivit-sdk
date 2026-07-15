@@ -5,6 +5,8 @@
 
 #include "ivit/runtime/runtime.hpp"
 
+#include <mutex>
+
 #ifdef IVIT_HAS_TENSORRT
 #include "ivit/runtime/tensorrt_runtime.hpp"
 #endif
@@ -77,7 +79,14 @@ public:
     }
 };
 
-// Static instance triggers registration on library load
-static RuntimeAutoRegister g_runtime_auto_register;
+// NOTE: Registration is intentionally NOT triggered by a load-time static
+// object. Constructing the TensorRT/OpenVINO runtimes probes CUDA and creates
+// library objects; on Windows this must not happen during DLL static
+// initialization (it runs under the loader lock and deadlocks). Instead we
+// register lazily on first runtime lookup, via ensure_runtimes_registered().
+void ensure_runtimes_registered() {
+    static std::once_flag flag;
+    std::call_once(flag, []() { RuntimeAutoRegister{}; });
+}
 
 } // namespace ivit

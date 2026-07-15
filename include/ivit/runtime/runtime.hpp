@@ -160,6 +160,15 @@ private:
     std::map<BackendType, std::shared_ptr<IRuntime>> runtimes_;
 };
 
+/**
+ * @brief Lazily register all compiled-in runtimes (thread-safe, once).
+ *
+ * Registration probes CUDA/TensorRT/OpenVINO, which must NOT run during DLL
+ * static initialization on Windows (doing so under the loader lock deadlocks).
+ * This is invoked on first runtime lookup instead of at library load.
+ */
+void ensure_runtimes_registered();
+
 } // namespace ivit
 
 #endif // IVIT_RUNTIME_RUNTIME_HPP
