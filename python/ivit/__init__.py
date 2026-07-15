@@ -282,7 +282,10 @@ def load(
 
     config = LoadConfig()
     config.device = device
-    if task:
+    # LoadConfig may not expose a `task` field (the native config does not);
+    # guard so passing task=... never raises. The task is otherwise inferred
+    # from the model / handled by the task-specific wrapper classes.
+    if task and hasattr(config, "task"):
         config.task = task
     for key, value in kwargs.items():
         if hasattr(config, key):

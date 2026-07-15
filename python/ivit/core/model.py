@@ -36,7 +36,8 @@ def load_model(
     """
     config = LoadConfig()
     config.device = device
-    if task:
+    # LoadConfig may not expose a `task` field; guard so task=... never raises.
+    if task and hasattr(config, "task"):
         config.task = task
     for key, value in kwargs.items():
         if hasattr(config, key):

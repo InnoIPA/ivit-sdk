@@ -314,18 +314,19 @@ class DeviceManager:
         # Use core device selection
         try:
             from .core.device import get_best_device
-            result = get_best_device(task=task, strategy=strategy)
+            result = get_best_device(task=task or "", priority=strategy)
 
-            # Convert DeviceInfo to Device
+            # Convert DeviceInfo to Device. The native DeviceInfo does not carry
+            # vendor / is_discrete, so fall back to sensible defaults.
             return Device(
                 id=result.id,
                 name=result.name,
                 type=result.type,
                 backend=result.backend,
-                vendor=result.vendor,
+                vendor=getattr(result, "vendor", "unknown"),
                 available=result.is_available,
                 memory_total=result.memory_total,
-                is_discrete=result.is_discrete,
+                is_discrete=getattr(result, "is_discrete", False),
             )
         except Exception:
             # Fallback to simple selection
