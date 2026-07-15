@@ -39,7 +39,7 @@ def parse_args():
                         "-- ASPP + classifier head run on CPU.")
     p.add_argument("--input-hw", type=int, default=520,
                    help="Model input spatial size (square).")
-    p.add_argument("--calib-dir", default="/home/dos/coco_val2017/val2017",
+    p.add_argument("--calib-dir", default="calib_images",
                    help="COCO fits PASCAL VOC 21-class domain reasonably well.")
     p.add_argument("--calib-size", type=int, default=1024)
     p.add_argument("--hw-arch", default="hailo8",

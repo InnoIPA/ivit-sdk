@@ -13,6 +13,8 @@ docs/development/hef-classification-hybrid.md.
 """
 
 import argparse
+import os
+
 import onnx
 
 
@@ -31,7 +33,7 @@ def parse_args():
     )
     p.add_argument(
         "--onnx",
-        default="/home/dos/.cache/ivit/models/mambavision-t.onnx",
+        default=os.path.expanduser("~/.cache/ivit/models/mambavision-t.onnx"),
         help="Source mambavision ONNX (full graph).",
     )
     p.add_argument(

@@ -19,6 +19,7 @@ norm/GAP/FC) is exported separately as mambavision_t_head.onnx.
 
 import argparse
 import glob
+import os
 import sys
 
 import cv2
@@ -35,14 +36,14 @@ def parse_args():
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
     p.add_argument(
-        "--onnx", default="/home/dos/.cache/ivit/models/mambavision-t.onnx")
+        "--onnx", default=os.path.expanduser("~/.cache/ivit/models/mambavision-t.onnx"))
     p.add_argument("--hef", default="models/hailo/mambavision_t.hef")
     p.add_argument("--har", default="models/hailo/mambavision_t.har")
     p.add_argument("--model-name", default="mambavision_t")
     p.add_argument("--input-hw", type=int, default=224)
     p.add_argument(
         "--calib-dir",
-        default="/home/dos/Documents/ivit-sdk/dogs-vs-cats/test1")
+        default="calib_images")
     p.add_argument("--calib-size", type=int, default=2048)
     p.add_argument("--hw-arch", default="hailo8",
                    choices=["hailo8", "hailo8r", "hailo8l"])

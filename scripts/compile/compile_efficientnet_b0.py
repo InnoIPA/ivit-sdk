@@ -52,7 +52,7 @@ def parse_args():
     p.add_argument("--har", default="models/hailo/efficientnet_b0.har")
     p.add_argument("--model-name", default="efficientnet_b0")
     p.add_argument("--input-hw", type=int, default=224)
-    p.add_argument("--calib-dir", default="/home/dos/coco_val2017/val2017")
+    p.add_argument("--calib-dir", default="calib_images")
     p.add_argument("--calib-size", type=int, default=512)
     p.add_argument("--hw-arch", default="hailo8",
                    choices=["hailo8", "hailo8r", "hailo8l"])

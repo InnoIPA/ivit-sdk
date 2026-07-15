@@ -27,7 +27,7 @@ def parse_args():
                    help="Model name inside the HAR.")
     p.add_argument("--input-hw", type=int, default=224,
                    help="Model input spatial size (square).")
-    p.add_argument("--calib-dir", default="/home/dos/coco_val2017/val2017",
+    p.add_argument("--calib-dir", default="calib_images",
                    help="Directory of calibration JPGs.")
     p.add_argument("--calib-size", type=int, default=512,
                    help="Number of calibration images to use.")
