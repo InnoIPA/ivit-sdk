@@ -99,7 +99,7 @@ def cmd_devices(args):
                 "name": d.name,
                 "type": d.type,
                 "backend": d.backend,
-                "available": d.available,
+                "available": d.is_available,
             }
             for d in device_list
         ]
@@ -158,7 +158,7 @@ def cmd_benchmark(args):
     print()
 
     # Get input shape
-    input_shape = model.input_info[0]["shape"]
+    input_shape = model.input_info[0].shape
     print(f"Input shape: {input_shape}")
     print()
 
@@ -239,14 +239,18 @@ def cmd_predict(args):
 
     if is_video or is_camera:
         # Stream inference
-        src = int(source) if is_camera else source
+        from ivit.core import InferConfig
+        cfg = InferConfig()
+        cfg.conf_threshold = conf
+        cfg.iou_threshold = iou
         print(f"Streaming inference...")
         print("-" * 40)
 
         frame_count = 0
-        for results in model.stream(src, conf=conf, iou=iou, show=show, save=save):
+        for stream_result in model.stream(str(source), cfg):
             frame_count += 1
-            print(f"Frame {frame_count}: {len(results)} detections, {results.inference_time_ms:.1f}ms")
+            res = stream_result.results
+            print(f"Frame {frame_count}: {len(res.detections)} detections, {res.inference_time_ms:.1f}ms")
 
         print("-" * 40)
         print(f"Total frames: {frame_count}")
@@ -267,14 +271,21 @@ def cmd_predict(args):
         for i, det in enumerate(results.detections):
             print(f"  [{i}] {det.label}: {det.confidence:.2%} @ [{det.bbox.x1:.0f}, {det.bbox.y1:.0f}, {det.bbox.x2:.0f}, {det.bbox.y2:.0f}]")
 
-        if save:
-            output_path = source_path.stem + "_result" + source_path.suffix
-            results.save(output_path)
-            print()
-            print(f"Saved to: {output_path}")
+        if save or show:
+            import cv2
+            image = cv2.imread(str(source))
+            vis = results.visualize(image) if image is not None else None
 
-        if show:
-            results.show()
+            if save and vis is not None:
+                output_path = source_path.stem + "_result" + source_path.suffix
+                cv2.imwrite(output_path, vis)
+                print()
+                print(f"Saved to: {output_path}")
+
+            if show and vis is not None:
+                cv2.imshow("iVIT-SDK", vis)
+                cv2.waitKey(0)
+                cv2.destroyAllWindows()
 
     print()
 
@@ -799,7 +810,7 @@ def cmd_serve(args):
                     "model": model.name,
                     "device": model.device,
                     "task": str(model.task),
-                    "input_shape": model.input_info[0]["shape"] if model.input_info else [],
+                    "input_shape": model.input_info[0].shape if model.input_info else [],
                 }
                 self.wfile.write(json.dumps(info).encode())
             else:
@@ -835,7 +846,10 @@ def cmd_serve(args):
 
                     # Run inference
                     conf = float(self.headers.get('X-Conf-Threshold', 0.5))
-                    results = model.predict(image, conf=conf)
+                    from ivit.core import InferConfig
+                    _cfg = InferConfig()
+                    _cfg.conf_threshold = conf
+                    results = model.predict(image, _cfg)
 
                     # Format response
                     response = {
