@@ -19,6 +19,7 @@ Usage:
 
 import argparse
 import json
+import os
 import sys
 
 import numpy as np
@@ -208,11 +209,13 @@ def main():
         default=None,
         help="Path to model file (.onnx, .xml, .engine). If not provided, uses Model Zoo."
     )
+    default_image = os.path.normpath(os.path.join(
+        os.path.dirname(__file__), "..", "..", "data", "images", "bus.jpg"))
     parser.add_argument(
         "--image",
         type=str,
-        default="test_images/bus.jpg",
-        help="Path to input image (default: test_images/bus.jpg)"
+        default=default_image,
+        help="Path to input image (default: bundled examples/data/images/bus.jpg)"
     )
     args = parser.parse_args()
 
