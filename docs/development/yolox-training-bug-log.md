@@ -70,7 +70,7 @@ ckpt_path = self.pretrained_weights or self._auto_pretrained()
 接續 Bug #1 修完後，重新訓練 100 epoch 仍然 AP 0.01。檢查 train log 開頭：
 
 ```
-ckpt='/home/dos/.cache/ivit/pretrained/yolox-nano_coco.pth'
+ckpt='~/.cache/ivit/pretrained/yolox-nano_coco.pth'
 INFO     | yolox.core.trainer:resume_train:338 - loading checkpoint for fine tuning
 WARNING  | yolox.utils.checkpoint:load_ckpt:16 -
   backbone.backbone.dark2.0.conv.weight is not in the ckpt

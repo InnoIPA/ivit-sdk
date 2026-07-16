@@ -19,7 +19,9 @@ norm/GAP/FC) is exported separately as mambavision_t_head.onnx.
 
 import argparse
 import glob
+import os
 import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -29,20 +31,26 @@ from hailo_sdk_client import ClientRunner
 # Last conv before levels.2 starts the SSM/transformer pipeline.
 BACKBONE_END_NODE = "/m/model/levels.1/downsample/reduction/reduction.0/Conv"
 
+# Model cache follows the SDK convention: $IVIT_CACHE_DIR, else
+# ~/.cache/ivit/models (see python/ivit/zoo/registry.py:_get_cache_dir).
+CACHE_DIR = Path(os.environ.get(
+    "IVIT_CACHE_DIR", str(Path.home() / ".cache" / "ivit" / "models")))
+DEFAULT_ONNX = str(CACHE_DIR / "mambavision-t.onnx")
+
 
 def parse_args():
     p = argparse.ArgumentParser(
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
     )
-    p.add_argument(
-        "--onnx", default="/home/dos/.cache/ivit/models/mambavision-t.onnx")
+    p.add_argument("--onnx", default=DEFAULT_ONNX)
     p.add_argument("--hef", default="models/hailo/mambavision_t.hef")
     p.add_argument("--har", default="models/hailo/mambavision_t.har")
     p.add_argument("--model-name", default="mambavision_t")
     p.add_argument("--input-hw", type=int, default=224)
     p.add_argument(
         "--calib-dir",
-        default="/home/dos/Documents/ivit-sdk/dogs-vs-cats/test1")
+        default="dogs-vs-cats/test1",
+        help="Calibration image dir, relative to CWD (run from repo root).")
     p.add_argument("--calib-size", type=int, default=2048)
     p.add_argument("--hw-arch", default="hailo8",
                    choices=["hailo8", "hailo8r", "hailo8l"])

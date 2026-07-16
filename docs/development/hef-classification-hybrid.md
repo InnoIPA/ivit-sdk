@@ -45,7 +45,7 @@ Mamba **selective scan (S6) + Einsum** Hailo Dataflow Compiler 不支援，trans
 ```bash
 conda run -n forhailo --no-capture-output \
   python compile_resnet50.py \
-  --calib-dir /home/dos/Documents/ivit-sdk/dogs-vs-cats/test1 \
+  --calib-dir dogs-vs-cats/test1 \
   --calib-size 2048
 ```
 
@@ -56,7 +56,7 @@ conda run -n forhailo --no-capture-output \
 ```bash
 conda run -n forhailo --no-capture-output \
   python examples/python/02_classification.py \
-  -m /home/dos/Documents/ivit-sdk/resnet50.hef \
+  -m resnet50.hef \
   -i examples/data/images/bus.jpg \
   -d hailo:0
 ```
@@ -72,7 +72,7 @@ conda run -n forhailo --no-capture-output \
 ```bash
 CUDA_VISIBLE_DEVICES=0 conda run -n forhailo --no-capture-output \
   python compile_efficientnet_b0.py \
-  --calib-dir /home/dos/Documents/ivit-sdk/dogs-vs-cats/test1 \
+  --calib-dir dogs-vs-cats/test1 \
   --calib-size 2048 \
   --gap-fix
 ```
@@ -95,8 +95,8 @@ QAT 是真正救 collapse 的 step（Bug #14 詳述）。
 ### Labels 配對
 
 ```bash
-cp /home/dos/.cache/ivit/models/efficientnet-b0.txt \
-   /home/dos/Documents/ivit-sdk/efficientnet_b0.txt
+cp ~/.cache/ivit/models/efficientnet-b0.txt \
+   efficientnet_b0.txt
 ```
 
 `Classifier` 自動偵測同名 `.txt`（連字號 vs 底線無所謂，依 HEF stem name）。
@@ -106,7 +106,7 @@ cp /home/dos/.cache/ivit/models/efficientnet-b0.txt \
 ```bash
 conda run -n forhailo --no-capture-output \
   python examples/python/02_classification.py \
-  -m /home/dos/Documents/ivit-sdk/efficientnet_b0.hef \
+  -m efficientnet_b0.hef \
   -i examples/data/images/bus.jpg \
   -d hailo:0
 ```
@@ -146,8 +146,8 @@ Script 預設：
 ```bash
 conda run -n forhailo --no-capture-output \
   python extract_mambavision_head.py \
-  --onnx /home/dos/.cache/ivit/models/mambavision-t.onnx \
-  --out  /home/dos/Documents/ivit-sdk/mambavision_t_head.onnx
+  --onnx ~/.cache/ivit/models/mambavision-t.onnx \
+  --out  mambavision_t_head.onnx
 ```
 
 Script (`extract_mambavision_head.py`) 內部用 `onnx.utils.extract_model` 切 subgraph，input tensor 接 Hailo HEF 的輸出邊界（`/m/model/levels.1/downsample/reduction/reduction.0/Conv_output_0`），output tensor 是原 model 的 `logits`。
@@ -157,8 +157,8 @@ Head subgraph：8017 nodes（整個 SSM + Transformer + classifier），input `[
 #### Step 3: Labels（跟 efficientnet 同款）
 
 ```bash
-cp /home/dos/.cache/ivit/models/mambavision-t.txt \
-   /home/dos/Documents/ivit-sdk/mambavision_t.txt
+cp ~/.cache/ivit/models/mambavision-t.txt \
+   mambavision_t.txt
 ```
 
 ### 部署 artifact 配對
@@ -174,7 +174,7 @@ mambavision_t.txt           ImageNet 1000 labels (auto-loaded)
 ```bash
 conda run -n forhailo --no-capture-output \
   python examples/python/02_classification.py \
-  -m /home/dos/Documents/ivit-sdk/mambavision_t.hef \
+  -m mambavision_t.hef \
   -i examples/data/images/bus.jpg \
   -d hailo:0
 ```

@@ -9,11 +9,19 @@ RGB [0,1] and the chip handles mean/std internally.
 
 import argparse
 import glob
+import os
 import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
 from hailo_sdk_client import ClientRunner
+
+
+# Calibration set defaults to $IVIT_CALIB_DIR, else ~/coco_val2017/val2017.
+# Override per machine with the env var or --calib-dir instead of hardcoding.
+DEFAULT_CALIB_DIR = os.environ.get(
+    "IVIT_CALIB_DIR", str(Path.home() / "coco_val2017" / "val2017"))
 
 
 def parse_args():
@@ -39,7 +47,7 @@ def parse_args():
                         "-- ASPP + classifier head run on CPU.")
     p.add_argument("--input-hw", type=int, default=520,
                    help="Model input spatial size (square).")
-    p.add_argument("--calib-dir", default="/home/dos/coco_val2017/val2017",
+    p.add_argument("--calib-dir", default=DEFAULT_CALIB_DIR,
                    help="COCO fits PASCAL VOC 21-class domain reasonably well.")
     p.add_argument("--calib-size", type=int, default=1024)
     p.add_argument("--hw-arch", default="hailo8",

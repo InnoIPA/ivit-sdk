@@ -24,11 +24,19 @@ GAPs usually fit within the shift delta budget without reduction.
 
 import argparse
 import glob
+import os
 import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
 from hailo_sdk_client import ClientRunner
+
+
+# Calibration set defaults to $IVIT_CALIB_DIR, else ~/coco_val2017/val2017.
+# Override per machine with the env var or --calib-dir instead of hardcoding.
+DEFAULT_CALIB_DIR = os.environ.get(
+    "IVIT_CALIB_DIR", str(Path.home() / "coco_val2017" / "val2017"))
 
 
 # (avgpool layer indices, spatial size, division_factors).
@@ -52,7 +60,7 @@ def parse_args():
     p.add_argument("--har", default="models/hailo/efficientnet_b0.har")
     p.add_argument("--model-name", default="efficientnet_b0")
     p.add_argument("--input-hw", type=int, default=224)
-    p.add_argument("--calib-dir", default="/home/dos/coco_val2017/val2017")
+    p.add_argument("--calib-dir", default=DEFAULT_CALIB_DIR)
     p.add_argument("--calib-size", type=int, default=512)
     p.add_argument("--hw-arch", default="hailo8",
                    choices=["hailo8", "hailo8r", "hailo8l"])

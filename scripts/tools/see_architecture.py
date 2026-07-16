@@ -1,5 +1,6 @@
- import onnx                                                                                        
-  m = onnx.load('/home/dos/.cache/ivit/models/efficientnet-b0.onnx')                                 
+ import onnx
+  import os
+  m = onnx.load(os.path.expanduser(os.environ.get('IVIT_CACHE_DIR', '~/.cache/ivit/models') + '/efficientnet-b0.onnx'))
   nodes = m.graph.node                                                                               
   print(f'total nodes: {len(nodes)}')                                                                
   from collections import Counter                                                                    

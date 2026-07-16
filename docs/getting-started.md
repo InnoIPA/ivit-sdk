@@ -737,7 +737,7 @@ ivit.convert_model("yolox-s.onnx", "yolox-s.xml", "cpu", "fp16")
 pip install hailo_dataflow_compiler-*.whl
 ```
 
-> 校準資料集預設指向 `/home/dos/coco_val2017/val2017`，請依實際路徑用 `--calib-dir` 覆寫。
+> 校準資料集預設指向 `$IVIT_CALIB_DIR`，未設定時退回 `~/coco_val2017/val2017`。請用環境變數或 `--calib-dir` 依實際路徑覆寫。
 
 ### 執行位置
 

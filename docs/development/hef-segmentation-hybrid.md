@@ -270,7 +270,7 @@ for (int c = 0; c < C; c++) {
 ```bash
 conda run -n forhailo --no-capture-output \
   python examples/python/02_segmentation.py \
-  -m /home/dos/Documents/ivit-sdk/deeplabv3_mbv3.hef \
+  -m deeplabv3_mbv3.hef \
   -i examples/data/images/bus.jpg \
   -d hailo:0
 ```

@@ -13,7 +13,17 @@ docs/development/hef-classification-hybrid.md.
 """
 
 import argparse
+import os
+from pathlib import Path
+
 import onnx
+
+
+# Model cache follows the SDK convention: $IVIT_CACHE_DIR, else
+# ~/.cache/ivit/models (see python/ivit/zoo/registry.py:_get_cache_dir).
+CACHE_DIR = Path(os.environ.get(
+    "IVIT_CACHE_DIR", str(Path.home() / ".cache" / "ivit" / "models")))
+DEFAULT_ONNX = str(CACHE_DIR / "mambavision-t.onnx")
 
 
 # Output tensor name of the last pure-conv op before the SSM pipeline.
@@ -31,7 +41,7 @@ def parse_args():
     )
     p.add_argument(
         "--onnx",
-        default="/home/dos/.cache/ivit/models/mambavision-t.onnx",
+        default=DEFAULT_ONNX,
         help="Source mambavision ONNX (full graph).",
     )
     p.add_argument(
