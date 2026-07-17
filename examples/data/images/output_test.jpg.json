@@ -1,0 +1,11 @@
+{
+  "inference_time_ms": 17.703,
+  "device_used": "cpu",
+  "image_size": [1080, 810],
+  "detections": [
+    {"class_id": 5, "label": "bus", "confidence": 0.876588, "bbox": {"x1": 30.8306, "y1": 230.099, "x2": 800.204, "y2": 746.355}},
+    {"class_id": 0, "label": "person", "confidence": 0.869113, "bbox": {"x1": 49.3818, "y1": 395.441, "x2": 212.2, "y2": 899.682}},
+    {"class_id": 0, "label": "person", "confidence": 0.780396, "bbox": {"x1": 680.703, "y1": 451.819, "x2": 810, "y2": 874.383}},
+    {"class_id": 0, "label": "person", "confidence": 0.772819, "bbox": {"x1": 212.697, "y1": 402.26, "x2": 352.754, "y2": 860.73}}
+  ]
+}

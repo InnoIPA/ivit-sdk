@@ -174,6 +174,7 @@ PYBIND11_MODULE(_ivit_core, m) {
     py::class_<ivit::LoadConfig>(m, "LoadConfig", "Model loading configuration")
         .def(py::init<>())
         .def_readwrite("device", &ivit::LoadConfig::device, "Target device (e.g., 'cpu', 'cuda:0')")
+        .def_readwrite("task", &ivit::LoadConfig::task, "Task hint: 'classification', 'detection', 'segmentation'")
         .def_readwrite("precision", &ivit::LoadConfig::precision, "Model precision")
         .def_readwrite("batch_size", &ivit::LoadConfig::batch_size, "Batch size")
         .def_readwrite("cache_dir", &ivit::LoadConfig::cache_dir, "Cache directory")

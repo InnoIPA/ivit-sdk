@@ -13,7 +13,6 @@
 #include <chrono>
 #include <filesystem>
 #include <iomanip>
-#include <unistd.h>
 #include <opencv2/opencv.hpp>
 
 #include "ivit/ivit.hpp"

@@ -15,12 +15,21 @@
 #include <iostream>
 #include <unordered_map>
 #include <algorithm>
+#include <cmath>
 
 namespace ivit {
 
 // ============================================================================
 // InferenceModel - Concrete model implementation using runtime backends
 // ============================================================================
+
+// Letterbox bookkeeping needed to map YOLOX grid-relative box coordinates
+// back to original image pixels.
+struct PreprocessInfo {
+    float scale = 1.0f;
+    int pad_w = 0;
+    int pad_h = 0;
+};
 
 class InferenceModel : public Model {
 public:
@@ -39,6 +48,14 @@ public:
     {
         input_info_ = runtime_->get_input_info(handle_);
         output_info_ = runtime_->get_output_info(handle_);
+
+        // YOLOX uses a different preprocessing convention (BGR, [0,255],
+        // letterbox) and output encoding (grid-relative, exp-scaled) than
+        // the generic normalized-[0,1] assumption below; detect it from the
+        // model name the same way vision::Detector does.
+        std::string name_lower = name_;
+        std::transform(name_lower.begin(), name_lower.end(), name_lower.begin(), ::tolower);
+        model_type_ = (name_lower.find("yolox") != std::string::npos) ? "yolox" : "";
     }
 
     ~InferenceModel() override {
@@ -85,13 +102,14 @@ public:
         auto start = std::chrono::high_resolution_clock::now();
 
         // Preprocess image
-        auto inputs = preprocess(image);
+        PreprocessInfo pp;
+        auto inputs = preprocess(image, pp);
 
         // Run inference
         auto outputs = runtime_->infer(handle_, inputs);
 
         // Postprocess results
-        postprocess(outputs, image.size(), config, results);
+        postprocess(outputs, image.size(), config, pp, results);
 
         auto end = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -131,8 +149,13 @@ public:
 
             // Batch preprocess: preprocess each image and concatenate
             std::vector<std::map<std::string, Tensor>> all_inputs;
+            std::vector<PreprocessInfo> all_pp;
+            all_inputs.reserve(images.size());
+            all_pp.reserve(images.size());
             for (const auto& img : images) {
-                all_inputs.push_back(preprocess(img));
+                PreprocessInfo pp;
+                all_inputs.push_back(preprocess(img, pp));
+                all_pp.push_back(pp);
             }
 
             // Merge tensors into batch
@@ -186,7 +209,7 @@ public:
                     sample_outputs[name] = std::move(sample_tensor);
                 }
 
-                postprocess(sample_outputs, orig_sizes[i], config, results);
+                postprocess(sample_outputs, orig_sizes[i], config, all_pp[i], results);
                 results.inference_time_ms = avg_time;
                 results_list.push_back(std::move(results));
             }
@@ -225,7 +248,7 @@ public:
     }
 
 private:
-    std::map<std::string, Tensor> preprocess(const cv::Mat& image) {
+    std::map<std::string, Tensor> preprocess(const cv::Mat& image, PreprocessInfo& pp) {
         if (input_info_.empty()) {
             throw InferenceError("Model has no inputs");
         }
@@ -244,18 +267,47 @@ private:
         if (width  <= 0) width  = 224;
         if (channels <= 0) channels = 3;
 
-        // Resize image
-        cv::Mat resized;
-        cv::Size target_size(width, height);
-        cv::resize(image, resized, target_size);
-
-        // Convert to float and normalize
+        bool is_yolox = (model_type_ == "yolox");
         cv::Mat float_img;
-        resized.convertTo(float_img, CV_32F, 1.0 / 255.0);
 
-        // Convert BGR to RGB if needed
-        if (channels == 3 && float_img.channels() == 3) {
-            cv::cvtColor(float_img, float_img, cv::COLOR_BGR2RGB);
+        if (is_yolox) {
+            // Letterbox resize (preserve aspect ratio, pad with gray 114)
+            int orig_w = image.cols;
+            int orig_h = image.rows;
+            pp.scale = std::min(
+                static_cast<float>(width) / orig_w,
+                static_cast<float>(height) / orig_h
+            );
+            int new_w = static_cast<int>(orig_w * pp.scale);
+            int new_h = static_cast<int>(orig_h * pp.scale);
+            pp.pad_w = (width - new_w) / 2;
+            pp.pad_h = (height - new_h) / 2;
+
+            cv::Mat resized;
+            cv::resize(image, resized, cv::Size(new_w, new_h));
+
+            cv::Mat letterbox(height, width, CV_8UC3, cv::Scalar(114, 114, 114));
+            resized.copyTo(letterbox(cv::Rect(pp.pad_w, pp.pad_h, new_w, new_h)));
+
+            // YOLOX expects BGR, [0, 255] — no color conversion, no normalize
+            letterbox.convertTo(float_img, CV_32F);
+        } else {
+            pp.scale = 1.0f;
+            pp.pad_w = 0;
+            pp.pad_h = 0;
+
+            // Resize image
+            cv::Mat resized;
+            cv::Size target_size(width, height);
+            cv::resize(image, resized, target_size);
+
+            // Convert to float and normalize
+            resized.convertTo(float_img, CV_32F, 1.0 / 255.0);
+
+            // Convert BGR to RGB if needed
+            if (channels == 3 && float_img.channels() == 3) {
+                cv::cvtColor(float_img, float_img, cv::COLOR_BGR2RGB);
+            }
         }
 
         // Create tensor
@@ -286,6 +338,7 @@ private:
         const std::map<std::string, Tensor>& outputs,
         cv::Size image_size,
         const InferConfig& config,
+        const PreprocessInfo& pp,
         Results& results
     ) {
         // Route to appropriate postprocessor based on task type
@@ -294,7 +347,7 @@ private:
                 postprocess_classification(outputs, config, results);
                 break;
             case TaskType::Detection:
-                postprocess_detection(outputs, image_size, config, results);
+                postprocess_detection(outputs, image_size, config, pp, results);
                 break;
             case TaskType::Segmentation:
                 postprocess_segmentation(outputs, image_size, config, results);
@@ -361,6 +414,7 @@ private:
         const std::map<std::string, Tensor>& outputs,
         cv::Size image_size,
         const InferConfig& config,
+        const PreprocessInfo& pp,
         Results& results
     ) {
         if (outputs.empty()) return;
@@ -378,12 +432,63 @@ private:
         int num_predictions = (shape.size() > 1) ? shape[1] : shape[0];
         int prediction_size = (shape.size() > 2) ? shape[2] : 6;  // x,y,w,h,conf,class
 
+        bool is_yolox = (model_type_ == "yolox");
+
+        // YOLOX grid decode table: strides [8, 16, 32], grid sizes derived
+        // from the actual model input resolution (not hardcoded to 640).
+        struct StrideLevel { int grid_w; int offset; int stride; };
+        std::vector<StrideLevel> stride_levels;
+        if (is_yolox) {
+            int in_h = 416, in_w = 416;
+            if (!input_info_.empty()) {
+                const auto& in_shape = input_info_[0].shape;
+                in_h = static_cast<int>(in_shape.size() > 2 ? in_shape[2] : in_h);
+                in_w = static_cast<int>(in_shape.size() > 3 ? in_shape[3] : in_w);
+            }
+            static const int strides[] = {8, 16, 32};
+            int cumulative = 0;
+            for (int s : strides) {
+                int gw = in_w / s;
+                int gh = in_h / s;
+                stride_levels.push_back({gw, cumulative, s});
+                cumulative += gh * gw;
+            }
+        }
+
         std::vector<Detection> detections;
 
         for (int i = 0; i < num_predictions; i++) {
             const float* pred = data + i * prediction_size;
 
+            float cx = pred[0];
+            float cy = pred[1];
+            float w  = pred[2];
+            float h  = pred[3];
             float confidence = pred[4];
+
+            // YOLOX: decode grid-relative predictions to pixel coordinates
+            if (is_yolox) {
+                int stride = stride_levels.back().stride;
+                int grid_w = stride_levels.back().grid_w;
+                int local_idx = i;
+                for (size_t s = 0; s < stride_levels.size(); s++) {
+                    int next_offset = (s + 1 < stride_levels.size())
+                        ? stride_levels[s + 1].offset : num_predictions;
+                    if (i < next_offset) {
+                        stride = stride_levels[s].stride;
+                        grid_w = stride_levels[s].grid_w;
+                        local_idx = i - stride_levels[s].offset;
+                        break;
+                    }
+                }
+                int gx = local_idx % grid_w;
+                int gy = local_idx / grid_w;
+                cx = (cx + gx) * stride;
+                cy = (cy + gy) * stride;
+                w = std::exp(w) * stride;
+                h = std::exp(h) * stride;
+            }
+
             if (confidence < config.conf_threshold) continue;
 
             // Find best class
@@ -411,16 +516,29 @@ private:
                 if (!found) continue;
             }
 
-            // Convert from center format to corner format
-            float cx = pred[0] * image_size.width;
-            float cy = pred[1] * image_size.height;
-            float w = pred[2] * image_size.width;
-            float h = pred[3] * image_size.height;
+            float x1, y1, x2, y2;
+            if (is_yolox) {
+                // Remove letterbox padding and undo the preprocessing scale
+                x1 = (cx - w / 2 - pp.pad_w) / pp.scale;
+                y1 = (cy - h / 2 - pp.pad_h) / pp.scale;
+                x2 = (cx + w / 2 - pp.pad_w) / pp.scale;
+                y2 = (cy + h / 2 - pp.pad_h) / pp.scale;
+            } else {
+                // Normalized [0,1] xywh (generic assumption)
+                float ncx = cx * image_size.width;
+                float ncy = cy * image_size.height;
+                float nw  = w  * image_size.width;
+                float nh  = h  * image_size.height;
+                x1 = ncx - nw / 2;
+                y1 = ncy - nh / 2;
+                x2 = ncx + nw / 2;
+                y2 = ncy + nh / 2;
+            }
 
-            float x1 = cx - w / 2;
-            float y1 = cy - h / 2;
-            float x2 = cx + w / 2;
-            float y2 = cy + h / 2;
+            x1 = std::max(0.0f, std::min(x1, static_cast<float>(image_size.width)));
+            y1 = std::max(0.0f, std::min(y1, static_cast<float>(image_size.height)));
+            x2 = std::max(0.0f, std::min(x2, static_cast<float>(image_size.width)));
+            y2 = std::max(0.0f, std::min(y2, static_cast<float>(image_size.height)));
 
             Detection det;
             det.bbox = BBox(x1, y1, x2, y2);
@@ -556,6 +674,7 @@ private:
     std::vector<TensorInfo> input_info_;
     std::vector<TensorInfo> output_info_;
     std::vector<std::string> labels_;
+    std::string model_type_;
 };
 
 // ============================================================================
