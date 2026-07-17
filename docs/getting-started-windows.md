@@ -61,7 +61,7 @@ iVIT-SDK (Innodisk Vision Intelligence Toolkit) 是一個統一的電腦視覺�
 | Visual Studio 2026 Build Tools          | C++ 編譯器 (MSVC 19.4+)                   | 官網安裝程式       |
 | CMake 3.18+                             | 建置系統                                  | winget / 官網      |
 | Ninja                                   | Ninja 建置工具                            | winget / 官網      |
-| OpenCV 4.5+                             | OpenCV（含 dnn 模組）                     | 官網預編譯版       |
+| OpenCV 4.5+（需 vc18）                  | OpenCV（含 dnn 模組）                     | 從原始碼編譯，見 Step 4 |
 | Intel OpenVINO Toolkit 2026.2.1         | OpenVINO C++ Runtime                     | Intel 官網安裝程式 |
 | Intel GPU Driver（選用）                | Intel iGPU OpenCL Runtime                | Intel 官網         |
 | CUDA Toolkit + TensorRT（選用）         | NVIDIA GPU 推論                           | NVIDIA 官網        |
@@ -102,7 +102,7 @@ cmake --version
 ninja --version
 ```
 
-### Step 3：安裝 OpenCV
+### Step 4：安裝 OpenCV
 
 > **重要**：[OpenCV 官網](https://opencv.org/releases/) 提供的 Windows 預編譯安裝程式（`opencv-4.x.x-windows.exe`）目前只內附到 **vc16**（VS2019 工具集）的二進位檔，**不含 VS2026（vc18）工具集**。用 Visual Studio 2026 編譯 iVIT-SDK 時，MSVC 版本必須與連結的 OpenCV 二進位一致，因此**不能直接用預編譯版**，需自行從原始碼編譯出 vc18 版本。
 
@@ -149,7 +149,7 @@ $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
 
 > 安裝後需重新開啟 PowerShell 使環境變數生效。
 
-### Step 4：安裝 Intel OpenVINO Toolkit
+### Step 5：安裝 Intel OpenVINO Toolkit
 
 從 [Intel OpenVINO 下載頁面](https://www.intel.com/content/www/us/en/developer/tools/openvino-toolkit/download.html) 下載 Windows 封存版（Archive，ZIP，**2026.2.1**）並解壓至目標目錄，例如 `C:\Users\<使用者名稱>\Documents\openvino_2026\`。
 
@@ -205,7 +205,7 @@ notepad $PROFILE
 >
 > **NPU 支援**：Intel Core Ultra NPU 需安裝對應的 [NPU Driver](https://www.intel.com/content/www/us/en/download/794734/intel-npu-driver-windows.html)。
 
-### Step 5：（選用）安裝 CUDA Toolkit + TensorRT（NVIDIA GPU）
+### Step 6：（選用）安裝 CUDA Toolkit + TensorRT（NVIDIA GPU）
 
 #### 安裝 CUDA Toolkit
 
@@ -234,7 +234,7 @@ $currentPath = [Environment]::GetEnvironmentVariable("PATH", "Machine")
 
 > 安裝後需重新開啟 PowerShell 使環境變數生效。
 
-### Step 6：安裝 Python 與 pybind11
+### Step 7：安裝 Python 與 pybind11
 
 從 [python.org](https://www.python.org/downloads/) 下載並安裝 Python 3.9–3.11（建議 **勾選「Add Python to PATH」**）。
 
@@ -256,12 +256,12 @@ pip install pybind11
 # 確認 CMake 版本
 cmake --version
 
-# 確認 OpenVINO 環境與版本（需先執行 setupvars.bat/ps1）
+# 確認已執行 setupvars.ps1、OpenVINO 環境變數確實有值（不是空字串）
 $env:INTEL_OPENVINO_DIR
 
-確認cmake 找得到C++ SDK
-cmake .. -G "Visual Studio 18 2026" -A x64 -DOpenVINO_DIR="C:\Users\AIPC-D160\Documents\openvino_2026\runtime\cmake" -DCMAKE_BUILD_TYPE=Release
-
+# （選用，在任一 CMake 專案的 build 目錄下執行）確認 CMake 找得到 C++ SDK：
+# cmake .. -G "Visual Studio 18 2026" -A x64 -DOpenVINO_DIR="C:\Users\<使用者名稱>\Documents\openvino_2026\runtime\cmake" -DCMAKE_BUILD_TYPE=Release
+# 完整指令（含 OpenCV_DIR）請見下方「編譯 SDK」章節
 
 # （選用）確認 CUDA
 nvcc --version
@@ -290,7 +290,7 @@ cd ivit-sdk
 
 ### 初始化 OpenVINO 環境
 
-每次開啟新 PowerShell 都需執行（路徑依實際安裝位置調整；務必用 `&` 呼叫 `.ps1`，`cmd /c` 呼叫 `.bat` 不會把環境變數留在目前 session，詳見 [環境安裝](#環境安裝) Step 4 說明）：
+每次開啟新 PowerShell 都需執行（路徑依實際安裝位置調整；務必用 `&` 呼叫 `.ps1`，`cmd /c` 呼叫 `.bat` 不會把環境變數留在目前 session，詳見 [環境安裝](#環境安裝) Step 5 說明）：
 
 ```powershell
 & "C:\Users\<使用者名稱>\Documents\openvino_2026\setupvars.ps1"
@@ -368,7 +368,10 @@ cd ..
 python -m build `
     -C cmake.define.OpenCV_DIR="C:\Users\<你的帳號>\Documents\opencv\build_vc18\install" `
     -C cmake.define.OpenVINO_DIR="C:\Users\<你的帳號>\Documents\openvino_2026\runtime\cmake"
-pip install dist\ivit_sdk-1.0.0-cp311-cp311-win_amd64.whl
+
+# 檔名依你實際的 Python 版本而定（例如 Python 3.10 產出的是 cp310-cp310，3.11 是 cp311-cp311）
+# 用 dir dist\ 看實際檔名，或直接用萬用字元安裝：
+pip install (Get-ChildItem dist\*.whl | Select-Object -First 1).FullName
 ```
 
 ### 安裝 Python 套件
@@ -462,7 +465,7 @@ dir build\bin\Release\      # simple_inference.exe、detection_demo.exe、...
 以下以本文件驗證平台的實際路徑為例，請改成你自己的位置：
 
 ```powershell
-# 1. OpenVINO 環境（自動把 runtime bin 加入 PATH；務必用 & 呼叫 .ps1，見 Step 4 說明）
+# 1. OpenVINO 環境（自動把 runtime bin 加入 PATH；務必用 & 呼叫 .ps1，見 Step 5 說明）
 & "C:\Users\<你的帳號>\Documents\openvino_2026\setupvars.ps1"
 
 # 2. OpenCV DLL 目錄
@@ -495,14 +498,26 @@ python -c "import ivit; print('cpp:', ivit.is_cpp_available())"
 ---
 
 ## 快速開始
-快速驗證指令
-先下載model
-ivit zoo download yolox-nano
+
+### 快速驗證指令
+
+編譯與安裝完成後，用下面這組指令快速確認整條路徑（OpenVINO + OpenCV + ivit）都通：
 
 ```powershell
-$env:PATH = "C:\Users\AIPC-D160\Documents\opencv\build_vc18\install\x64\vc18\bin;C:\Users\AIPC-D160\Documents\ivit-sdk\venv\Lib\site-packages\ivit\bin;$env:PATH"
-ivit predict "$env:USERPROFILE\.cache\ivit\models\yolox-nano.onnx" "C:\Users\AIPC-D160\Documents\ivit-sdk\examples\data\images\bus.jpg" --device cpu --conf 0.3
+# 1. 初始化 OpenVINO 環境（缺這步會導致載入 openvino.dll 失敗，見 Step 5 說明）
+& "C:\Users\<使用者名稱>\Documents\openvino_2026\setupvars.ps1"
+
+# 2. 補上 OpenCV / ivit.dll 的 DLL 搜尋路徑（editable 安裝才需要第二個路徑）
+$env:PATH = "C:\Users\<使用者名稱>\Documents\opencv\build_vc18\install\x64\vc18\bin;C:\Users\<使用者名稱>\Documents\ivit-sdk\venv\Lib\site-packages\ivit\bin;$env:PATH"
+
+# 3. 下載一個小模型（若已下載過會直接跳過）
+ivit zoo download yolox-nano
+
+# 4. 實際跑一次偵測
+ivit predict "$env:USERPROFILE\.cache\ivit\models\yolox-nano.onnx" "C:\Users\<使用者名稱>\Documents\ivit-sdk\examples\data\images\bus.jpg" --device cpu --conf 0.3
 ```
+
+預期會看到 `Detections: 4`（bus + 3 個 person，信心值約 77~88%）。
 
 ### 確認裝置
 
@@ -841,7 +856,7 @@ ivit convert model.onnx --format openvino -o .\output\
 首次使用或更新 SDK 後，需先編譯再轉換：
 
 ```powershell
-# 1. 初始化 OpenVINO 環境（路徑依實際安裝位置調整；務必用 & 呼叫 .ps1，見 Step 4 說明）
+# 1. 初始化 OpenVINO 環境（路徑依實際安裝位置調整；務必用 & 呼叫 .ps1，見 Step 5 說明）
 & "C:\Users\<使用者名稱>\Documents\openvino_2026\setupvars.ps1"
 
 # 2. 編譯 C++ 核心與 Python binding（需在 Developer PowerShell 中執行）
@@ -1134,7 +1149,7 @@ python examples\python\02_segmentation.py `
 確認已執行 OpenVINO 環境初始化，且安裝路徑正確：
 
 ```powershell
-# 初始化 OpenVINO 環境（路徑依實際安裝位置調整；務必用 & 呼叫 .ps1，見 Step 4 說明）
+# 初始化 OpenVINO 環境（路徑依實際安裝位置調整；務必用 & 呼叫 .ps1，見 Step 5 說明）
 & "C:\Users\<使用者名稱>\Documents\openvino_2026\setupvars.ps1"
 
 # 手動指定 OpenVINO CMake 路徑（需在 Developer PowerShell 中執行）
@@ -1180,7 +1195,7 @@ try {
 Windows 上執行程式前需確認相關 DLL 在 PATH 中（完整說明見 [執行期環境設定](#執行期環境設定dll-搜尋路徑)）：
 
 ```powershell
-# 確認 OpenVINO DLL 路徑已在 PATH 中（務必用 & 呼叫 .ps1，cmd /c 呼叫 .bat 不會生效，見 Step 4 說明）
+# 確認 OpenVINO DLL 路徑已在 PATH 中（務必用 & 呼叫 .ps1，cmd /c 呼叫 .bat 不會生效，見 Step 5 說明）
 & "C:\Users\<你的帳號>\Documents\openvino_2026\setupvars.ps1"
 
 # 確認 OpenCV DLL 路徑已在 PATH 中（路徑依實際安裝調整）
