@@ -21,6 +21,12 @@ inline int ivit_close(int fd) { return _close(fd); }
 inline int ivit_setenv(const char* name, const char* value, int /*overwrite*/) {
     return _putenv_s(name, value);
 }
+// Windows has no $HOME by default (that's a POSIX convention); the user
+// profile directory lives in %USERPROFILE% instead.
+inline const char* ivit_home_dir() {
+    const char* home = std::getenv("HOME");
+    return home ? home : std::getenv("USERPROFILE");
+}
 #else
 #include <unistd.h>
 #define IVIT_DEVNULL "/dev/null"
@@ -31,5 +37,8 @@ inline int ivit_open(const char* path, int flags) { return open(path, flags); }
 inline int ivit_close(int fd) { return close(fd); }
 inline int ivit_setenv(const char* name, const char* value, int overwrite) {
     return setenv(name, value, overwrite);
+}
+inline const char* ivit_home_dir() {
+    return std::getenv("HOME");
 }
 #endif

@@ -719,7 +719,7 @@ void set_cache_dir(const std::string& path) {
 std::string get_cache_dir() {
     if (g_cache_dir.empty()) {
         // Default cache directory
-        const char* home = std::getenv("HOME");
+        const char* home = ivit_home_dir();
         if (home) {
             return std::string(home) + "/.cache/ivit";
         }

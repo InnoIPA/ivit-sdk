@@ -282,6 +282,37 @@
 
 ---
 
+# 第六部分：全庫掃描（2026-07-17，找剩下的 Windows-only bug）
+
+前五部分修完後，對整個 repo（`src/`、`include/`、`python/`、`scripts/`、`examples/`、`CMakeLists.txt`）做了一次系統性掃描，找還沒被記錄過的「因為是 Windows 才會出問題」的程式碼。以下兩個是 Windows 預設編譯路徑（`IVIT_USE_QNN=OFF`、`IVIT_USE_HAILORT=OFF`）就會踩到的，已修復；其餘只在額外啟用 QNN / HailoRT（Linux 專用後端）才會出問題，先記錄不修。
+
+## 28. C++ 測試目標用了 GNU ld 專屬的 linker flag 🟥
+
+- **位置**：`CMakeLists.txt:370,375`（`target_link_options(test_model/test_inference PRIVATE -Wl,--unresolved-symbols=ignore-in-shared-libs)`）
+- **症狀**：若裝了 GTest 且 `-DIVIT_BUILD_TESTS=ON`（本文件建置流程預設用 `OFF`，所以正常流程不會踩到），MSVC 的 `link.exe` 完全看不懂 `-Wl,...` 這種 GNU `ld` 的 passthrough 語法，直接編譯失敗。
+- **技術白話**：`-Wl,` 是 GCC/Clang 用來把後面的參數原封不動轉交給底層連結器 `ld` 的慣例寫法，這裡用它告訴 `ld`「忽略共享庫裡沒解析到的符號」。這個慣例只有 GNU 系連結器認得；MSVC 的 `link.exe` 用的是完全不同的參數格式（例如 `/FORCE:UNRESOLVED`），看到 `-Wl,` 只會當成無法識別的選項報錯。原本的程式碼沒有依平台/編譯器判斷，MSVC 建置時一定會炸。
+- **修法**：用 `if(NOT MSVC)` 包住這兩行 `target_link_options`。
+
+## 29. `get_cache_dir()` 只認 `$HOME`，Windows 上會 fallback 到錯誤路徑 🟨
+
+- **位置**：`src/core/device_manager.cpp:719-729`
+- **症狀**：`clear_cache()` 沒帶明確路徑時，實際清除的快取目錄不是真正的使用者快取目錄。不會當掉，只是靜默清不到東西。
+- **技術原因**：程式用 `std::getenv("HOME")` 取使用者家目錄，抓不到就 fallback 到 `"/tmp/ivit_cache"`。`HOME` 是 POSIX 慣例的環境變數，Windows 原生 cmd/PowerShell 通常沒有設定它（Windows 對應的是 `%USERPROFILE%`）。
+- **技術白話**：抓不到 `HOME` 之後 fallback 的 `"/tmp/ivit_cache"` 這個字串，在 Windows 上經過 `std::filesystem` 解析會變成**目前所在磁碟根目錄**下的 `\tmp\ivit_cache`（例如 `C:\tmp\ivit_cache`），跟使用者實際的家目錄毫無關係。這跟 Python 端的行為不一致——`python/ivit/zoo/registry.py`、`python/ivit/core/config.py` 都是用 `Path.home()`/`os.path.expanduser("~/.cache/ivit")`，這兩者在 Windows 上會正確解析成 `C:\Users\<帳號>\.cache\ivit`。C++ 端漏了這層平台判斷。
+- **修法**：在既有的 `include/ivit/core/platform_compat.hpp`（`unistd.h`/`ssize_t`/`setenv` 那些 Windows shim 所在的檔案）新增 `ivit_home_dir()`：Windows 上先試 `HOME` 再 fallback `USERPROFILE`，POSIX 維持原本的 `HOME`。`device_manager.cpp` 改呼叫這個函式取代直接呼叫 `std::getenv("HOME")`。
+
+## 30~34. QNN / HailoRT 後端的 POSIX-only 程式碼 🟩（記錄，Windows 預設編譯不受影響，暫不修）
+
+以下全部只在額外開啟 `IVIT_USE_QNN=ON` 或啟用 HailoRT 才會被編譯/執行到；Windows 預設建置（本文件的 `cmake` 指令都沒開這兩個選項）完全碰不到，先記錄供未來真要在 Windows 上啟用這兩個後端時參考：
+
+- **`dlopen`/`dlsym`/`dlclose` 直接呼叫**（`src/core/device_manager.cpp:444,446,564,565`、`src/runtime/qnn_runtime.cpp:61-197`）：POSIX 動態載入 API，MSVC 沒有 `<dlfcn.h>`，要改用 `LoadLibrary`/`GetProcAddress`/`FreeLibrary`。
+- **硬編 `.so` 後端庫名**（`device_manager.cpp:438-440,563`、`qnn_runtime.cpp:32-34,71,96-100,160`，例如 `"libQnnHtp.so"`）：即使改用 `LoadLibrary`，Windows 上的檔名也該是 `.dll`，否則探測永遠失敗、裝置永遠找不到。
+- **`std::system("... > /dev/null 2>&1")`**（`src/runtime/hailort_runtime.cpp:334-335`）：`/dev/null` 在 Windows `cmd.exe` 不存在，應該用 `NUL`。
+- **`/dev/hailo0` 裝置節點存在性檢查**（`device_manager.cpp:573,591`）：Windows 沒有 `/dev` 裝置節點，這個檢查在 Windows 上永遠回傳 false（無害的 no-op，但邏輯上是 Linux-only 假設）。
+- **CMake `HINTS /opt/qnn /usr/local/qnn`**（`CMakeLists.txt:212,229,233,237`）：Unix-only 搜尋路徑，Windows 上永遠解析不到，無害但該補上 Windows 對應路徑（例如 QNN SDK 的安裝目錄）。
+
+---
+
 # 總結
 
 | 部分 | 問題數 | 性質 |
@@ -291,11 +322,12 @@
 | 三、靜默失敗 | 2 | 不報錯但回傳假路徑（zoo 下載） |
 | 四、腳本/範例/可攜性 | 4 | 語法、硬編路徑、錯誤訊息 |
 | 五、偵測管線靜默失敗 | 4（2 已修 / 2 待修） | Python 通用推論路徑對 YOLOX 永遠回傳空結果 |
+| 六、全庫掃描 | 5（2 已修 / 3 記錄不修） | 建置系統與 QNN/HailoRT 後端的 POSIX-only 殘留 |
 
 **三大 pattern（供後續維護參考）**：
 
-1. **跨平台假設**：程式碼預設 POSIX/Linux 環境——`unistd.h`、`ssize_t`、`setenv`、共享庫預設匯出所有符號、DLL 靠 PATH 搜尋、`/home/dos` 絕對路徑。移植到 Windows 就逐一浮現。其中最嚴重的是 **#9 loader-lock 死結**：它在 Linux 完全正常、只在 Windows 觸發，且症狀是「卡死」而非拋錯，最難定位。
+1. **跨平台假設**：程式碼預設 POSIX/Linux 環境——`unistd.h`、`ssize_t`、`setenv`、`$HOME`、共享庫預設匯出所有符號、DLL 靠 PATH 搜尋、`/home/dos` 絕對路徑、GNU ld 專屬 linker flag、`dlopen`/`.so`。移植到 Windows 就逐一浮現。其中最嚴重的是 **#9 loader-lock 死結**：它在 Linux 完全正常、只在 Windows 觸發，且症狀是「卡死」而非拋錯，最難定位。
 2. **Python↔C++ 綁定漂移**：CLI 與部分 API 使用的屬性/方法名與簽章（`available`、`input_info["shape"]`、`show`、`stream(conf=)`、`LoadConfig.task`、`get_best_device(strategy=)`、`TaskType` 列舉未註冊）與實際 pybind 綁定對不上。這類**全部可由整合測試攔截**；CLI 幾乎沒有測試覆蓋是根本原因。
-3. **能跑 ≠ 結果對**：#25 是本輪最隱蔽的一類——程式不崩、不報錯，甚至印出「跑完了」的訊息，但核心邏輯（YOLOX 前後處理）從一開始就沒被實作、只是行為正確的另一個類別（`vision::Detector`）沒被通用路徑共用。這類 bug 只能靠**拿真模型、真圖片跑一次、檢查數字合理性**抓到，型別檢查/單元測試都測不出來。
+3. **能跑 ≠ 結果對**：#25 是目前最隱蔽的一類——程式不崩、不報錯，甚至印出「跑完了」的訊息，但核心邏輯（YOLOX 前後處理）從一開始就沒被實作、只是行為正確的另一個類別（`vision::Detector`）沒被通用路徑共用。這類 bug 只能靠**拿真模型、真圖片跑一次、檢查數字合理性**抓到，型別檢查/單元測試都測不出來。
 
-> 第一~四部分已在 `window_v2` 分支以 Conventional Commits 提交，並經 CPU（OpenVINO）與 GPU（TensorRT / cuda:0）實跑回歸驗證。第五部分為 2026-07-17 追加驗證的發現，#24/#25 已修復並實測（`ivit predict` 對 yolox-nano.onnx 結果與 C++ `simple_inference.exe` 一致），#26/#27 已確認可重現、尚待修復。
+> 第一~四部分已在 `window_v2` 分支以 Conventional Commits 提交，並經 CPU（OpenVINO）與 GPU（TensorRT / cuda:0）實跑回歸驗證。第五、六部分為 2026-07-17 追加驗證的發現：#24/#25/#28/#29 已修復並實測（#24/#25 的 `ivit predict` 結果與 C++ `simple_inference.exe` 一致；#28/#29 修復後重新 configure/build 確認無誤，且偵測結果無回歸）；#26/#27 已確認可重現、尚待修復；#30~#34 為 QNN/HailoRT 專用、Windows 預設建置不受影響，先記錄。
