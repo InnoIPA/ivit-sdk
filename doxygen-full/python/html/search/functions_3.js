@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['calculate_5fstats_0',['calculate_stats',['../classivit_1_1utils_1_1profiler_1_1Profiler.html#aca8b73ee69fca106c39cc6c1d94558a5',1,'ivit::utils::profiler::Profiler']]],
+  ['calibration_5fset_1',['calibration_set',['../classivit_1_1train_1_1dataset_1_1ImageFolderDataset.html#a4cec619c2e54bd9dfd69c7db2e22af45',1,'ivit::train::dataset::ImageFolderDataset']]],
+  ['callback_2',['callback',['../namespaceivit_1_1core_1_1callbacks.html#a1365c8ef7d9c58f5a307a7df33bffbfc',1,'ivit::core::callbacks']]],
+  ['center_3',['center',['../classivit_1_1core_1_1types_1_1BBox.html#a5ba7584025345176900e6044173c15a6',1,'ivit::core::types::BBox']]],
+  ['check_5fhealth_4',['check_health',['../classivit_1_1utils_1_1metrics_1_1HealthMonitor.html#a4a9bb51eb5ae077d7cc107a30135065c',1,'ivit::utils::metrics::HealthMonitor']]],
+  ['class_5fnames_5',['class_names',['../classivit_1_1train_1_1dataset_1_1BaseDataset.html#a788320d36cc253e5646a2b244bf1e4ca',1,'ivit.train.dataset.BaseDataset.class_names()'],['../classivit_1_1train_1_1dataset_1_1ImageFolderDataset.html#a1e7ebe743bd4b2d617754e39399c6b98',1,'ivit.train.dataset.ImageFolderDataset.class_names()'],['../classivit_1_1train_1_1dataset_1_1COCODataset.html#a86cf23f1c20a0af67ea1f353b65f13e3',1,'ivit.train.dataset.COCODataset.class_names()'],['../classivit_1_1train_1_1dataset_1_1YOLODataset.html#a9cd141322daf99050ead416c17ab5d36',1,'ivit.train.dataset.YOLODataset.class_names()'],['../classivit_1_1train_1_1dataset_1_1SegmentationDataset.html#adeaf777823fad8b572600e52cae23715',1,'ivit.train.dataset.SegmentationDataset.class_names()']]],
+  ['classes_6',['classes',['../classivit_1_1vision_1_1__classifier__ort_1_1Classifier.html#a8c178bce3a1b05c982edddbf4592bbe3',1,'ivit.vision._classifier_ort.Classifier.classes()'],['../classivit_1_1vision_1_1classifier_1_1Classifier.html#adce12d0cd9d16714fdd712f7a574a108',1,'ivit.vision.classifier.Classifier.classes()'],['../classivit_1_1vision_1_1detector_1_1Detector.html#abaa8a60c92af53844c746fc7993e251d',1,'ivit.vision.detector.Detector.classes()'],['../classivit_1_1vision_1_1segmentor_1_1Segmentor.html#a2b20c330ec54fd9ad226dd04faef1e0b',1,'ivit.vision.segmentor.Segmentor.classes()']]],
+  ['clear_7',['clear',['../classivit_1_1core_1_1callbacks_1_1CallbackManager.html#a01dc3aebe107839cb9065ba0351f8b05',1,'ivit::core::callbacks::CallbackManager']]],
+  ['cmd_5fbenchmark_8',['cmd_benchmark',['../namespaceivit_1_1cli.html#adffb8aaae8fafb95501a5469b398ffdc',1,'ivit::cli']]],
+  ['cmd_5fconvert_9',['cmd_convert',['../namespaceivit_1_1cli.html#a8a7c352f445f8afe6b236cb83bbee9fb',1,'ivit::cli']]],
+  ['cmd_5fdevices_10',['cmd_devices',['../namespaceivit_1_1cli.html#a59152b65769f6c92fc7fe30358b2bbdc',1,'ivit::cli']]],
+  ['cmd_5feval_11',['cmd_eval',['../namespaceivit_1_1cli.html#a13084162e4e1b853c56399e3477ea789',1,'ivit::cli']]],
+  ['cmd_5fexport_12',['cmd_export',['../namespaceivit_1_1cli.html#a35098c883e9632abec775b79f2ceae0c',1,'ivit::cli']]],
+  ['cmd_5finfo_13',['cmd_info',['../namespaceivit_1_1cli.html#ab2405255c8872088385906fefa1bcfc8',1,'ivit::cli']]],
+  ['cmd_5fpredict_14',['cmd_predict',['../namespaceivit_1_1cli.html#ad9a4b7182eb45871eb0c2433bc980100',1,'ivit::cli']]],
+  ['cmd_5fserve_15',['cmd_serve',['../namespaceivit_1_1cli.html#a4b835daa7caacdeead756c50891c1131',1,'ivit::cli']]],
+  ['cmd_5ftrain_16',['cmd_train',['../namespaceivit_1_1cli.html#a0834060bb04b1b33b79b901213afdec0',1,'ivit::cli']]],
+  ['cmd_5fzoo_17',['cmd_zoo',['../namespaceivit_1_1cli.html#ac920df661ecdad26142c631f9ddc3366',1,'ivit::cli']]],
+  ['colorize_5fmask_18',['colorize_mask',['../classivit_1_1core_1_1result_1_1Results.html#ac15436c9a5ebdaa74b019cc2fcd27d43',1,'ivit::core::result::Results']]],
+  ['count_19',['count',['../classivit_1_1core_1_1callbacks_1_1LatencyLogger.html#aad36c64837d87992d4294ac5c4a25fac',1,'ivit::core::callbacks::LatencyLogger']]],
+  ['cpu_20',['cpu',['../classivit_1_1devices_1_1DeviceManager.html#a283f4996a8521fe1bc07dd05feb17349',1,'ivit::devices::DeviceManager']]],
+  ['create_5fcomparison_21',['create_comparison',['../classivit_1_1utils_1_1visualizer_1_1Visualizer.html#a106592b42e826a7b7b1c4ad26bdd7c1b',1,'ivit::utils::visualizer::Visualizer']]],
+  ['cuda_22',['cuda',['../classivit_1_1devices_1_1DeviceManager.html#a0b6cf0f43d49ba2f2fbb0546d19696f5',1,'ivit::devices::DeviceManager']]],
+  ['current_5fepoch_23',['current_epoch',['../classivit_1_1train_1_1base_1_1BaseTrainer.html#a46231de13ed090382a902fb0844a3c60',1,'ivit::train::base::BaseTrainer']]],
+  ['current_5fframe_24',['current_frame',['../classivit_1_1utils_1_1video_1_1VideoStream.html#a2181f167886b8cfdf84a06eafc84c947',1,'ivit::utils::video::VideoStream']]]
+];

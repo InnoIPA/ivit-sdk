@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['generate_5fcolormap_0',['generate_colormap',['../classivit_1_1utils_1_1visualizer_1_1Visualizer.html#a2e5f4cab19a437ae0a959dd94306f1c2',1,'ivit::utils::visualizer::Visualizer']]],
+  ['get_5fbackend_5ffor_5fdevice_1',['get_backend_for_device',['../namespaceivit_1_1core_1_1device.html#a5de496d7bb7de148d916d4114a45b334',1,'ivit::core::device']]],
+  ['get_5fbest_5fdevice_2',['get_best_device',['../namespaceivit.html#a282ffa5a2889b88454ad75530f22971e',1,'ivit.get_best_device'],['../namespaceivit_1_1core_1_1device.html#a3e48d604d844b6e3025d6d5d20b381f5',1,'ivit.core.device.get_best_device()']]],
+  ['get_5fcache_5fdir_3',['get_cache_dir',['../namespaceivit_1_1core_1_1config.html#a766393bebb3de048f61b05c6ce2761aa',1,'ivit::core::config']]],
+  ['get_5fcolor_4',['get_color',['../classivit_1_1utils_1_1visualizer_1_1Visualizer.html#a9ca33ab1e7aac2636c8ca51e085a24d5',1,'ivit::utils::visualizer::Visualizer']]],
+  ['get_5fconfig_5',['get_config',['../namespaceivit_1_1core_1_1config.html#ae6d5f876b280650e1f75caf139077ffa',1,'ivit::core::config']]],
+  ['get_5fcontours_6',['get_contours',['../classivit_1_1core_1_1result_1_1Results.html#ad9922a35b98d9842f23802e10ebdbd36',1,'ivit::core::result::Results']]],
+  ['get_5fdefault_5faugmentation_7',['get_default_augmentation',['../namespaceivit_1_1train_1_1augmentation.html#a4c28cdbf2e64f347321463bf7f66cd27',1,'ivit::train::augmentation']]],
+  ['get_5fdefault_5fcollector_8',['get_default_collector',['../namespaceivit_1_1utils_1_1metrics.html#a6b7fb0ede3c788d7f86ea2a5c6a4415d',1,'ivit::utils::metrics']]],
+  ['get_5fdevice_9',['get_device',['../namespaceivit_1_1core_1_1device.html#a97afc4add31ae77867c668eb9f4b0e48',1,'ivit::core::device']]],
+  ['get_5fkeypoint_10',['get_keypoint',['../classivit_1_1core_1_1types_1_1Pose.html#a4304003d177797a0c4d2624eae5c4d8a',1,'ivit::core::types::Pose']]],
+  ['get_5fmetrics_11',['get_metrics',['../classivit_1_1utils_1_1metrics_1_1MetricsCollector.html#a793ebcb634d188a7848602227e8dee25',1,'ivit.utils.metrics.MetricsCollector.get_metrics()'],['../namespaceivit_1_1utils_1_1metrics.html#a67bf7a35437f3b6bb7598e6810aa0002',1,'ivit.utils.metrics.get_metrics()']]],
+  ['get_5fmodel_5finfo_12',['get_model_info',['../namespaceivit_1_1zoo_1_1registry.html#a1504a7c9cc6f07a8140266d164a219f0',1,'ivit::zoo::registry']]],
+  ['get_5fpercentile_13',['get_percentile',['../classivit_1_1utils_1_1metrics_1_1MetricsCollector.html#aac543778162cbe240800b9f9b8c1348e',1,'ivit::utils::metrics::MetricsCollector']]],
+  ['get_5fpostprocessor_14',['get_postprocessor',['../namespaceivit_1_1core_1_1processors.html#a1de217f65e2a29063a5396e0e69c014e',1,'ivit::core::processors']]],
+  ['get_5fpreprocessor_15',['get_preprocessor',['../namespaceivit_1_1core_1_1processors.html#a6b4d163430ecaa55249bdc05ddaa09e0',1,'ivit::core::processors']]],
+  ['get_5fruntime_5finfo_16',['get_runtime_info',['../namespaceivit.html#acaef22ac2ebf327b34ac2dbdde81e190',1,'ivit']]],
+  ['get_5ftrain_5faugmentation_17',['get_train_augmentation',['../namespaceivit_1_1train_1_1augmentation.html#a66cbd8709e2be98425a1da4bea8971b2',1,'ivit::train::augmentation']]],
+  ['get_5ftraining_5fbackend_18',['get_training_backend',['../namespaceivit_1_1zoo_1_1registry.html#a974d083753480695d01aa9aee6f044c8',1,'ivit::zoo::registry']]],
+  ['get_5fval_5faugmentation_19',['get_val_augmentation',['../namespaceivit_1_1train_1_1augmentation.html#a8490249f95ab4ed4e06e103d7ca1ccb4',1,'ivit::train::augmentation']]],
+  ['gpu_20',['GPU',['../classivit_1_1devices_1_1DeviceType.html#a12a4c99bd4f92ee6d6176417acd59207',1,'ivit.devices.DeviceType.GPU'],['../classivit_1_1devices_1_1D.html#aa81a02c949e856fac073a9e4134b0dd0',1,'ivit.devices.D.GPU']]],
+  ['gpu_21',['gpu',['../classivit_1_1devices_1_1DeviceManager.html#aa552fea16994591ea445969f87bd6be9',1,'ivit::devices::DeviceManager']]],
+  ['gpu_5f0_22',['GPU_0',['../classivit_1_1devices_1_1D.html#aec2231764463d8bb60ede0bc4adf2797',1,'ivit::devices::D']]]
+];

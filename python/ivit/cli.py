@@ -152,7 +152,7 @@ def cmd_benchmark(args):
     # Load model
     print("Loading model...", end=" ", flush=True)
     start = time.time()
-    model = ivit.load(model_path, device=device)
+    model = ivit.load(model_path, device=device, task="detection")
     load_time = time.time() - start
     print(f"Done ({load_time:.2f}s)")
     print()
@@ -228,7 +228,7 @@ def cmd_predict(args):
 
     # Load model
     print("Loading model...", end=" ", flush=True)
-    model = ivit.load(model_path, device=device)
+    model = ivit.load(model_path, device=device, task="detection")
     print("Done")
     print()
 
@@ -779,7 +779,7 @@ def cmd_serve(args):
 
     # Load model
     print("Loading model...", end=" ", flush=True)
-    model = ivit.load(model_path, device=device)
+    model = ivit.load(model_path, device=device, task="detection")
     print("Done")
     print()
 

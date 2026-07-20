@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['generate_5fcolormap_0',['generate_colormap',['../classivit_1_1utils_1_1Visualizer.html#a0b7080d44e2d10cfb895a3bdfa7848c8',1,'ivit::utils::Visualizer']]],
+  ['get_5fbackend_5ffor_5fdevice_1',['get_backend_for_device',['../namespaceivit.html#a06cc8c592e9085dbf0f9f12b4f555267',1,'ivit']]],
+  ['get_5fbackend_5fname_2',['get_backend_name',['../classivit_1_1QNNRuntime.html#aa085ae1dec928dea7c50ff47535826e5',1,'ivit::QNNRuntime']]],
+  ['get_5fbest_5fdevice_3',['get_best_device',['../classivit_1_1DeviceManager.html#a69ddaa902b752c4dc5934bc75124d5ea',1,'ivit::DeviceManager::get_best_device()'],['../namespaceivit.html#a43d58c0cf0049d94dcf187ae1df27f0a',1,'ivit::get_best_device()']]],
+  ['get_5fbest_5fruntime_4',['get_best_runtime',['../classivit_1_1RuntimeFactory.html#ac901eac5ca32e3e00363e5b6eceb22c6',1,'ivit::RuntimeFactory']]],
+  ['get_5fcache_5fdir_5',['get_cache_dir',['../namespaceivit.html#a9989bda4247251f272343f3396cd4dc1',1,'ivit']]],
+  ['get_5fcolor_6',['get_color',['../classivit_1_1utils_1_1Visualizer.html#a81e0240c0d954a2c503247f3723dd9d2',1,'ivit::utils::Visualizer']]],
+  ['get_5fcore_7',['get_core',['../classivit_1_1OpenVINORuntime.html#a28d9d9d00774129dad9bdd1bcf84c8f2',1,'ivit::OpenVINORuntime']]],
+  ['get_5fdevice_8',['get_device',['../classivit_1_1DeviceManager.html#a3a640ec423952243c246a25d3f620ec7',1,'ivit::DeviceManager']]],
+  ['get_5fdevice_5fstatus_9',['get_device_status',['../classivit_1_1DeviceManager.html#acccd9cae17dcd4f66fdd0965a40cfa0f',1,'ivit::DeviceManager']]],
+  ['get_5fdevices_10',['get_devices',['../classivit_1_1HailoRTRuntime.html#a2b1bc192087a595c48a42916e0d0345e',1,'ivit::HailoRTRuntime::get_devices()'],['../classivit_1_1OpenVINORuntime.html#abf3cd65730e2199bf0e6bfe97b98cd06',1,'ivit::OpenVINORuntime::get_devices()'],['../classivit_1_1QNNRuntime.html#a0565dd384ff863b3b72eb4ac224ab6b1',1,'ivit::QNNRuntime::get_devices()'],['../classivit_1_1IRuntime.html#a5727117adb30596b9c5e598d18af3452',1,'ivit::IRuntime::get_devices()'],['../classivit_1_1TensorRTRuntime.html#af073eaafb9d6f71d63f1e8621195d0e9',1,'ivit::TensorRTRuntime::get_devices()']]],
+  ['get_5finput_5finfo_11',['get_input_info',['../classivit_1_1HailoRTRuntime.html#ac8809b668490573a42c2b64dda8bdde2',1,'ivit::HailoRTRuntime::get_input_info()'],['../classivit_1_1OpenVINORuntime.html#a2e689136c67a58b57a2215a7ed4a53b9',1,'ivit::OpenVINORuntime::get_input_info()'],['../classivit_1_1QNNRuntime.html#a03d197ebb9c0e4b86285ca9833b27ff0',1,'ivit::QNNRuntime::get_input_info()'],['../classivit_1_1IRuntime.html#a93430704b4becf538d07b8591c4dd889',1,'ivit::IRuntime::get_input_info()'],['../classivit_1_1TensorRTRuntime.html#a9de2b4ae773a23e13ca0a7e1567f5c52',1,'ivit::TensorRTRuntime::get_input_info()']]],
+  ['get_5flog_5flevel_12',['get_log_level',['../namespaceivit.html#a1df4f1228a88eaf6993bdc0c0864f354',1,'ivit']]],
+  ['get_5fopenvino_5fruntime_13',['get_openvino_runtime',['../namespaceivit.html#aee635b7febd8de8ff867434eadd0cb0a',1,'ivit']]],
+  ['get_5foutput_5finfo_14',['get_output_info',['../classivit_1_1HailoRTRuntime.html#ad828873cf835cc202e5ad4d07a3ee6ff',1,'ivit::HailoRTRuntime::get_output_info()'],['../classivit_1_1OpenVINORuntime.html#a1e2d35895636aaea36c77171d729cdc6',1,'ivit::OpenVINORuntime::get_output_info()'],['../classivit_1_1QNNRuntime.html#a45f102199cc6390c6ce9a8c454b5fe83',1,'ivit::QNNRuntime::get_output_info()'],['../classivit_1_1IRuntime.html#a2ba11991a1d7a555b507aabe8862757f',1,'ivit::IRuntime::get_output_info()'],['../classivit_1_1TensorRTRuntime.html#ae32507d764df1ab29fce5fa275ea067a',1,'ivit::TensorRTRuntime::get_output_info()']]],
+  ['get_5fparsed_5flog_5flevel_15',['get_parsed_log_level',['../namespaceivit.html#adc519c1952c38ad2b289d7356b129e6d',1,'ivit']]],
+  ['get_5fqnn_5fruntime_16',['get_qnn_runtime',['../namespaceivit.html#a93c26c120fb2f541c774901d8bb6b29e',1,'ivit']]],
+  ['get_5fruntime_17',['get_runtime',['../classivit_1_1RuntimeFactory.html#a232b91bb3aad266d0dd5fc8bd6cdeadd',1,'ivit::RuntimeFactory']]],
+  ['get_5fruntime_5ffor_5fdevice_18',['get_runtime_for_device',['../classivit_1_1RuntimeFactory.html#abe19cf7f2576d580a119fdebae879fb2',1,'ivit::RuntimeFactory']]],
+  ['get_5ftensorrt_5fruntime_19',['get_tensorrt_runtime',['../namespaceivit.html#a2466a42c0ab98d5d89364e3edeaaa797',1,'ivit']]],
+  ['get_5fversion_20',['get_version',['../classivit_1_1OpenVINORuntime.html#a61620ca028cfd9747b267120665b3890',1,'ivit::OpenVINORuntime::get_version()'],['../classivit_1_1QNNRuntime.html#ab0fb88ec7cddb6e93f1e7bfd35cebc00',1,'ivit::QNNRuntime::get_version()'],['../classivit_1_1TensorRTRuntime.html#a9b31772c4297dce1374dffcfc47121dc',1,'ivit::TensorRTRuntime::get_version()']]],
+  ['graph_21',['graph',['../structivit_1_1QNNModel.html#ac0337595ee0dd3f3f8e4a9e48d94ff90',1,'ivit::QNNModel']]],
+  ['graph_5fname_22',['graph_name',['../structivit_1_1QNNModel.html#ac0d3ded9b9cf9088d4392b117036b487',1,'ivit::QNNModel']]]
+];

@@ -473,12 +473,20 @@ std::shared_ptr<nvinfer1::ICudaEngine> TensorRTRuntime::build_engine_from_onnx(
     }
 
     // Create network
+#if NV_TENSORRT_MAJOR >= 10
+    // TRT 10+ removed implicit batch and the kEXPLICIT_BATCH flag; explicit
+    // batch is the only mode, so createNetworkV2 takes no batch flag.
+    auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(
+        builder->createNetworkV2(0)
+    );
+#else
     const auto explicit_batch = 1U << static_cast<uint32_t>(
         nvinfer1::NetworkDefinitionCreationFlag::kEXPLICIT_BATCH
     );
     auto network = std::unique_ptr<nvinfer1::INetworkDefinition>(
         builder->createNetworkV2(explicit_batch)
     );
+#endif
     if (!network) {
         throw IVITError("Failed to create TensorRT network");
     }
@@ -513,6 +521,14 @@ std::shared_ptr<nvinfer1::ICudaEngine> TensorRTRuntime::build_engine_from_onnx(
     }
 
     // Set precision
+#if NV_TENSORRT_MAJOR >= 10
+    // TRT 10+ networks are strongly typed: precision is derived from the ONNX
+    // model's own tensor types, and the kFP16/kINT8 builder flags plus the
+    // platformHasFast* queries were removed. Precision is therefore not set via
+    // builder flags here (INT8 in TRT 10+ expects explicit Q/DQ nodes in the
+    // ONNX graph). config.precision is honored at export time instead.
+    (void)builder;
+#else
     if (config.precision == Precision::FP16) {
         if (builder->platformHasFastFp16()) {
             builder_config->setFlag(nvinfer1::BuilderFlag::kFP16);
@@ -523,6 +539,7 @@ std::shared_ptr<nvinfer1::ICudaEngine> TensorRTRuntime::build_engine_from_onnx(
             // Note: INT8 calibration would be needed for full INT8 inference
         }
     }
+#endif
 
     // Set memory pool limit (use 1GB as default)
     builder_config->setMemoryPoolLimit(

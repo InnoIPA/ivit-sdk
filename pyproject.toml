@@ -99,10 +99,19 @@ dev = [
     "sphinx>=6.0",
     "sphinx-rtd-theme>=1.2",
 ]
+# 文件站台（MkDocs Material + Python API autodoc）。
+# 註：C++ API sidecar 另需系統 `doxygen`（如 `sudo apt install doxygen` 或
+# `conda install -c conda-forge doxygen`），非 pip 依賴。
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.26",
+    "black>=23.0",              # mkdocstrings 用來格式化函式簽名（多行排版）
+]
 # Combined installations
 # 注意：YOLOX 仍需另外用 `pip install --no-build-isolation 'git+https://github.com/Megvii-BaseDetection/YOLOX.git'` 安裝
 all = [
-    "ivit-sdk[tensorrt,zoo,train,training-all,quantize,dev]",
+    "ivit-sdk[tensorrt,zoo,train,training-all,quantize,dev,docs]",
 ]
 # Alias for backward compatibility
 cuda = [

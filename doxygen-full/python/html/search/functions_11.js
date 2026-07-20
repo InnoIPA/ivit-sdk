@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['throughput_5ffps_0',['throughput_fps',['../classivit_1_1utils_1_1metrics_1_1InferenceMetrics.html#ae8adc3247b0adb8683670afc32bade1d',1,'ivit::utils::metrics::InferenceMetrics']]],
+  ['times_1',['times',['../classivit_1_1utils_1_1profiler_1_1Profiler.html#a3b3a9e45d2a3663a062486715b354633',1,'ivit::utils::profiler::Profiler']]],
+  ['to_5fcxcywh_2',['to_cxcywh',['../classivit_1_1core_1_1types_1_1BBox.html#a2cd289ecbce3b161cd8d22d725a404d4',1,'ivit::core::types::BBox']]],
+  ['to_5fdict_3',['to_dict',['../classivit_1_1core_1_1result_1_1Results.html#a90420ac1c359a6381ab1cd1fedac7b52',1,'ivit.core.result.Results.to_dict()'],['../classivit_1_1utils_1_1metrics_1_1InferenceMetrics.html#aeb77a436f758127e39d5f0d50886e8ea',1,'ivit.utils.metrics.InferenceMetrics.to_dict()'],['../classivit_1_1utils_1_1metrics_1_1MetricsExporter.html#a01fc7e7e88260c6a3f325c988e6caeb7',1,'ivit.utils.metrics.MetricsExporter.to_dict()'],['../classivit_1_1utils_1_1profiler_1_1ProfileReport.html#a9ee06d847ac9709527eb8c14d93d58fc',1,'ivit.utils.profiler.ProfileReport.to_dict()'],['../classivit_1_1vision_1_1yolox__predictor_1_1EvalReport.html#a1405b5c76e93f159b76eda3dacdc0ed2',1,'ivit.vision.yolox_predictor.EvalReport.to_dict()']]],
+  ['to_5fhailo_5fconfig_4',['to_hailo_config',['../classivit_1_1core_1_1runtime__config_1_1HailoConfig.html#a7d350d8a01a1abda29fabeb9266da593',1,'ivit::core::runtime_config::HailoConfig']]],
+  ['to_5fjson_5',['to_json',['../classivit_1_1core_1_1result_1_1Results.html#a812fd9b02bb406550b040d511ff1489c',1,'ivit.core.result.Results.to_json()'],['../classivit_1_1utils_1_1metrics_1_1MetricsExporter.html#a5ade7e83f7412979bcde054732e6d2a8',1,'ivit.utils.metrics.MetricsExporter.to_json()'],['../classivit_1_1utils_1_1profiler_1_1ProfileReport.html#a3d29c31075b532f8a4c93d7df2f0489a',1,'ivit.utils.profiler.ProfileReport.to_json()']]],
+  ['to_5fov_5fconfig_6',['to_ov_config',['../classivit_1_1core_1_1runtime__config_1_1OpenVINOConfig.html#aa2c5371d097e0306f16e313b2f0fdbd3',1,'ivit::core::runtime_config::OpenVINOConfig']]],
+  ['to_5fprometheus_7',['to_prometheus',['../classivit_1_1utils_1_1metrics_1_1MetricsExporter.html#a58fe8a3b6f0fb23407c4e8312f2bc3cc',1,'ivit::utils::metrics::MetricsExporter']]],
+  ['to_5fqnn_5fconfig_8',['to_qnn_config',['../classivit_1_1core_1_1runtime__config_1_1QNNConfig.html#a981269916f8175085ddc0c723d5e07ba',1,'ivit::core::runtime_config::QNNConfig']]],
+  ['to_5ftrt_5fconfig_9',['to_trt_config',['../classivit_1_1core_1_1runtime__config_1_1TensorRTConfig.html#aa1aafa59c22f049ad59e546faec89d7d',1,'ivit::core::runtime_config::TensorRTConfig']]],
+  ['to_5fxywh_10',['to_xywh',['../classivit_1_1core_1_1types_1_1BBox.html#a883932a0a063c066194a223132976d50',1,'ivit::core::types::BBox']]],
+  ['top1_11',['top1',['../classivit_1_1core_1_1result_1_1Results.html#a48c6ef6999b3de01dae1f276fa134dac',1,'ivit::core::result::Results']]],
+  ['top5_12',['top5',['../classivit_1_1core_1_1result_1_1Results.html#aa6883a8220908e17dc8ed4ea1584766d',1,'ivit::core::result::Results']]],
+  ['topk_13',['topk',['../classivit_1_1core_1_1result_1_1Results.html#ab15c1deb5f2d64267b0478fb27e5f74d',1,'ivit::core::result::Results']]],
+  ['total_5flatency_14',['total_latency',['../classivit_1_1core_1_1callbacks_1_1LatencyLogger.html#a2741f5f46716fb49ddaeebcf94e2c682',1,'ivit::core::callbacks::LatencyLogger']]],
+  ['trigger_15',['trigger',['../classivit_1_1core_1_1callbacks_1_1CallbackManager.html#aa70efc3c180f8bee55f2a08113a3ee2f',1,'ivit::core::callbacks::CallbackManager']]]
+];

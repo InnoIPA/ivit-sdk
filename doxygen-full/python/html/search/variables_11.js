@@ -1,0 +1,28 @@
+var searchData=
+[
+  ['saturation_0',['saturation',['../classivit_1_1train_1_1augmentation_1_1ColorJitter.html#a90d9d67b4e65918198f45583b64cf098',1,'ivit::train::augmentation::ColorJitter']]],
+  ['save_5fbest_5fonly_1',['save_best_only',['../classivit_1_1train_1_1callbacks_1_1ModelCheckpoint.html#a2eef285f0ac38cda4d93220e9c09eb01',1,'ivit::train::callbacks::ModelCheckpoint']]],
+  ['scheduler_5fkwargs_2',['scheduler_kwargs',['../classivit_1_1train_1_1callbacks_1_1LRScheduler.html#ab4f825bce6082d232e3215a0c56612fe',1,'ivit::train::callbacks::LRScheduler']]],
+  ['scheduler_5ftype_3',['scheduler_type',['../classivit_1_1train_1_1callbacks_1_1LRScheduler.html#a94da03ca835ef79fcad20c6c4e8ac057',1,'ivit::train::callbacks::LRScheduler']]],
+  ['score_4',['score',['../classivit_1_1vision_1_1__classifier__ort_1_1__ClassificationResult.html#a7bb2e81a2ed4a92a2cec3d5862dfd4ea',1,'ivit::vision::_classifier_ort::_ClassificationResult']]],
+  ['seed_5',['seed',['../classivit_1_1train_1_1dataset_1_1ImageFolderDataset.html#a6d168c74eee8cedc9b94246a67e8dd1e',1,'ivit.train.dataset.ImageFolderDataset.seed'],['../classivit_1_1train_1_1dataset_1_1SegmentationDataset.html#ae823843661f9241d6871d1cff4942eac',1,'ivit.train.dataset.SegmentationDataset.seed']]],
+  ['segmentation_6',['SEGMENTATION',['../classivit_1_1core_1_1types_1_1TaskType.html#a06315b4ebae34d368de4b698576253b6',1,'ivit::core::types::TaskType']]],
+  ['segmentation_5fmask_7',['segmentation_mask',['../classivit_1_1core_1_1result_1_1Results.html#a94854ef32b62d43df2a4ee4440b4bdf9',1,'ivit::core::result::Results']]],
+  ['shape_8',['shape',['../classivit_1_1core_1_1types_1_1TensorInfo.html#a42ca4d3777ff8be5170e2e13d253a4ec',1,'ivit::core::types::TensorInfo']]],
+  ['size_9',['size',['../classivit_1_1train_1_1augmentation_1_1Resize.html#a90ed855bba1d8839ff5c80e8766ea57a',1,'ivit::train::augmentation::Resize']]],
+  ['snpeconfig_10',['SNPEConfig',['../namespaceivit_1_1core_1_1runtime__config.html#a26001a8b637a517bfafc17fb0db8ce90',1,'ivit::core::runtime_config']]],
+  ['source_11',['source',['../classivit_1_1zoo_1_1registry_1_1ModelInfo.html#affd4dcae5b2bef344d00fd3192ef24df',1,'ivit::zoo::registry::ModelInfo']]],
+  ['source_5ffps_12',['source_fps',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a20dc56b1e3d96e5e530d3dab42270aed',1,'ivit.core.callbacks.CallbackContext.source_fps'],['../classivit_1_1core_1_1result_1_1Results.html#a3b6e41ee55dad9be924968d908a0bd04',1,'ivit.core.result.Results.source_fps']]],
+  ['split_13',['split',['../classivit_1_1train_1_1dataset_1_1ImageFolderDataset.html#a0e7dd0130fed847c13deebad83e71d55',1,'ivit.train.dataset.ImageFolderDataset.split'],['../classivit_1_1train_1_1dataset_1_1COCODataset.html#a9e8d9a511eb9794bad65e9d5bd07bbe4',1,'ivit.train.dataset.COCODataset.split'],['../classivit_1_1train_1_1dataset_1_1YOLODataset.html#a5dc1b0a3619efa003678fbb34cfc403e',1,'ivit.train.dataset.YOLODataset.split'],['../classivit_1_1train_1_1dataset_1_1SegmentationDataset.html#a48f94073c45cc8f00915fe1399c6d3f7',1,'ivit.train.dataset.SegmentationDataset.split']]],
+  ['start_5ftime_14',['start_time',['../classivit_1_1utils_1_1metrics_1_1InferenceMetrics.html#a4cf25a469a51181b54aaa5e2c7d41287',1,'ivit::utils::metrics::InferenceMetrics']]],
+  ['std_15',['std',['../classivit_1_1core_1_1processors_1_1CenterCropPreProcessor.html#af21a65341ce716890cca2162722300e3',1,'ivit.core.processors.CenterCropPreProcessor.std'],['../classivit_1_1train_1_1augmentation_1_1Normalize.html#a637c0997ebb188532456bdf5e6deab57',1,'ivit.train.augmentation.Normalize.std']]],
+  ['stream_5fend_16',['STREAM_END',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#ae0b99875da91dde4b538a24775e2ea75',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['stream_5fframe_17',['STREAM_FRAME',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#a3f88cc8d7283a55f827bce42110cf79a',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['stream_5fstart_18',['STREAM_START',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#aad84ac57532753207624301f7fc76105',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['strict_5ftype_5fconstraints_19',['strict_type_constraints',['../classivit_1_1core_1_1runtime__config_1_1TensorRTConfig.html#aecef091c36f04ca4ca730e2c3044f7ca',1,'ivit::core::runtime_config::TensorRTConfig']]],
+  ['success_5frate_20',['success_rate',['../classivit_1_1utils_1_1metrics_1_1InferenceMetrics.html#a487ee6c2fd703fcff17ccc2f266cdb8e',1,'ivit::utils::metrics::InferenceMetrics']]],
+  ['successful_5finferences_21',['successful_inferences',['../classivit_1_1utils_1_1metrics_1_1InferenceMetrics.html#afc74f4dd92d82f3aea2d52f56918578a',1,'ivit::utils::metrics::InferenceMetrics']]],
+  ['suggestions_22',['suggestions',['../classivit_1_1core_1_1exceptions_1_1IVITError.html#a23f5d6ed4dc3d10b87e96619277907b8',1,'ivit::core::exceptions::IVITError']]],
+  ['supported_5fextensions_23',['SUPPORTED_EXTENSIONS',['../classivit_1_1train_1_1dataset_1_1ImageFolderDataset.html#afbd54bb3d0f470d8d61a4ae4dc0a23a1',1,'ivit.train.dataset.ImageFolderDataset.SUPPORTED_EXTENSIONS'],['../classivit_1_1train_1_1dataset_1_1SegmentationDataset.html#a8085f9ad54f31a3cf17638ac252dc2e1',1,'ivit.train.dataset.SegmentationDataset.SUPPORTED_EXTENSIONS']]],
+  ['supported_5fprecisions_24',['supported_precisions',['../classivit_1_1core_1_1types_1_1DeviceInfo.html#a77769515c677438e53a577d0c74f8fff',1,'ivit::core::types::DeviceInfo']]]
+];

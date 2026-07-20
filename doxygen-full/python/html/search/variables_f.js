@@ -1,0 +1,20 @@
+var searchData=
+[
+  ['p_0',['p',['../classivit_1_1train_1_1augmentation_1_1RandomHorizontalFlip.html#ab73967e85e4239a535206d8ceb2680dd',1,'ivit.train.augmentation.RandomHorizontalFlip.p'],['../classivit_1_1train_1_1augmentation_1_1RandomVerticalFlip.html#a4cc771626cc96c58e5b453d02685c875',1,'ivit.train.augmentation.RandomVerticalFlip.p'],['../classivit_1_1train_1_1augmentation_1_1RandomRotation.html#af91e2c70a2b7979ebd1a6a4b98bcfbb9',1,'ivit.train.augmentation.RandomRotation.p']]],
+  ['pad_5fvalue_1',['pad_value',['../classivit_1_1core_1_1processors_1_1LetterboxPreProcessor.html#a6acf4869a78778182e28808bbe2f1d7a',1,'ivit.core.processors.LetterboxPreProcessor.pad_value'],['../classivit_1_1train_1_1augmentation_1_1Resize.html#a79a8d1aa75203d22a26bc47e7b9bacc2',1,'ivit.train.augmentation.Resize.pad_value']]],
+  ['path_2',['path',['../namespaceivit_1_1cli.html#ad997b3cc39b97442ec4449169c79ddd1',1,'ivit::cli']]],
+  ['patience_3',['patience',['../classivit_1_1train_1_1callbacks_1_1EarlyStopping.html#a40c862d9b99fd69bcb721ccce29d8786',1,'ivit::train::callbacks::EarlyStopping']]],
+  ['per_5fclass_5fap_4',['per_class_AP',['../classivit_1_1vision_1_1yolox__predictor_1_1EvalReport.html#a562f199c550ca9fa7868add12599312d',1,'ivit::vision::yolox_predictor::EvalReport']]],
+  ['performance_5fmode_5',['performance_mode',['../classivit_1_1core_1_1runtime__config_1_1OpenVINOConfig.html#a2c1b87e80e71db9c4734ca3dabad3cc3',1,'ivit::core::runtime_config::OpenVINOConfig']]],
+  ['performance_5fprofile_6',['performance_profile',['../classivit_1_1core_1_1runtime__config_1_1QNNConfig.html#ae9fd10133468ede6936f1d6a15387019',1,'ivit::core::runtime_config::QNNConfig']]],
+  ['pose_5festimation_7',['POSE_ESTIMATION',['../classivit_1_1core_1_1types_1_1TaskType.html#a5658b6bf1a65da17b16c0b9be622afa4',1,'ivit::core::types::TaskType']]],
+  ['poses_8',['poses',['../classivit_1_1core_1_1result_1_1Results.html#a1cd75e5ca490fb62ec1546b68e8bd69d',1,'ivit::core::result::Results']]],
+  ['post_5fprocess_9',['POST_PROCESS',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#ad0ff31a19e16bfb2576c77b766cbc4af',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['postprocess_5fms_10',['postprocess_ms',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a0fc7382fe424d7eb3d23052d33cd9dc3',1,'ivit::core::callbacks::CallbackContext']]],
+  ['power_5ftdp_5fwatts_11',['power_tdp_watts',['../classivit_1_1core_1_1types_1_1DeviceInfo.html#af9983fe0a249f1849758b1277250094e',1,'ivit::core::types::DeviceInfo']]],
+  ['pre_5fprocess_12',['PRE_PROCESS',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#a22f44c740c610820f1f512c112b0560b',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['precision_13',['precision',['../classivit_1_1core_1_1types_1_1LoadConfig.html#ad486b86d70749aa7b2293095e0e62319',1,'ivit.core.types.LoadConfig.precision'],['../classivit_1_1utils_1_1profiler_1_1ProfileReport.html#a4785b93e467e77a70b99dfc166fe8a0e',1,'ivit.utils.profiler.ProfileReport.precision']]],
+  ['preprocess_5fms_14',['preprocess_ms',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a6b9d96e1824ac4062394c5084c2b744e',1,'ivit::core::callbacks::CallbackContext']]],
+  ['pretrained_5fweights_15',['pretrained_weights',['../classivit_1_1train_1_1__yolox__backend_1_1YoloxBackend.html#ae6b79fec9cd17994f1be0c644f1f94e4',1,'ivit::train::_yolox_backend::YoloxBackend']]],
+  ['profiling_5flevel_16',['profiling_level',['../classivit_1_1core_1_1runtime__config_1_1QNNConfig.html#a9e4e6a397a0cfa671e88e766eb8ecaf4',1,'ivit::core::runtime_config::QNNConfig']]]
+];

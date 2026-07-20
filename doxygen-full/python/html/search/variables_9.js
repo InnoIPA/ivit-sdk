@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['id_0',['id',['../classivit_1_1__DeviceInfo.html#a4c54873c9c279506861981531842e045',1,'ivit::_DeviceInfo']]],
+  ['ignore_5findex_1',['ignore_index',['../classivit_1_1train_1_1segmentation_1_1SegmentationTrainer.html#a5d9fd346fb04dedef07e2bb40369d8f8',1,'ivit::train::segmentation::SegmentationTrainer']]],
+  ['image_2',['image',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a0a1a5814cd8bc80e429a03cb809ee76c',1,'ivit::core::callbacks::CallbackContext']]],
+  ['image_5fshape_3',['image_shape',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a313d49a965f10245400df1f22ae59652',1,'ivit::core::callbacks::CallbackContext']]],
+  ['image_5fsize_4',['image_size',['../classivit_1_1core_1_1result_1_1Results.html#a7b2b69ec5baed90067d00f46b27b1c00',1,'ivit.core.result.Results.image_size'],['../classivit_1_1train_1_1classification_1_1ClassificationTrainer.html#a0b05035a2953281b1d4bf13d514a211a',1,'ivit.train.classification.ClassificationTrainer.image_size'],['../classivit_1_1train_1_1detection_1_1DetectionTrainer.html#af675e9fe889866cd059b0449760b8729',1,'ivit.train.detection.DetectionTrainer.image_size'],['../classivit_1_1train_1_1segmentation_1_1SegmentationTrainer.html#a1a8299e8adac7816f96fd120537608b8',1,'ivit.train.segmentation.SegmentationTrainer.image_size']]],
+  ['images_5fdir_5',['images_dir',['../classivit_1_1train_1_1dataset_1_1SegmentationDataset.html#ad8fe8e33708dd823101c226c7f32a701',1,'ivit::train::dataset::SegmentationDataset']]],
+  ['imgsz_6',['imgsz',['../classivit_1_1core_1_1types_1_1InferConfig.html#a517d196293cefe284391878c326935cc',1,'ivit.core.types.InferConfig.imgsz'],['../classivit_1_1train_1_1__yolox__backend_1_1YoloxBackend.html#a17a4c3fe4292de506af5ba80d956a35e',1,'ivit.train._yolox_backend.YoloxBackend.imgsz']]],
+  ['infer_5fend_7',['INFER_END',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#a7b634cf600b3ca700141d6a933388a93',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['infer_5fstart_8',['INFER_START',['../classivit_1_1core_1_1callbacks_1_1CallbackEvent.html#a57f8102bd5d5d9c3f9e26c53b4fd1409',1,'ivit::core::callbacks::CallbackEvent']]],
+  ['inference_5fms_9',['inference_ms',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a7478c1c76d1eca09ccb6239e688fa2a5',1,'ivit::core::callbacks::CallbackContext']]],
+  ['inference_5fprecision_10',['inference_precision',['../classivit_1_1core_1_1runtime__config_1_1OpenVINOConfig.html#a2d73f6a10da5910dbcac2c2c313b7687',1,'ivit::core::runtime_config::OpenVINOConfig']]],
+  ['inference_5ftime_5fms_11',['inference_time_ms',['../classivit_1_1core_1_1result_1_1Results.html#a56bccebb6bb5bc18f96bd3332b5fe792',1,'ivit.core.result.Results.inference_time_ms'],['../classivit_1_1vision_1_1__classifier__ort_1_1__Results.html#a6c967b88e25beec6d4daf1560e1b42e4',1,'ivit.vision._classifier_ort._Results.inference_time_ms']]],
+  ['input_5fshape_12',['input_shape',['../classivit_1_1utils_1_1profiler_1_1ProfileReport.html#a98ce06c18acea9661e432285e67c7f99',1,'ivit::utils::profiler::ProfileReport']]],
+  ['input_5fsize_13',['input_size',['../classivit_1_1train_1_1__yolox__backend_1_1YoloxBackend.html#a7563a5435683750725d85077594c5fa8',1,'ivit.train._yolox_backend.YoloxBackend.input_size'],['../classivit_1_1vision_1_1yolox__predictor_1_1YoloxPredictor.html#ac90e3ca70b5f62354d0913cee4ba887c',1,'ivit.vision.yolox_predictor.YoloxPredictor.input_size']]],
+  ['input_5ftensor_14',['input_tensor',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a22bc0dc823cdbf6d08118e32a0ebd776',1,'ivit::core::callbacks::CallbackContext']]],
+  ['instance_5fsegmentation_15',['INSTANCE_SEGMENTATION',['../classivit_1_1core_1_1types_1_1TaskType.html#ad73d9d4f5e74315f2da4ba9f3ae15089',1,'ivit::core::types::TaskType']]],
+  ['int32_16',['INT32',['../classivit_1_1core_1_1types_1_1DataType.html#a328ae4f858d59f92b5e38088053675c9',1,'ivit::core::types::DataType']]],
+  ['int64_17',['INT64',['../classivit_1_1core_1_1types_1_1DataType.html#a3e554bb49e6978777e2be0eff3b27ff8',1,'ivit::core::types::DataType']]],
+  ['int8_18',['INT8',['../classivit_1_1core_1_1types_1_1DataType.html#a025350df4b7abecaec2d39874a7ea96d',1,'ivit::core::types::DataType']]],
+  ['iou_5fthreshold_19',['iou_threshold',['../classivit_1_1core_1_1types_1_1InferConfig.html#a8665cb1a5b168c2f9215443d798a9ca4',1,'ivit::core::types::InferConfig']]],
+  ['is_5favailable_20',['is_available',['../classivit_1_1core_1_1types_1_1DeviceInfo.html#a5c7907851daebae8adaea36a34caed71',1,'ivit::core::types::DeviceInfo']]],
+  ['is_5fdiscrete_21',['is_discrete',['../classivit_1_1core_1_1types_1_1DeviceInfo.html#a89ad265dd8fdda4b4ae7f03cd727d291',1,'ivit.core.types.DeviceInfo.is_discrete'],['../classivit_1_1devices_1_1Device.html#ada4cbfacfa3b4e28ecdc7987929d2cdb',1,'ivit.devices.Device.is_discrete']]],
+  ['iterations_22',['iterations',['../classivit_1_1utils_1_1profiler_1_1ProfileReport.html#a09c3dd9d1f206c2e0fc771cd305f080a',1,'ivit::utils::profiler::ProfileReport']]]
+];

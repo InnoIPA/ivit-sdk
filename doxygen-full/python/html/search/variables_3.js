@@ -1,0 +1,25 @@
+var searchData=
+[
+  ['cache_5fcontext_0',['cache_context',['../classivit_1_1core_1_1runtime__config_1_1QNNConfig.html#a6c3e3747c86d77398457a76099a05526',1,'ivit::core::runtime_config::QNNConfig']]],
+  ['cache_5fdir_1',['cache_dir',['../classivit_1_1core_1_1runtime__config_1_1OpenVINOConfig.html#a4e808ca5cc45b9fdd9d399a9f558420d',1,'ivit.core.runtime_config.OpenVINOConfig.cache_dir'],['../classivit_1_1core_1_1types_1_1LoadConfig.html#a42cd38306e051b507bf23c8499717c3e',1,'ivit.core.types.LoadConfig.cache_dir']]],
+  ['callbackfn_2',['CallbackFn',['../namespaceivit_1_1core_1_1callbacks.html#acfad17bc45ab88c485e18f9f1f6f2cca',1,'ivit::core::callbacks']]],
+  ['causes_3',['causes',['../classivit_1_1core_1_1exceptions_1_1IVITError.html#a7ef58d7db40d9ef6d998ad39ad1881fd',1,'ivit::core::exceptions::IVITError']]],
+  ['class_5fid_4',['class_id',['../classivit_1_1vision_1_1__classifier__ort_1_1__ClassificationResult.html#a7bf43273dd7b92a721ffdd99cc444ed4',1,'ivit::vision::_classifier_ort::_ClassificationResult']]],
+  ['classes_5',['classes',['../classivit_1_1core_1_1callbacks_1_1DetectionFilter.html#abe36bc7555658f83245044bb4ca73eb0',1,'ivit.core.callbacks.DetectionFilter.classes'],['../classivit_1_1core_1_1types_1_1InferConfig.html#a9b0f373aba6cc7aac690d43b9ba92bdc',1,'ivit.core.types.InferConfig.classes']]],
+  ['classification_6',['CLASSIFICATION',['../classivit_1_1core_1_1types_1_1TaskType.html#a24b65577305f842fff1a7115d8007328',1,'ivit::core::types::TaskType']]],
+  ['classifications_7',['classifications',['../classivit_1_1core_1_1result_1_1Results.html#a3dbb6c2e26ae2389f274079e2e509af2',1,'ivit.core.result.Results.classifications'],['../classivit_1_1vision_1_1__classifier__ort_1_1__Results.html#ad46489657b8e43346d8b291a27e2bac5',1,'ivit.vision._classifier_ort._Results.classifications']]],
+  ['coco_5fkeypoint_5fnames_8',['COCO_KEYPOINT_NAMES',['../namespaceivit_1_1core_1_1processors.html#af5865503ae15eefedede7c6af039a4a1',1,'ivit::core::processors']]],
+  ['colors_9',['COLORS',['../classivit_1_1utils_1_1visualizer_1_1Visualizer.html#a43cf4a775ecd4e83a41989fb9f47356b',1,'ivit::utils::visualizer::Visualizer']]],
+  ['compute_5fcapability_10',['compute_capability',['../classivit_1_1core_1_1types_1_1DeviceInfo.html#a34169222e1a3c2b7e3b34de201339364',1,'ivit.core.types.DeviceInfo.compute_capability'],['../classivit_1_1devices_1_1Device.html#a2383737dbce2093cbac3344a98b5f8e5',1,'ivit.devices.Device.compute_capability']]],
+  ['conf_5fthreshold_11',['conf_threshold',['../classivit_1_1core_1_1types_1_1InferConfig.html#a492a976cb700efb8e782423895fc0767',1,'ivit::core::types::InferConfig']]],
+  ['confidence_12',['confidence',['../classivit_1_1core_1_1types_1_1Pose.html#a769d86828484aabbe36524b99269e6a4',1,'ivit::core::types::Pose']]],
+  ['config_13',['config',['../classivit_1_1train_1_1base_1_1BaseTrainer.html#a4d241c1f6f7ef0e3d4d6f54e9fd708d8',1,'ivit.train.base.BaseTrainer.config'],['../classivit_1_1train_1_1detection_1_1DetectionTrainer.html#ad36fc72c8c27a41932eda351fe34ec1f',1,'ivit.train.detection.DetectionTrainer.config']]],
+  ['contrast_14',['contrast',['../classivit_1_1train_1_1augmentation_1_1ColorJitter.html#a6b1acb59b9867b6c418b62b1690d4892',1,'ivit::train::augmentation::ColorJitter']]],
+  ['cpu_15',['CPU',['../classivit_1_1devices_1_1DeviceType.html#a9949dc32d0e56093b80a8825ee83c5df',1,'ivit.devices.DeviceType.CPU'],['../classivit_1_1devices_1_1D.html#a2a08e6cc9df8531c04c2bd8d25196736',1,'ivit.devices.D.CPU']]],
+  ['crop_5fratio_16',['crop_ratio',['../classivit_1_1core_1_1processors_1_1CenterCropPreProcessor.html#a32aeb76297769d82a727b72900049c91',1,'ivit::core::processors::CenterCropPreProcessor']]],
+  ['cuda_17',['CUDA',['../classivit_1_1devices_1_1DeviceType.html#afb0ec8169b40269d395f93f07d3abf9d',1,'ivit.devices.DeviceType.CUDA'],['../classivit_1_1devices_1_1D.html#af84ffc3f53cbce1c17c3dab060e7e4b2',1,'ivit.devices.D.CUDA']]],
+  ['cuda_5f0_18',['CUDA_0',['../classivit_1_1devices_1_1D.html#a85788792a98705a8727fccfcc7ffd7ee',1,'ivit::devices::D']]],
+  ['cuda_5f1_19',['CUDA_1',['../classivit_1_1devices_1_1D.html#af051af9a20f803767f81e164b2f50cf0',1,'ivit::devices::D']]],
+  ['custom_20',['custom',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a029575cbf550bfbfd6826e3d4c97debf',1,'ivit::core::callbacks::CallbackContext']]],
+  ['cv2_21',['cv2',['../namespaceivit_1_1vision_1_1yolox__predictor.html#ad7a9b84fd0d2ac6421c65d61998455fb',1,'ivit::vision::yolox_predictor']]]
+];

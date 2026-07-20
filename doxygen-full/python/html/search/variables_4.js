@@ -1,0 +1,18 @@
+var searchData=
+[
+  ['d_0',['D',['../namespaceivit.html#a49ed32e54dd74e5fb66ed17c1928d27b',1,'ivit']]],
+  ['data_5fdir_1',['data_dir',['../classivit_1_1train_1_1__yolox__backend_1_1YoloxBackend.html#a31bcf9ff12773a4971767929f6bd49f6',1,'ivit::train::_yolox_backend::YoloxBackend']]],
+  ['dataset_2',['dataset',['../classivit_1_1train_1_1base_1_1BaseTrainer.html#adf7ddc476b6cceed0b6f0dfe91e49da8',1,'ivit.train.base.BaseTrainer.dataset'],['../classivit_1_1train_1_1classification_1_1__ClassifyWrapper.html#acd083a38fd569cc982f7fe610c3c6bdb',1,'ivit.train.classification._ClassifyWrapper.dataset'],['../classivit_1_1train_1_1segmentation_1_1__SegWrapper.html#a6da794e86b726643c8b8f1ba52266b88',1,'ivit.train.segmentation._SegWrapper.dataset']]],
+  ['degrees_3',['degrees',['../classivit_1_1train_1_1augmentation_1_1RandomRotation.html#a12267d959cfb8a101f2c6c0200e71fc3',1,'ivit::train::augmentation::RandomRotation']]],
+  ['details_4',['details',['../classivit_1_1core_1_1exceptions_1_1IVITError.html#a678d5f2a93a4b2a95f358fe2bbe5ea19',1,'ivit::core::exceptions::IVITError']]],
+  ['detection_5',['DETECTION',['../classivit_1_1core_1_1types_1_1TaskType.html#af52692516059694eb5fb5e81bf7e687a',1,'ivit::core::types::TaskType']]],
+  ['detections_6',['detections',['../classivit_1_1core_1_1result_1_1Results.html#a511c5f9ad27d2db7fe2a4d303e6f1eea',1,'ivit::core::result::Results']]],
+  ['detectiontrainer_7',['DetectionTrainer',['../namespaceivit_1_1train.html#a05591955a2c40103fc9f93c9f480e1e4',1,'ivit::train']]],
+  ['device_8',['Device',['../namespaceivit.html#ae0c786890121af41c27464a3c3ad5e6a',1,'ivit']]],
+  ['device_9',['device',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#adbe1c4557553152d8f3961cac29ab4f8',1,'ivit.core.callbacks.CallbackContext.device'],['../classivit_1_1core_1_1types_1_1LoadConfig.html#ad09e58e25965cb1415554c145c71c9b5',1,'ivit.core.types.LoadConfig.device'],['../classivit_1_1train_1_1__yolox__backend_1_1YoloxBackend.html#a8b284c5ccd80503c8d97a3bced4329c1',1,'ivit.train._yolox_backend.YoloxBackend.device'],['../classivit_1_1train_1_1base_1_1BaseTrainer.html#a542fd52f7fec7236f6bfcb8f08debf2a',1,'ivit.train.base.BaseTrainer.device'],['../classivit_1_1train_1_1detection_1_1DetectionTrainer.html#a5ca74d95fb059fc6750d5f69ba4d2e83',1,'ivit.train.detection.DetectionTrainer.device'],['../classivit_1_1train_1_1exporter_1_1ModelExporter.html#a5c298e034b8a181f8a922d10d3531753',1,'ivit.train.exporter.ModelExporter.device'],['../classivit_1_1utils_1_1profiler_1_1ProfileReport.html#ab222b62c3fd301eb1f9c275c0f315ec9',1,'ivit.utils.profiler.ProfileReport.device']]],
+  ['device_5fproperties_10',['device_properties',['../classivit_1_1core_1_1runtime__config_1_1OpenVINOConfig.html#a787a17730bd0f16e6db86572c912735f',1,'ivit::core::runtime_config::OpenVINOConfig']]],
+  ['device_5fstr_11',['device_str',['../classivit_1_1train_1_1base_1_1BaseTrainer.html#ae26724b66f1351eac678a1ca55925d8f',1,'ivit::train::base::BaseTrainer']]],
+  ['device_5fused_12',['device_used',['../classivit_1_1core_1_1result_1_1Results.html#a9fe881431a0dce3e2b96fc192a098011',1,'ivit.core.result.Results.device_used'],['../classivit_1_1vision_1_1__classifier__ort_1_1__Results.html#a0248b6c3cb980ecf0e3b5bdd893733ae',1,'ivit.vision._classifier_ort._Results.device_used']]],
+  ['devices_13',['devices',['../namespaceivit.html#a7e637a2872cc559d6c0ba60c785b90f6',1,'ivit.devices'],['../namespaceivit_1_1devices.html#a67d8b23ea8101d9dd67a0b1c6964dc31',1,'ivit.devices.devices']]],
+  ['dla_5fcore_14',['dla_core',['../classivit_1_1core_1_1runtime__config_1_1TensorRTConfig.html#a35a6adf4487c91aa9b9c033e3b7f9766',1,'ivit::core::runtime_config::TensorRTConfig']]]
+];

@@ -1,0 +1,22 @@
+var searchData=
+[
+  ['face_5fdetection_0',['FACE_DETECTION',['../classivit_1_1core_1_1types_1_1TaskType.html#a3083f2937c1c108a1900f6e6573f2193',1,'ivit::core::types::TaskType']]],
+  ['face_5frecognition_1',['FACE_RECOGNITION',['../classivit_1_1core_1_1types_1_1TaskType.html#af599bcea0ffea980d0975527cbe3d01e',1,'ivit::core::types::TaskType']]],
+  ['failed_5finferences_2',['failed_inferences',['../classivit_1_1utils_1_1metrics_1_1InferenceMetrics.html#ab47c470a439bfe1380d7e9afa0fb8e88',1,'ivit::utils::metrics::InferenceMetrics']]],
+  ['filepath_3',['filepath',['../classivit_1_1train_1_1callbacks_1_1ModelCheckpoint.html#ae9c7bb3b41cd5e318072822107e1c113',1,'ivit::train::callbacks::ModelCheckpoint']]],
+  ['filter_4',['filter',['../classivit_1_1core_1_1result_1_1Results.html#adc1008cf85c69ba5a44fa51e11bb9fc8',1,'ivit.core.result.Results.filter()'],['../classivit_1_1devices_1_1DeviceManager.html#a4d30bdae1d898066fd12c4e5d21788cf',1,'ivit.devices.DeviceManager.filter()']]],
+  ['filter_5fby_5farea_5',['filter_by_area',['../classivit_1_1core_1_1result_1_1Results.html#a3724629a2d0e82662df90c50c3034d7d',1,'ivit::core::result::Results']]],
+  ['filter_5fby_5fclass_6',['filter_by_class',['../classivit_1_1core_1_1result_1_1Results.html#aa8181bf109879f9776ce7b7d85f9d7d6',1,'ivit::core::result::Results']]],
+  ['filter_5fby_5fconfidence_7',['filter_by_confidence',['../classivit_1_1core_1_1result_1_1Results.html#a50074627dcc5ca1b6bd31b9c660ecde3',1,'ivit::core::result::Results']]],
+  ['fit_8',['fit',['../classivit_1_1train_1_1__yolox__backend_1_1YoloxBackend.html#a00cb917a21069ece8b38768aa0d6e6ab',1,'ivit.train._yolox_backend.YoloxBackend.fit()'],['../classivit_1_1train_1_1base_1_1BaseTrainer.html#ac66c2bcede5d6e4122f54f3e893cf903',1,'ivit.train.base.BaseTrainer.fit()'],['../classivit_1_1train_1_1detection_1_1DetectionTrainer.html#a9e61cbd5230dfab5472b516d59b923dd',1,'ivit.train.detection.DetectionTrainer.fit()']]],
+  ['float16_9',['FLOAT16',['../classivit_1_1core_1_1types_1_1DataType.html#a76f44f22ceca7a3cda2dd2420e99f4d7',1,'ivit::core::types::DataType']]],
+  ['float32_10',['FLOAT32',['../classivit_1_1core_1_1types_1_1DataType.html#a2b2dcaf4e6418d756a7d92922b362246',1,'ivit::core::types::DataType']]],
+  ['formats_11',['formats',['../classivit_1_1zoo_1_1registry_1_1ModelInfo.html#aedc607184ed7ab72a724fa6c6fdfc533',1,'ivit::zoo::registry::ModelInfo']]],
+  ['fps_12',['fps',['../classivit_1_1core_1_1callbacks_1_1FPSCounter.html#a0cdfa9aa41b3f4a7451f2c6b8acead16',1,'ivit.core.callbacks.FPSCounter.fps()'],['../classivit_1_1utils_1_1video_1_1VideoStream.html#abb0e581529c2dc64fdd743742664efb7',1,'ivit.utils.video.VideoStream.fps()']]],
+  ['fpscounter_13',['FPSCounter',['../classivit_1_1core_1_1callbacks_1_1FPSCounter.html',1,'ivit::core::callbacks']]],
+  ['frame_5fcount_14',['frame_count',['../classivit_1_1utils_1_1video_1_1VideoStream.html#a0f0f4316f9f981769b8c4ad307e3bea3',1,'ivit.utils.video.VideoStream.frame_count()'],['../classivit_1_1utils_1_1video_1_1VideoWriter.html#a32f75d5685f95102eb7f919585390db7',1,'ivit.utils.video.VideoWriter.frame_count()']]],
+  ['frame_5fidx_15',['frame_idx',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#a2fbe12c73ce112f04459e3b53166df80',1,'ivit.core.callbacks.CallbackContext.frame_idx'],['../classivit_1_1core_1_1result_1_1Results.html#a4ebe06b3da4a1478a550f32709875546',1,'ivit.core.result.Results.frame_idx']]],
+  ['freeze_5fbackbone_16',['freeze_backbone',['../classivit_1_1train_1_1base_1_1BaseTrainer.html#a43630808a1434180adba98b7b7a72b49',1,'ivit.train.base.BaseTrainer.freeze_backbone'],['../classivit_1_1train_1_1classification_1_1ClassificationTrainer.html',1,'ivit.train.classification.ClassificationTrainer.freeze_backbone']]],
+  ['from_5fcxcywh_17',['from_cxcywh',['../classivit_1_1core_1_1types_1_1BBox.html#a34f8c1be45d8ca255bc73fd7d7160c4b',1,'ivit::core::types::BBox']]],
+  ['from_5fxywh_18',['from_xywh',['../classivit_1_1core_1_1types_1_1BBox.html#ae45d06c38f1712bdf51dab0c6980f5c2',1,'ivit::core::types::BBox']]]
+];

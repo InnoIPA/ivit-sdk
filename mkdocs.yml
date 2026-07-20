@@ -1,0 +1,88 @@
+site_name: iVIT-SDK
+site_description: Innodisk Vision Intelligence Toolkit — 統一電腦視覺推論與訓練 SDK
+site_url: https://ivit-sdk.readthedocs.io
+repo_url: https://github.com/innodisk-mannywang/ivit-sdk
+repo_name: innodisk/ivit-sdk
+
+# 重用現有手寫 Markdown 目錄；API reference 以新增頁面附加，不覆蓋既有文件。
+docs_dir: docs
+
+theme:
+  name: material
+  language: zh-Hant
+  features:
+    - navigation.sections
+    - navigation.tabs
+    - navigation.top
+    - content.code.copy
+    - search.suggest
+    - search.highlight
+  palette:
+    - scheme: default
+      toggle:
+        icon: material/weather-night
+        name: 切換至深色模式
+    - scheme: slate
+      toggle:
+        icon: material/weather-sunny
+        name: 切換至淺色模式
+
+plugins:
+  - search:
+      lang:
+        - zh
+        - en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          # 讓 `ivit` 從原始碼樹 python/ivit/ 解析（而非可能過期的 site-packages 複本）。
+          paths: [python]
+          options:
+            # 用 griffe 預設的靜態分析（不實際 import 模組）：不受此環境 numpy /
+            # 編譯擴充 _ivit_core 匯入問題影響。代價是不能直接 document 指向
+            # _ivit_core 的原生型別（Model/BBox…），那些改由 C++ API sidecar 呈現。
+            docstring_style: google
+            docstring_section_style: table
+            merge_init_into_class: true
+            separate_signature: true
+            show_signature_annotations: true
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            filters: ["!^_"]
+            inherited_members: false
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - toc:
+      permalink: true
+
+nav:
+  - 首頁: index.md
+  - 入門:
+      - 快速上手: getting-started.md
+      - 使用手冊: user-guide.md
+      - Model Zoo: model-zoo.md
+      - 裝置選擇: device-selection.md
+      - 效能調校: performance-tuning.md
+      - 常見問題: faq.md
+  - 部署:
+      - Intel / OpenVINO: deployment/intel-openvino.md
+      - NVIDIA / TensorRT: deployment/nvidia-tensorrt.md
+  - Python API Reference:
+      - 總覽: api/reference/index.md
+      - Vision（Detector/Classifier/Segmentor）: api/reference/vision.md
+      - Core（Model/Results/Config）: api/reference/core.md
+      - Model Zoo: api/reference/zoo.md
+      - Training: api/reference/train.md
+      - Utils: api/reference/utils.md
+      - Devices & CLI: api/reference/cli.md
+  - C++ API Reference: api/cpp/html/index.html

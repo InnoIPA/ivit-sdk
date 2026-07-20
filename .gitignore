@@ -79,3 +79,7 @@ dogs-vs-cats/
 runs/
 
 output/
+
+# Docs build outputs
+site/
+docs/api/cpp/

@@ -1,0 +1,38 @@
+# Doxygen 設定 —— iVIT-SDK Python API（全 Doxygen 版之二）
+# 只含 Python 套件，輸出到 doxygen-full/python/html/。與 C++ 子站分開，外觀一致。
+# 註：Doxygen 不解析 Google-style docstring 的 Args:/Returns:，會以純文字呈現。
+#   doxygen Doxyfile-python
+
+PROJECT_NAME           = "iVIT-SDK · Python API"
+PROJECT_BRIEF          = "Python API — import ivit"
+OUTPUT_DIRECTORY       = doxygen-full/python
+HTML_OUTPUT            = html
+OUTPUT_LANGUAGE        = English
+
+INPUT                  = python/ivit
+FILE_PATTERNS          = *.py
+RECURSIVE              = YES
+EXCLUDE_PATTERNS       = */__pycache__/* */_binding* */runtime/*
+
+OPTIMIZE_OUTPUT_JAVA   = YES
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT
+
+HTML_EXTRA_STYLESHEET  = doxygen-full/awesome/doxygen-awesome.css \
+                         doxygen-full/awesome/doxygen-awesome-sidebar-only.css \
+                         doxygen-full/awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css
+HTML_EXTRA_FILES       = doxygen-full/awesome/doxygen-awesome-darkmode-toggle.js \
+                         doxygen-full/awesome/doxygen-awesome-fragment-copy-button.js
+
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+SORT_MEMBER_DOCS       = NO

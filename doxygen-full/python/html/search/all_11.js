@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['randomhorizontalflip_0',['RandomHorizontalFlip',['../classivit_1_1train_1_1augmentation_1_1RandomHorizontalFlip.html',1,'ivit::train::augmentation']]],
+  ['randomrotation_1',['RandomRotation',['../classivit_1_1train_1_1augmentation_1_1RandomRotation.html',1,'ivit::train::augmentation']]],
+  ['randomverticalflip_2',['RandomVerticalFlip',['../classivit_1_1train_1_1augmentation_1_1RandomVerticalFlip.html',1,'ivit::train::augmentation']]],
+  ['raw_5foutputs_3',['raw_outputs',['../classivit_1_1core_1_1result_1_1Results.html#afb0a83ccb72fc5e97881329a5c0ef305',1,'ivit::core::result::Results']]],
+  ['read_4',['read',['../classivit_1_1utils_1_1video_1_1VideoStream.html#af42d6f7a9401ee7d0d93f841862451d6',1,'ivit::utils::video::VideoStream']]],
+  ['record_5finference_5',['record_inference',['../classivit_1_1utils_1_1metrics_1_1MetricsCollector.html#ae7d19eb29ae15ad8a2332f22a171bead',1,'ivit.utils.metrics.MetricsCollector.record_inference()'],['../classivit_1_1utils_1_1metrics_1_1HealthMonitor.html#a9e7aad81b1e14adba9124b1b5ef92c6e',1,'ivit.utils.metrics.HealthMonitor.record_inference()'],['../namespaceivit_1_1utils_1_1metrics.html#ae3e715134c70f3ba726f3b3b6cd40cea',1,'ivit.utils.metrics.record_inference()']]],
+  ['refresh_6',['refresh',['../classivit_1_1devices_1_1DeviceManager.html#aa3ef3e6a9fcfd6667927227941c0cf24',1,'ivit::devices::DeviceManager']]],
+  ['register_7',['register',['../classivit_1_1core_1_1callbacks_1_1CallbackManager.html#ad988d6fd091180595ccf5d221bec89bb',1,'ivit::core::callbacks::CallbackManager']]],
+  ['register_5fpostprocessor_8',['register_postprocessor',['../namespaceivit_1_1core_1_1processors.html#ae2ff401a5da872ababa9945051ac2a12',1,'ivit::core::processors']]],
+  ['register_5fpreprocessor_9',['register_preprocessor',['../namespaceivit_1_1core_1_1processors.html#ac6e57d9b59cea938fed2b545c2730267',1,'ivit::core::processors']]],
+  ['registry_2epy_10',['registry.py',['../registry_8py.html',1,'']]],
+  ['release_11',['release',['../classivit_1_1utils_1_1video_1_1VideoStream.html#ada725fc275c290361f39892c5eaa3dd4',1,'ivit.utils.video.VideoStream.release()'],['../classivit_1_1utils_1_1video_1_1VideoWriter.html#a78717d06968365070a75b2b376e9d409',1,'ivit.utils.video.VideoWriter.release()']]],
+  ['remove_5flistener_12',['remove_listener',['../classivit_1_1utils_1_1metrics_1_1MetricsCollector.html#a64f8444c240959cb1651e6969138157d',1,'ivit::utils::metrics::MetricsCollector']]],
+  ['reset_13',['reset',['../classivit_1_1core_1_1callbacks_1_1LatencyLogger.html#aad7e03743433cbd559a265e94ed546f4',1,'ivit.core.callbacks.LatencyLogger.reset()'],['../classivit_1_1core_1_1callbacks_1_1FPSCounter.html#acbd189aff7120ad13e85ef8e61001fc1',1,'ivit.core.callbacks.FPSCounter.reset()'],['../classivit_1_1utils_1_1metrics_1_1MetricsCollector.html#af2de1cbe3c2c9a858e7575be4d415fbe',1,'ivit.utils.metrics.MetricsCollector.reset()'],['../classivit_1_1utils_1_1profiler_1_1Profiler.html#ad1c8402856f16c0220f4063b5911c495',1,'ivit.utils.profiler.Profiler.reset()']]],
+  ['resize_14',['Resize',['../classivit_1_1train_1_1augmentation_1_1Resize.html',1,'ivit::train::augmentation']]],
+  ['resourceexhaustederror_15',['ResourceExhaustedError',['../classivit_1_1core_1_1exceptions_1_1ResourceExhaustedError.html',1,'ivit::core::exceptions']]],
+  ['result_2epy_16',['result.py',['../result_8py.html',1,'']]],
+  ['results_17',['Results',['../classivit_1_1core_1_1result_1_1Results.html',1,'ivit::core::result']]],
+  ['results_18',['results',['../classivit_1_1core_1_1callbacks_1_1CallbackContext.html#ace342cc507173de3e0af29047e9509e7',1,'ivit::core::callbacks::CallbackContext']]],
+  ['root_19',['root',['../classivit_1_1train_1_1dataset_1_1ImageFolderDataset.html#a8bb5c3a683dc93982e07867fcd79c1be',1,'ivit.train.dataset.ImageFolderDataset.root'],['../classivit_1_1train_1_1dataset_1_1COCODataset.html#a38c59b9b14af7edb3610f9411d17afd4',1,'ivit.train.dataset.COCODataset.root'],['../classivit_1_1train_1_1dataset_1_1YOLODataset.html#a65f521db0f481f2e8eb0315ad5024bbd',1,'ivit.train.dataset.YOLODataset.root']]],
+  ['rtdetrpostprocessor_20',['RTDETRPostProcessor',['../classivit_1_1core_1_1processors_1_1RTDETRPostProcessor.html',1,'ivit::core::processors']]],
+  ['rtmposepostprocessor_21',['RTMPosePostProcessor',['../classivit_1_1core_1_1processors_1_1RTMPosePostProcessor.html',1,'ivit::core::processors']]],
+  ['runtime_5fconfig_2epy_22',['runtime_config.py',['../runtime__config_8py.html',1,'']]]
+];

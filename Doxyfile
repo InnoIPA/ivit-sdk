@@ -1,0 +1,43 @@
+# Doxygen 設定 —— iVIT-SDK C++ API sidecar
+# 產生 HTML 到 docs/api/cpp/html/，由 MkDocs 站台的 nav 連結進入。
+# 用法： doxygen Doxyfile
+# 註： Doxygen 會自動套用未列出的預設值，此檔只覆寫必要項目。
+
+PROJECT_NAME           = "iVIT-SDK C++ API"
+PROJECT_BRIEF          = "Innodisk Vision Intelligence Toolkit — C++ public API"
+OUTPUT_DIRECTORY       = docs/api/cpp
+OUTPUT_LANGUAGE        = English
+
+# --- 輸入 ---
+INPUT                  = include/ivit
+FILE_PATTERNS          = *.hpp
+RECURSIVE              = YES
+
+# --- 擷取範圍 ---
+# header 已有實質 Doxygen 註解；EXTRACT_ALL=YES 讓仍缺方法級註解者也一併列出。
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+
+# --- 輸出格式 ---
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+HTML_COLORSTYLE        = TOGGLE
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+
+# --- 前置處理：條件編譯的後端 header 需先定義巨集，否則內容會空白 ---
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = IVIT_HAS_OPENVINO \
+                         IVIT_HAS_TENSORRT \
+                         IVIT_HAS_HAILORT \
+                         IVIT_HAS_QNN
+
+# --- 雜項 ---
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+SORT_MEMBER_DOCS       = NO

@@ -1,0 +1,43 @@
+# Doxygen 設定 —— iVIT-SDK C++ API（全 Doxygen 版之一）
+# 只含 C++ header，輸出到 doxygen-full/cpp/html/。與 Python 子站分開，外觀一致。
+#   doxygen Doxyfile-cpp
+
+PROJECT_NAME           = "iVIT-SDK · C++ API"
+PROJECT_BRIEF          = "C++ public API — include/ivit/"
+OUTPUT_DIRECTORY       = doxygen-full/cpp
+HTML_OUTPUT            = html
+OUTPUT_LANGUAGE        = English
+
+INPUT                  = include/ivit
+FILE_PATTERNS          = *.hpp
+RECURSIVE              = YES
+
+EXTRACT_ALL            = YES
+EXTRACT_STATIC         = YES
+JAVADOC_AUTOBRIEF      = YES
+QT_AUTOBRIEF           = YES
+
+GENERATE_HTML          = YES
+GENERATE_LATEX         = NO
+GENERATE_TREEVIEW      = YES
+DISABLE_INDEX          = NO
+FULL_SIDEBAR           = NO
+HTML_COLORSTYLE        = LIGHT
+
+HTML_EXTRA_STYLESHEET  = doxygen-full/awesome/doxygen-awesome.css \
+                         doxygen-full/awesome/doxygen-awesome-sidebar-only.css \
+                         doxygen-full/awesome/doxygen-awesome-sidebar-only-darkmode-toggle.css
+HTML_EXTRA_FILES       = doxygen-full/awesome/doxygen-awesome-darkmode-toggle.js \
+                         doxygen-full/awesome/doxygen-awesome-fragment-copy-button.js
+
+ENABLE_PREPROCESSING   = YES
+MACRO_EXPANSION        = YES
+EXPAND_ONLY_PREDEF     = YES
+PREDEFINED             = IVIT_HAS_OPENVINO \
+                         IVIT_HAS_TENSORRT \
+                         IVIT_HAS_HAILORT \
+                         IVIT_HAS_QNN
+
+QUIET                  = YES
+WARN_IF_UNDOCUMENTED   = NO
+SORT_MEMBER_DOCS       = NO
