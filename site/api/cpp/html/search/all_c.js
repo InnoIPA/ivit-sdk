@@ -1,0 +1,14 @@
+var searchData=
+[
+  ['name_0',['name',['../structivit_1_1DeviceInfo.html#a8c4c89613f82a1b56ce4fdaa7e129b9f',1,'ivit::DeviceInfo::name'],['../structivit_1_1DeviceStatus.html#a9e04c2749590f2e65230e6e41c8783ff',1,'ivit::DeviceStatus::name'],['../structivit_1_1Keypoint.html#a36ce225727009916cb9749f57d212a01',1,'ivit::Keypoint::name'],['../structivit_1_1TensorInfo.html#ae0c99e21687a7a0e750cbb6da2113b7e',1,'ivit::TensorInfo::name'],['../classivit_1_1Model.html#abba59b6d7c101ce584f45b16251cad55',1,'ivit::Model::name()'],['../classivit_1_1HailoRTRuntime.html#aa954cb2a11979dfd342506cc72070bc3',1,'ivit::HailoRTRuntime::name()'],['../classivit_1_1OpenVINORuntime.html#ab9b3c7b4599b035917e719a9e26615aa',1,'ivit::OpenVINORuntime::name()'],['../classivit_1_1QNNRuntime.html#adaccf8612076d703e3ee892d23fe8db2',1,'ivit::QNNRuntime::name()'],['../classivit_1_1IRuntime.html#ad88f090600efcd4f674b62bf630b1a53',1,'ivit::IRuntime::name()'],['../classivit_1_1TensorRTRuntime.html#a57cdbad643192bcdbe3185ca5a77f0da',1,'ivit::TensorRTRuntime::name()']]],
+  ['nc_1',['NC',['../namespaceivit.html#a428abd58f15495667426f369f487b211a90581d96b500fd2d3fd701a583409cb8',1,'ivit']]],
+  ['nchw_2',['NCHW',['../namespaceivit.html#a428abd58f15495667426f369f487b211a6b99f356fe3b30a2a850b5ea897c289f',1,'ivit']]],
+  ['next_3',['next',['../classivit_1_1Model_1_1StreamIterator.html#a546723fe7e2593b1ca037c96d4fb9fa2',1,'ivit::Model::StreamIterator']]],
+  ['nhwc_4',['NHWC',['../namespaceivit.html#a428abd58f15495667426f369f487b211ad066db54b89b0912e7e7c6da51e2da51',1,'ivit']]],
+  ['npu_5fcompilation_5fmode_5',['npu_compilation_mode',['../structivit_1_1OpenVINOConfig.html#ae5eeecec2e4708e5e3f44108b90d8974',1,'ivit::OpenVINOConfig']]],
+  ['num_5fclasses_6',['num_classes',['../classivit_1_1vision_1_1Classifier.html#a27287f884011b81bd1a37357854e7bcd',1,'ivit::vision::Classifier::num_classes()'],['../classivit_1_1vision_1_1Detector.html#a5acd90a6373e8d3444034a987b5b0a45',1,'ivit::vision::Detector::num_classes()'],['../classivit_1_1vision_1_1Segmentor.html#a83d7458f7462d54de9a4dc026cbfcc53',1,'ivit::vision::Segmentor::num_classes()']]],
+  ['num_5fdetections_7',['num_detections',['../classivit_1_1Results.html#a82b998c6d0556127779d720beae3c8ed',1,'ivit::Results']]],
+  ['num_5fstreams_8',['num_streams',['../structivit_1_1OpenVINOConfig.html#aca8a6573c8f464bc8bdc97a2f167392b',1,'ivit::OpenVINOConfig']]],
+  ['num_5fthreads_9',['num_threads',['../structivit_1_1OpenVINOConfig.html#a15bf5f9d4dc2637257527a150ce3bcc0',1,'ivit::OpenVINOConfig::num_threads'],['../structivit_1_1RuntimeConfig.html#ae352149353cba5afe635f36c043ee4bf',1,'ivit::RuntimeConfig::num_threads']]],
+  ['numel_10',['numel',['../structivit_1_1TensorInfo.html#aec1287e1325ab32a742796ada8a18192',1,'ivit::TensorInfo::numel()'],['../classivit_1_1Tensor.html#a3d78b1805b8fa92e17cec340a5b3b14d',1,'ivit::Tensor::numel()']]]
+];

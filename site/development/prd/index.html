@@ -1,0 +1,3767 @@
+
+<!doctype html>
+<html lang="zh-Hant" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Innodisk Vision Intelligence Toolkit — 統一電腦視覺推論與訓練 SDK">
+      
+      
+      
+        <link rel="canonical" href="https://ivit-sdk.readthedocs.io/development/prd/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>PRD-001: iVIT-SDK 產品需求文件 - iVIT-SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#prd-001-ivit-sdk" class="md-skip">
+          跳轉至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="頁首">
+    <a href="../.." title="iVIT-SDK" class="md-header__button md-logo" aria-label="iVIT-SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            iVIT-SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              PRD-001: iVIT-SDK 產品需求文件
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切換至深色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切換至深色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切換至淺色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切換至淺色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜尋" placeholder="搜尋" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="搜尋">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空" aria-label="清空" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜尋引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/innodisk-mannywang/ivit-sdk" title="前往倉庫" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    innodisk/ivit-sdk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="標籤頁" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首頁
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/" class="md-tabs__link">
+          
+  
+  
+  入門
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/intel-openvino/" class="md-tabs__link">
+          
+  
+  
+  部署
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/reference/" class="md-tabs__link">
+          
+  
+  
+  Python API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/cpp/html/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  C++ API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="導航" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="iVIT-SDK" class="md-nav__button md-logo" aria-label="iVIT-SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    iVIT-SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/innodisk-mannywang/ivit-sdk" title="前往倉庫" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    innodisk/ivit-sdk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首頁
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    入門
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    入門
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速上手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用手冊
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model-zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../device-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    裝置選擇
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance-tuning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    效能調校
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常見問題
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/intel-openvino/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intel / OpenVINO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/nvidia-tensorrt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NVIDIA / TensorRT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    總覽
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/vision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vision（Detector/Classifier/Segmentor）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core（Model/Results/Config）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/train/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Devices & CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/cpp/html/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++ API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目錄">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目錄
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 執行摘要
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 執行摘要">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 產品願景
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 核心價值主張
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.3 目標市場
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 產品定義
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 產品定義">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 產品名稱與定位
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 目標用戶畫像
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2.2 目標用戶畫像">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#si" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        主要用戶：系統整合商 (SI)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ai" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        次要用戶：AI 應用開發者
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.3 競品分析
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 硬體支援需求
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. 硬體支援需求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 支援平台矩陣
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3.1 支援平台矩陣">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#311-intel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1.1 Intel 平台
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#312-nvidia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1.2 NVIDIA 平台
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#313-qualcomm-" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1.3 Qualcomm 平台（規劃中 - 未來里程碑）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 硬體自動偵測
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 功能需求
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 功能需求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 電腦視覺任務支援
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.1 電腦視覺任務支援">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#411-classification" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.1 圖像分類 (Classification)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#412-object-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.2 物件偵測 (Object Detection)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#413-semantic-segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.3 語意分割 (Semantic Segmentation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#414-instance-segmentation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.4 實例分割 (Instance Segmentation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#415-pose-estimation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.5 姿態估計 (Pose Estimation)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#416-face-analysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.6 人臉相關 (Face Analysis)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#417-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.7 光學字元辨識 (OCR)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#418-anomaly-detection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1.8 異常偵測 (Anomaly Detection)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 訓練功能需求
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.2 訓練功能需求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#421-transfer-learning" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2.1 遷移式學習 (Transfer Learning)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#422" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2.2 資料管理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#423" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2.3 模型匯出
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 模型管理需求
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.3 模型管理需求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#431" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3.1 模型載入
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#432-model-zoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3.2 Model Zoo
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 非功能需求
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4.4 非功能需求">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#441" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4.1 效能需求
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#442" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4.2 相容性需求
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#443" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4.3 可維護性需求
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. API 設計草案
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. API 設計草案">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 Python API 概覽
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 核心推論 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 任務專用 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 訓練 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-c-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 C++ API 概覽
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-model-zoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. Model Zoo 規劃
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. Model Zoo 規劃">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 預訓練模型清單
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6.1 預訓練模型清單">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        分類模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        物件偵測模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#_3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        語意分割模型
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. 開發里程碑
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. 開發里程碑">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#phase-1-mvp-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 1: MVP (3 個月)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-2-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 2: 功能完善 (3 個月)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#phase-3-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Phase 3: 生態建設 (3 個月)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 驗收標準
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. 驗收標準">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 功能驗收
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 效能驗收
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#83" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.3 品質驗收
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 風險與緩解
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 附錄
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. 附錄">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A. 名詞對照表
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        B. 參考資料
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="prd-001-ivit-sdk">PRD-001: iVIT-SDK 產品需求文件<a class="headerlink" href="#prd-001-ivit-sdk" title="Permanent link">&para;</a></h1>
+<table>
+<thead>
+<tr>
+<th>文件編號</th>
+<th>PRD-001</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>版本</td>
+<td>1.0</td>
+</tr>
+<tr>
+<td>狀態</td>
+<td>Draft</td>
+</tr>
+<tr>
+<td>建立日期</td>
+<td>2026-01-24</td>
+</tr>
+<tr>
+<td>作者</td>
+<td>AI 產品團隊</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="1">1. 執行摘要<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<h3 id="11">1.1 產品願景<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<p>iVIT-SDK (Innodisk Vision &amp; Inference Toolkit) 是宜鼎國際為其 AI 運算平台開發的統一電腦視覺推論與訓練 SDK。本 SDK 旨在成為跨硬體平台的標準化開發工具包，類似於：</p>
+<ul>
+<li><strong>OpenVINO</strong> 之於 Intel 硬體</li>
+<li><strong>TensorRT</strong> 之於 NVIDIA 硬體</li>
+<li><strong>SNPE/QNN</strong> 之於 Qualcomm 硬體</li>
+</ul>
+<p>但 iVIT-SDK 更進一步，提供<strong>統一的 API 介面</strong>，讓開發者只需學習一套 API，即可在多種硬體平台上部署 AI 應用。</p>
+<h3 id="12">1.2 核心價值主張<a class="headerlink" href="#12" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>價值</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>一次開發，多平台部署</strong></td>
+<td>統一 API 抽象不同硬體後端</td>
+</tr>
+<tr>
+<td><strong>降低整合門檻</strong></td>
+<td>隱藏各廠商 SDK 複雜性</td>
+</tr>
+<tr>
+<td><strong>加速產品上市</strong></td>
+<td>預整合常用 CV 任務</td>
+</tr>
+<tr>
+<td><strong>訓練到推論一站式</strong></td>
+<td>支援遷移式學習</td>
+</tr>
+<tr>
+<td><strong>宜鼎硬體優化</strong></td>
+<td>針對宜鼎 AI 運算平台調優</td>
+</tr>
+</tbody>
+</table>
+<h3 id="13">1.3 目標市場<a class="headerlink" href="#13" title="Permanent link">&para;</a></h3>
+<ul>
+<li>系統整合商 (SI)</li>
+<li>工業自動化設備商</li>
+<li>智慧零售解決方案商</li>
+<li>智慧城市/交通方案商</li>
+<li>AI 邊緣運算應用開發者</li>
+</ul>
+<hr />
+<h2 id="2">2. 產品定義<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<h3 id="21">2.1 產品名稱與定位<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>內容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>正式名稱</strong></td>
+<td>iVIT-SDK (Innodisk Vision &amp; Inference Toolkit)</td>
+</tr>
+<tr>
+<td><strong>產品類型</strong></td>
+<td>電腦視覺推論與訓練 SDK</td>
+</tr>
+<tr>
+<td><strong>目標定位</strong></td>
+<td>跨硬體平台的統一 AI 開發工具包</td>
+</tr>
+<tr>
+<td><strong>授權模式</strong></td>
+<td>[待定] 開源 / 商業授權</td>
+</tr>
+</tbody>
+</table>
+<h3 id="22">2.2 目標用戶畫像<a class="headerlink" href="#22" title="Permanent link">&para;</a></h3>
+<h4 id="si">主要用戶：系統整合商 (SI)<a class="headerlink" href="#si" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>屬性</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>背景</strong></td>
+<td>具備軟體開發能力，但非 AI 專家</td>
+</tr>
+<tr>
+<td><strong>痛點</strong></td>
+<td>不同硬體需學習不同 SDK，整合成本高</td>
+</tr>
+<tr>
+<td><strong>需求</strong></td>
+<td>快速整合 AI 功能到現有系統</td>
+</tr>
+<tr>
+<td><strong>技術能力</strong></td>
+<td>Python 中階、C++ 初中階</td>
+</tr>
+<tr>
+<td><strong>決策因素</strong></td>
+<td>開發效率、技術支援、文件完整度</td>
+</tr>
+</tbody>
+</table>
+<h4 id="ai">次要用戶：AI 應用開發者<a class="headerlink" href="#ai" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>屬性</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>背景</strong></td>
+<td>熟悉深度學習，具模型訓練經驗</td>
+</tr>
+<tr>
+<td><strong>痛點</strong></td>
+<td>模型部署到邊緣設備繁瑣</td>
+</tr>
+<tr>
+<td><strong>需求</strong></td>
+<td>簡化從訓練到部署的流程</td>
+</tr>
+<tr>
+<td><strong>技術能力</strong></td>
+<td>Python 高階、熟悉 PyTorch/TensorFlow</td>
+</tr>
+<tr>
+<td><strong>決策因素</strong></td>
+<td>效能、模型支援廣度、客製化彈性</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23">2.3 競品分析<a class="headerlink" href="#23" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>特性</th>
+<th>iVIT-SDK</th>
+<th>OpenVINO</th>
+<th>TensorRT</th>
+<th>SNPE</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>跨硬體支援</strong></td>
+<td>✅ Intel/NVIDIA/Qualcomm</td>
+<td>Intel only</td>
+<td>NVIDIA only</td>
+<td>Qualcomm only</td>
+</tr>
+<tr>
+<td><strong>統一 API</strong></td>
+<td>✅</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+<td><strong>訓練功能</strong></td>
+<td>✅ 遷移式學習</td>
+<td>❌</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+<tr>
+<td><strong>Python API</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>⚠️ 有限</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>C++ API</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅</td>
+</tr>
+<tr>
+<td><strong>Model Zoo</strong></td>
+<td>✅</td>
+<td>✅</td>
+<td>❌</td>
+<td>⚠️ 有限</td>
+</tr>
+<tr>
+<td><strong>中文文件</strong></td>
+<td>✅</td>
+<td>⚠️ 部分</td>
+<td>❌</td>
+<td>❌</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="3">3. 硬體支援需求<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<h3 id="31">3.1 支援平台矩陣<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<h4 id="311-intel">3.1.1 Intel 平台<a class="headerlink" href="#311-intel" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>硬體類型</th>
+<th>產品系列</th>
+<th>架構</th>
+<th>推論引擎</th>
+<th>x86-64</th>
+<th>ARM64</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>CPU</strong></td>
+<td>Xeon Scalable (4th/5th Gen)</td>
+<td>Sapphire Rapids/Emerald Rapids</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>CPU</strong></td>
+<td>Core Ultra (Meteor Lake)</td>
+<td>Meteor Lake</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>CPU</strong></td>
+<td>Core (12th-14th Gen)</td>
+<td>Alder Lake/Raptor Lake</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>CPU</strong></td>
+<td>Atom</td>
+<td>Elkhart Lake/Alder Lake-N</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>iGPU</strong></td>
+<td>Intel Xe Graphics</td>
+<td>Xe-LP/Xe-LPG</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>Intel Arc A-Series</td>
+<td>Xe-HPG (Alchemist)</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>Intel Data Center GPU Max</td>
+<td>Xe-HPC (Ponte Vecchio)</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>NPU</strong></td>
+<td>Intel AI Boost</td>
+<td>Meteor Lake NPU</td>
+<td>OpenVINO</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>底層 Runtime 版本要求</strong>：
+- OpenVINO &gt;= 2024.0
+- Intel GPU Driver &gt;= 24.x</p>
+<h4 id="312-nvidia">3.1.2 NVIDIA 平台<a class="headerlink" href="#312-nvidia" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>硬體類型</th>
+<th>產品系列</th>
+<th>架構</th>
+<th>推論引擎</th>
+<th>x86-64</th>
+<th>ARM64</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>GeForce RTX 30/40 Series</td>
+<td>Ampere/Ada Lovelace</td>
+<td>TensorRT</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>NVIDIA RTX A-Series</td>
+<td>Ampere/Ada</td>
+<td>TensorRT</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>Tesla T4</td>
+<td>Turing</td>
+<td>TensorRT</td>
+<td>✅</td>
+<td>-</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>NVIDIA A-Series (A2/A10/A30/A100)</td>
+<td>Ampere</td>
+<td>TensorRT</td>
+<td>✅</td>
+<td>-</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>NVIDIA L4/L40/L40S</td>
+<td>Ada Lovelace</td>
+<td>TensorRT</td>
+<td>✅</td>
+<td>-</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>dGPU</strong></td>
+<td>NVIDIA H100</td>
+<td>Hopper</td>
+<td>TensorRT</td>
+<td>✅</td>
+<td>-</td>
+<td>P2</td>
+</tr>
+<tr>
+<td><strong>Jetson</strong></td>
+<td>Jetson AGX Orin</td>
+<td>Ampere</td>
+<td>TensorRT</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>Jetson</strong></td>
+<td>Jetson Orin NX</td>
+<td>Ampere</td>
+<td>TensorRT</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>Jetson</strong></td>
+<td>Jetson Orin Nano</td>
+<td>Ampere</td>
+<td>TensorRT</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>Jetson</strong></td>
+<td>Jetson AGX Xavier</td>
+<td>Volta</td>
+<td>TensorRT</td>
+<td>-</td>
+<td>✅</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>Jetson</strong></td>
+<td>Jetson Xavier NX</td>
+<td>Volta</td>
+<td>TensorRT</td>
+<td>-</td>
+<td>✅</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>Jetson</strong></td>
+<td>Jetson Nano (Legacy)</td>
+<td>Maxwell</td>
+<td>TensorRT</td>
+<td>-</td>
+<td>✅</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>底層 Runtime 版本要求</strong>：
+- TensorRT &gt;= 8.6 (推薦 9.x)
+- CUDA &gt;= 12.0
+- cuDNN &gt;= 8.9
+- JetPack &gt;= 5.1 (Jetson)</p>
+<h4 id="313-qualcomm-">3.1.3 Qualcomm 平台（規劃中 - 未來里程碑）<a class="headerlink" href="#313-qualcomm-" title="Permanent link">&para;</a></h4>
+<blockquote>
+<p><strong>注意</strong>：Qualcomm 平台支援目前為規劃階段，尚未實作。以下為未來開發計畫。</p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>硬體類型</th>
+<th>產品系列</th>
+<th>架構</th>
+<th>推論引擎</th>
+<th>x86-64</th>
+<th>ARM64</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>SoC</strong></td>
+<td>Snapdragon 8 Gen 3</td>
+<td>Hexagon DSP + NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>SoC</strong></td>
+<td>Snapdragon 8 Gen 2</td>
+<td>Hexagon DSP + NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>SoC</strong></td>
+<td>Snapdragon 8cx Gen 3</td>
+<td>Hexagon DSP + NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>PC</strong></td>
+<td>Snapdragon X Elite</td>
+<td>Hexagon NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>PC</strong></td>
+<td>Snapdragon X Plus</td>
+<td>Hexagon NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>IoT</strong></td>
+<td>QCS8550</td>
+<td>Hexagon DSP + NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>IoT</strong></td>
+<td>QCS6490</td>
+<td>Hexagon DSP + NPU</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P0</td>
+</tr>
+<tr>
+<td><strong>IoT</strong></td>
+<td>QCS8250</td>
+<td>Hexagon DSP</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P1</td>
+</tr>
+<tr>
+<td><strong>Robotics</strong></td>
+<td>RB5 Platform</td>
+<td>Hexagon DSP</td>
+<td>SNPE/QNN</td>
+<td>-</td>
+<td>✅</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>底層 Runtime 版本要求</strong>：
+- SNPE &gt;= 2.18 或 QNN &gt;= 2.x
+- Qualcomm AI Engine Direct SDK</p>
+<h3 id="32">3.2 硬體自動偵測<a class="headerlink" href="#32" title="Permanent link">&para;</a></h3>
+<p>SDK 應提供自動硬體偵測功能：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">ivit</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># 列出可用硬體</span>
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">devices</span> <span class="o">=</span> <span class="n">ivit</span><span class="o">.</span><span class="n">list_devices</span><span class="p">()</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="c1"># 輸出範例:</span>
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a><span class="c1"># [</span>
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="c1">#   {&quot;id&quot;: &quot;cpu&quot;, &quot;name&quot;: &quot;Intel Core Ultra 7 165H&quot;, &quot;backend&quot;: &quot;openvino&quot;},</span>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a><span class="c1">#   {&quot;id&quot;: &quot;gpu:0&quot;, &quot;name&quot;: &quot;Intel Arc Graphics&quot;, &quot;backend&quot;: &quot;openvino&quot;},</span>
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1">#   {&quot;id&quot;: &quot;npu&quot;, &quot;name&quot;: &quot;Intel AI Boost&quot;, &quot;backend&quot;: &quot;openvino&quot;},</span>
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="c1">#   {&quot;id&quot;: &quot;cuda:0&quot;, &quot;name&quot;: &quot;NVIDIA GeForce RTX 4090&quot;, &quot;backend&quot;: &quot;tensorrt&quot;},</span>
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a><span class="c1"># ]</span>
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="c1"># 自動選擇最佳設備</span>
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a><span class="n">best_device</span> <span class="o">=</span> <span class="n">ivit</span><span class="o">.</span><span class="n">get_best_device</span><span class="p">()</span>
+</code></pre></div>
+<hr />
+<h2 id="4">4. 功能需求<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
+<h3 id="41">4.1 電腦視覺任務支援<a class="headerlink" href="#41" title="Permanent link">&para;</a></h3>
+<h4 id="411-classification">4.1.1 圖像分類 (Classification)<a class="headerlink" href="#411-classification" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CLS-001</td>
+<td>支援單標籤圖像分類</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CLS-002</td>
+<td>支援多標籤圖像分類</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>CLS-003</td>
+<td>回傳 Top-K 分類結果</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CLS-004</td>
+<td>支援 Softmax 信心分數</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CLS-005</td>
+<td>支援批次推論</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- ResNet (18/34/50/101/152)
+- EfficientNet (B0-B7)
+- MobileNet (V2/V3)
+- ConvNeXt
+- Vision Transformer (ViT)
+- Swin Transformer</p>
+<h4 id="412-object-detection">4.1.2 物件偵測 (Object Detection)<a class="headerlink" href="#412-object-detection" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DET-001</td>
+<td>支援邊界框 (Bounding Box) 偵測</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DET-002</td>
+<td>回傳類別、信心分數、座標</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DET-003</td>
+<td>支援 NMS (Non-Maximum Suppression)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DET-004</td>
+<td>支援信心分數閾值設定</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DET-005</td>
+<td>支援 IoU 閾值設定</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DET-006</td>
+<td>支援批次推論</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DET-007</td>
+<td>支援串流影片處理</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- YOLOv5 (n/s/m/l/x)
+- YOLOX (nano/tiny/s/m/l)
+- YOLOv9
+- YOLOv10
+- SSD (MobileNet/VGG)
+- Faster R-CNN
+- RetinaNet
+- DETR</p>
+<h4 id="413-semantic-segmentation">4.1.3 語意分割 (Semantic Segmentation)<a class="headerlink" href="#413-semantic-segmentation" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SEG-001</td>
+<td>支援像素級分類</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>SEG-002</td>
+<td>回傳分割遮罩 (Mask)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>SEG-003</td>
+<td>支援多類別分割</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>SEG-004</td>
+<td>支援遮罩視覺化 (Colormap)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>SEG-005</td>
+<td>支援遮罩輪廓提取</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>SEG-006</td>
+<td>支援批次推論</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- DeepLabV3/DeepLabV3+
+- UNet/UNet++
+- SegFormer
+- PSPNet
+- FCN
+- BiSeNet</p>
+<h4 id="414-instance-segmentation">4.1.4 實例分割 (Instance Segmentation)<a class="headerlink" href="#414-instance-segmentation" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>INS-001</td>
+<td>支援個別物件分割</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>INS-002</td>
+<td>回傳邊界框 + 實例遮罩</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>INS-003</td>
+<td>區分同類別不同實例</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>INS-004</td>
+<td>支援遮罩視覺化</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- Mask R-CNN
+- YOLACT/YOLACT++
+- DeepLabV3
+- SOLOv2</p>
+<h4 id="415-pose-estimation">4.1.5 姿態估計 (Pose Estimation)<a class="headerlink" href="#415-pose-estimation" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>POS-001</td>
+<td>支援人體關鍵點偵測</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>POS-002</td>
+<td>回傳 17/18 點人體骨架</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>POS-003</td>
+<td>支援多人姿態估計</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>POS-004</td>
+<td>支援關鍵點信心分數</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>POS-005</td>
+<td>支援骨架視覺化</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- RTMPose
+- HRNet
+- OpenPose
+- MediaPipe Pose</p>
+<h4 id="416-face-analysis">4.1.6 人臉相關 (Face Analysis)<a class="headerlink" href="#416-face-analysis" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>FAC-001</td>
+<td>支援人臉偵測</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>FAC-002</td>
+<td>支援人臉特徵點定位</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>FAC-003</td>
+<td>支援人臉特徵提取 (Embedding)</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>FAC-004</td>
+<td>支援人臉比對 (1:1 驗證)</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>FAC-005</td>
+<td>支援人臉搜尋 (1:N 識別)</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- RetinaFace
+- SCRFD
+- ArcFace
+- CosFace</p>
+<h4 id="417-ocr">4.1.7 光學字元辨識 (OCR)<a class="headerlink" href="#417-ocr" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>OCR-001</td>
+<td>支援文字區域偵測</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>OCR-002</td>
+<td>支援印刷文字辨識</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>OCR-003</td>
+<td>支援中英文混合辨識</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>OCR-004</td>
+<td>支援多語系辨識</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- PaddleOCR
+- EasyOCR
+- TrOCR</p>
+<h4 id="418-anomaly-detection">4.1.8 異常偵測 (Anomaly Detection)<a class="headerlink" href="#418-anomaly-detection" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ANO-001</td>
+<td>支援無監督異常偵測</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>ANO-002</td>
+<td>支援異常熱力圖生成</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>ANO-003</td>
+<td>支援異常分數輸出</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>ANO-004</td>
+<td>支援少樣本訓練</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<p><strong>支援模型</strong>：
+- PatchCore
+- FastFlow
+- PaDiM
+- STFPM</p>
+<h3 id="42">4.2 訓練功能需求<a class="headerlink" href="#42" title="Permanent link">&para;</a></h3>
+<h4 id="421-transfer-learning">4.2.1 遷移式學習 (Transfer Learning)<a class="headerlink" href="#421-transfer-learning" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TRN-001</td>
+<td>支援分類模型微調</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>TRN-002</td>
+<td>支援凍結特徵提取層</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>TRN-003</td>
+<td>支援自訂類別數量</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>TRN-004</td>
+<td>支援資料增強</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>TRN-005</td>
+<td>支援訓練進度回調</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>TRN-006</td>
+<td>支援訓練中止與恢復</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>TRN-007</td>
+<td>支援物件偵測模型微調</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>TRN-008</td>
+<td>支援分割模型微調</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<h4 id="422">4.2.2 資料管理<a class="headerlink" href="#422" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>DAT-001</td>
+<td>支援標準資料集格式 (ImageFolder)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DAT-002</td>
+<td>支援 COCO 格式</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>DAT-003</td>
+<td>支援 YOLO 標註格式</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>DAT-004</td>
+<td>支援 VOC 格式</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>DAT-005</td>
+<td>支援資料集分割 (train/val/test)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>DAT-006</td>
+<td>提供資料驗證工具</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<h4 id="423">4.2.3 模型匯出<a class="headerlink" href="#423" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>EXP-001</td>
+<td>支援匯出 ONNX 格式</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>EXP-002</td>
+<td>支援匯出 OpenVINO IR 格式</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>EXP-003</td>
+<td>支援匯出 TensorRT Engine</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>EXP-004</td>
+<td>支援匯出 SNPE DLC 格式</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>EXP-005</td>
+<td>支援 INT8 量化</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>EXP-006</td>
+<td>支援 FP16 量化</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>EXP-007</td>
+<td>支援校正資料集量化</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43">4.3 模型管理需求<a class="headerlink" href="#43" title="Permanent link">&para;</a></h3>
+<h4 id="431">4.3.1 模型載入<a class="headerlink" href="#431" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MDL-001</td>
+<td>支援從本地路徑載入模型</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MDL-002</td>
+<td>支援從 URL 下載模型</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>MDL-003</td>
+<td>支援從 Model Zoo 載入</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MDL-004</td>
+<td>自動偵測模型格式</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MDL-005</td>
+<td>自動模型格式轉換</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MDL-006</td>
+<td>模型快取管理</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<h4 id="432-model-zoo">4.3.2 Model Zoo<a class="headerlink" href="#432-model-zoo" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>ZOO-001</td>
+<td>提供預訓練分類模型</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>ZOO-002</td>
+<td>提供預訓練偵測模型</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>ZOO-003</td>
+<td>提供預訓練分割模型</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>ZOO-004</td>
+<td>模型元資料 (精度、速度)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>ZOO-005</td>
+<td>模型版本管理</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>ZOO-006</td>
+<td>模型效能基準</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44">4.4 非功能需求<a class="headerlink" href="#44" title="Permanent link">&para;</a></h3>
+<h4 id="441">4.4.1 效能需求<a class="headerlink" href="#441" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>目標值</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>PRF-001</td>
+<td>模型載入時間</td>
+<td>&lt; 5 秒 (首次)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>PRF-002</td>
+<td>推論延遲 (YOLOX-Nano, 640x640)</td>
+<td>&lt; 10ms (GPU)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>PRF-003</td>
+<td>記憶體佔用</td>
+<td>&lt; 500MB (典型模型)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>PRF-004</td>
+<td>CPU 利用率</td>
+<td>支援多執行緒</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>PRF-005</td>
+<td>GPU 記憶體利用率</td>
+<td>優化 VRAM 使用</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<h4 id="442">4.4.2 相容性需求<a class="headerlink" href="#442" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CMP-001</td>
+<td>支援 Python 3.9/3.10/3.11/3.12</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CMP-002</td>
+<td>支援 Ubuntu 20.04/22.04</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CMP-003</td>
+<td>支援 Windows 10/11</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CMP-004</td>
+<td>支援 NVIDIA JetPack 5.x/6.x</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>CMP-005</td>
+<td>支援 C++17 標準</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<h4 id="443">4.4.3 可維護性需求<a class="headerlink" href="#443" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>需求 ID</th>
+<th>需求描述</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>MNT-001</td>
+<td>完整 API 文件</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MNT-002</td>
+<td>程式碼覆蓋率 &gt; 80%</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MNT-003</td>
+<td>版本語意化 (Semantic Versioning)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MNT-004</td>
+<td>變更日誌 (CHANGELOG)</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>MNT-005</td>
+<td>多語系文件 (中/英)</td>
+<td>P0</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-api">5. API 設計草案<a class="headerlink" href="#5-api" title="Permanent link">&para;</a></h2>
+<h3 id="51-python-api">5.1 Python API 概覽<a class="headerlink" href="#51-python-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="c1"># 核心模組</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="kn">import</span><span class="w"> </span><span class="nn">ivit</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="c1"># 任務專用模組</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ivit.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">Classifier</span><span class="p">,</span> <span class="n">Detector</span><span class="p">,</span> <span class="n">Segmentor</span><span class="p">,</span> <span class="n">PoseEstimator</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="c1"># 訓練模組</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ivit.train</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">,</span> <span class="n">Augmentation</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="c1"># 工具模組</span>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ivit.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">Visualizer</span><span class="p">,</span> <span class="n">Profiler</span><span class="p">,</span> <span class="n">VideoStream</span>
+</code></pre></div>
+<h3 id="52-api">5.2 核心推論 API<a class="headerlink" href="#52-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">ivit</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a><span class="c1"># 方式 1: 通用模型載入</span>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="n">model</span> <span class="o">=</span> <span class="n">ivit</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;yolox-s.onnx&quot;</span><span class="p">,</span>           <span class="c1"># 模型路徑或 Model Zoo 名稱</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>                  <span class="c1"># auto, cpu, gpu:0, npu, cuda:0</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">backend</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span>                 <span class="c1"># auto, openvino, tensorrt, snpe</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>    <span class="n">task</span><span class="o">=</span><span class="s2">&quot;detection&quot;</span><span class="p">,</span>               <span class="c1"># 任務類型提示 (可選)</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a><span class="p">)</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a><span class="c1"># 推論</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a><span class="n">results</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;image.jpg&quot;</span><span class="p">,</span>             <span class="c1"># 影像路徑、numpy array、URL</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="n">conf_threshold</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>             <span class="c1"># 信心閾值</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>    <span class="n">iou_threshold</span><span class="o">=</span><span class="mf">0.45</span><span class="p">,</span>             <span class="c1"># NMS IoU 閾值</span>
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a><span class="p">)</span>
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a><span class="c1"># 結果存取</span>
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a><span class="k">for</span> <span class="n">detection</span> <span class="ow">in</span> <span class="n">results</span><span class="p">:</span>
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Class: </span><span class="si">{</span><span class="n">detection</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Confidence: </span><span class="si">{</span><span class="n">detection</span><span class="o">.</span><span class="n">confidence</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Bounding Box: </span><span class="si">{</span><span class="n">detection</span><span class="o">.</span><span class="n">bbox</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>  <span class="c1"># [x1, y1, x2, y2]</span>
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a><span class="c1"># 視覺化</span>
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a><span class="n">results</span><span class="o">.</span><span class="n">visualize</span><span class="p">(</span><span class="n">save_path</span><span class="o">=</span><span class="s2">&quot;output.jpg&quot;</span><span class="p">)</span>
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a><span class="c1"># 批次推論</span>
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a><span class="n">batch_results</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">([</span><span class="s2">&quot;img1.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;img2.jpg&quot;</span><span class="p">,</span> <span class="s2">&quot;img3.jpg&quot;</span><span class="p">])</span>
+</code></pre></div>
+<h3 id="53-api">5.3 任務專用 API<a class="headerlink" href="#53-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ivit.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">Classifier</span><span class="p">,</span> <span class="n">Detector</span><span class="p">,</span> <span class="n">Segmentor</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="c1"># 分類</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="n">classifier</span> <span class="o">=</span> <span class="n">Classifier</span><span class="p">(</span><span class="s2">&quot;efficientnet_b0&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">result</span> <span class="o">=</span> <span class="n">classifier</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;cat.jpg&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Top-1: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">top1</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">top1</span><span class="o">.</span><span class="n">score</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">)&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Top-5: </span><span class="si">{</span><span class="n">result</span><span class="o">.</span><span class="n">top5</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a><span class="c1"># 物件偵測</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="n">detector</span> <span class="o">=</span> <span class="n">Detector</span><span class="p">(</span><span class="s2">&quot;yolox-s&quot;</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda:0&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a><span class="n">detections</span> <span class="o">=</span> <span class="n">detector</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;street.jpg&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="k">for</span> <span class="n">det</span> <span class="ow">in</span> <span class="n">detections</span><span class="p">:</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">det</span><span class="o">.</span><span class="n">label</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">det</span><span class="o">.</span><span class="n">confidence</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="n">det</span><span class="o">.</span><span class="n">bbox</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a><span class="c1"># 語意分割</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a><span class="n">segmentor</span> <span class="o">=</span> <span class="n">Segmentor</span><span class="p">(</span><span class="s2">&quot;deeplabv3_resnet50&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="n">mask</span> <span class="o">=</span> <span class="n">segmentor</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="s2">&quot;scene.jpg&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a><span class="n">mask</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;segmentation.png&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a><span class="n">mask</span><span class="o">.</span><span class="n">colorize</span><span class="p">()</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="s2">&quot;segmentation_colored.png&quot;</span><span class="p">)</span>
+</code></pre></div>
+<h3 id="54-api">5.4 訓練 API<a class="headerlink" href="#54-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ivit.train</span><span class="w"> </span><span class="kn">import</span> <span class="n">Trainer</span><span class="p">,</span> <span class="n">ImageFolderDataset</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a><span class="kn">from</span><span class="w"> </span><span class="nn">ivit.vision</span><span class="w"> </span><span class="kn">import</span> <span class="n">Classifier</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="c1"># 準備資料集</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">dataset</span> <span class="o">=</span> <span class="n">ImageFolderDataset</span><span class="p">(</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="n">root</span><span class="o">=</span><span class="s2">&quot;./my_dataset&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="n">train_split</span><span class="o">=</span><span class="mf">0.8</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="n">transforms</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;resize&quot;</span><span class="p">,</span> <span class="s2">&quot;normalize&quot;</span><span class="p">,</span> <span class="s2">&quot;augment&quot;</span><span class="p">],</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a><span class="p">)</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a><span class="c1"># 載入預訓練模型</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="n">model</span> <span class="o">=</span> <span class="n">Classifier</span><span class="p">(</span><span class="s2">&quot;resnet50&quot;</span><span class="p">,</span> <span class="n">pretrained</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<a id="__codelineno-4-13" name="__codelineno-4-13" href="#__codelineno-4-13"></a>
+<a id="__codelineno-4-14" name="__codelineno-4-14" href="#__codelineno-4-14"></a><span class="c1"># 建立訓練器</span>
+<a id="__codelineno-4-15" name="__codelineno-4-15" href="#__codelineno-4-15"></a><span class="n">trainer</span> <span class="o">=</span> <span class="n">Trainer</span><span class="p">(</span>
+<a id="__codelineno-4-16" name="__codelineno-4-16" href="#__codelineno-4-16"></a>    <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+<a id="__codelineno-4-17" name="__codelineno-4-17" href="#__codelineno-4-17"></a>    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+<a id="__codelineno-4-18" name="__codelineno-4-18" href="#__codelineno-4-18"></a>    <span class="n">epochs</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
+<a id="__codelineno-4-19" name="__codelineno-4-19" href="#__codelineno-4-19"></a>    <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.001</span><span class="p">,</span>
+<a id="__codelineno-4-20" name="__codelineno-4-20" href="#__codelineno-4-20"></a>    <span class="n">batch_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
+<a id="__codelineno-4-21" name="__codelineno-4-21" href="#__codelineno-4-21"></a>    <span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;adam&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-22" name="__codelineno-4-22" href="#__codelineno-4-22"></a>    <span class="n">device</span><span class="o">=</span><span class="s2">&quot;cuda:0&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-23" name="__codelineno-4-23" href="#__codelineno-4-23"></a><span class="p">)</span>
+<a id="__codelineno-4-24" name="__codelineno-4-24" href="#__codelineno-4-24"></a>
+<a id="__codelineno-4-25" name="__codelineno-4-25" href="#__codelineno-4-25"></a><span class="c1"># 開始訓練</span>
+<a id="__codelineno-4-26" name="__codelineno-4-26" href="#__codelineno-4-26"></a><span class="n">trainer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+<a id="__codelineno-4-27" name="__codelineno-4-27" href="#__codelineno-4-27"></a>    <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span>
+<a id="__codelineno-4-28" name="__codelineno-4-28" href="#__codelineno-4-28"></a>        <span class="n">trainer</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">EarlyStopping</span><span class="p">(</span><span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">),</span>
+<a id="__codelineno-4-29" name="__codelineno-4-29" href="#__codelineno-4-29"></a>        <span class="n">trainer</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">ModelCheckpoint</span><span class="p">(</span><span class="s2">&quot;best_model.pt&quot;</span><span class="p">),</span>
+<a id="__codelineno-4-30" name="__codelineno-4-30" href="#__codelineno-4-30"></a>    <span class="p">]</span>
+<a id="__codelineno-4-31" name="__codelineno-4-31" href="#__codelineno-4-31"></a><span class="p">)</span>
+<a id="__codelineno-4-32" name="__codelineno-4-32" href="#__codelineno-4-32"></a>
+<a id="__codelineno-4-33" name="__codelineno-4-33" href="#__codelineno-4-33"></a><span class="c1"># 評估</span>
+<a id="__codelineno-4-34" name="__codelineno-4-34" href="#__codelineno-4-34"></a><span class="n">metrics</span> <span class="o">=</span> <span class="n">trainer</span><span class="o">.</span><span class="n">evaluate</span><span class="p">()</span>
+<a id="__codelineno-4-35" name="__codelineno-4-35" href="#__codelineno-4-35"></a><span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Accuracy: </span><span class="si">{</span><span class="n">metrics</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.2%</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<a id="__codelineno-4-36" name="__codelineno-4-36" href="#__codelineno-4-36"></a>
+<a id="__codelineno-4-37" name="__codelineno-4-37" href="#__codelineno-4-37"></a><span class="c1"># 匯出優化模型</span>
+<a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a><span class="n">trainer</span><span class="o">.</span><span class="n">export</span><span class="p">(</span>
+<a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>    <span class="n">path</span><span class="o">=</span><span class="s2">&quot;my_model.onnx&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-40" name="__codelineno-4-40" href="#__codelineno-4-40"></a>    <span class="nb">format</span><span class="o">=</span><span class="s2">&quot;onnx&quot;</span><span class="p">,</span>
+<a id="__codelineno-4-41" name="__codelineno-4-41" href="#__codelineno-4-41"></a>    <span class="n">optimize_for</span><span class="o">=</span><span class="s2">&quot;intel_npu&quot;</span><span class="p">,</span>  <span class="c1"># 目標硬體優化</span>
+<a id="__codelineno-4-42" name="__codelineno-4-42" href="#__codelineno-4-42"></a>    <span class="n">quantize</span><span class="o">=</span><span class="s2">&quot;int8&quot;</span><span class="p">,</span>            <span class="c1"># 量化精度</span>
+<a id="__codelineno-4-43" name="__codelineno-4-43" href="#__codelineno-4-43"></a>    <span class="n">calibration_data</span><span class="o">=</span><span class="n">dataset</span><span class="o">.</span><span class="n">calibration_set</span><span class="p">,</span>
+<a id="__codelineno-4-44" name="__codelineno-4-44" href="#__codelineno-4-44"></a><span class="p">)</span>
+</code></pre></div>
+<h3 id="55-c-api">5.5 C++ API 概覽<a class="headerlink" href="#55-c-api" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ivit/ivit.hpp&gt;</span>
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a><span class="c1">// 載入模型</span>
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="k">auto</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ivit</span><span class="o">::</span><span class="n">load_model</span><span class="p">(</span><span class="s">&quot;yolox-s.onnx&quot;</span><span class="p">,</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="w">    </span><span class="p">.</span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;cuda:0&quot;</span><span class="p">,</span>
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="w">    </span><span class="p">.</span><span class="n">backend</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;tensorrt&quot;</span>
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a><span class="p">});</span>
+<a id="__codelineno-5-8" name="__codelineno-5-8" href="#__codelineno-5-8"></a>
+<a id="__codelineno-5-9" name="__codelineno-5-9" href="#__codelineno-5-9"></a><span class="c1">// 推論</span>
+<a id="__codelineno-5-10" name="__codelineno-5-10" href="#__codelineno-5-10"></a><span class="n">cv</span><span class="o">::</span><span class="n">Mat</span><span class="w"> </span><span class="n">image</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">cv</span><span class="o">::</span><span class="n">imread</span><span class="p">(</span><span class="s">&quot;image.jpg&quot;</span><span class="p">);</span>
+<a id="__codelineno-5-11" name="__codelineno-5-11" href="#__codelineno-5-11"></a><span class="k">auto</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="o">-&gt;</span><span class="n">predict</span><span class="p">(</span><span class="n">image</span><span class="p">);</span>
+<a id="__codelineno-5-12" name="__codelineno-5-12" href="#__codelineno-5-12"></a>
+<a id="__codelineno-5-13" name="__codelineno-5-13" href="#__codelineno-5-13"></a><span class="c1">// 處理結果</span>
+<a id="__codelineno-5-14" name="__codelineno-5-14" href="#__codelineno-5-14"></a><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">det</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">results</span><span class="p">.</span><span class="n">detections</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-5-15" name="__codelineno-5-15" href="#__codelineno-5-15"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">cout</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot;Class: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">det</span><span class="p">.</span><span class="n">label</span>
+<a id="__codelineno-5-16" name="__codelineno-5-16" href="#__codelineno-5-16"></a><span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; Conf: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">det</span><span class="p">.</span><span class="n">confidence</span>
+<a id="__codelineno-5-17" name="__codelineno-5-17" href="#__codelineno-5-17"></a><span class="w">              </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="s">&quot; BBox: &quot;</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">det</span><span class="p">.</span><span class="n">bbox</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span>
+<a id="__codelineno-5-18" name="__codelineno-5-18" href="#__codelineno-5-18"></a><span class="p">}</span>
+<a id="__codelineno-5-19" name="__codelineno-5-19" href="#__codelineno-5-19"></a>
+<a id="__codelineno-5-20" name="__codelineno-5-20" href="#__codelineno-5-20"></a><span class="c1">// 視覺化</span>
+<a id="__codelineno-5-21" name="__codelineno-5-21" href="#__codelineno-5-21"></a><span class="k">auto</span><span class="w"> </span><span class="n">viz</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">results</span><span class="p">.</span><span class="n">visualize</span><span class="p">();</span>
+<a id="__codelineno-5-22" name="__codelineno-5-22" href="#__codelineno-5-22"></a><span class="n">cv</span><span class="o">::</span><span class="n">imwrite</span><span class="p">(</span><span class="s">&quot;output.jpg&quot;</span><span class="p">,</span><span class="w"> </span><span class="n">viz</span><span class="p">);</span>
+</code></pre></div>
+<hr />
+<h2 id="6-model-zoo">6. Model Zoo 規劃<a class="headerlink" href="#6-model-zoo" title="Permanent link">&para;</a></h2>
+<h3 id="61">6.1 預訓練模型清單<a class="headerlink" href="#61" title="Permanent link">&para;</a></h3>
+<h4 id="_1">分類模型<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>模型名稱</th>
+<th>參數量</th>
+<th>ImageNet Top-1</th>
+<th>推薦硬體</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>mobilenet_v2</td>
+<td>3.4M</td>
+<td>72.0%</td>
+<td>CPU, NPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>mobilenet_v3_small</td>
+<td>2.5M</td>
+<td>67.4%</td>
+<td>CPU, NPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>mobilenet_v3_large</td>
+<td>5.4M</td>
+<td>75.2%</td>
+<td>CPU, NPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>efficientnet_b0</td>
+<td>5.3M</td>
+<td>77.1%</td>
+<td>CPU, GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>efficientnet_b1</td>
+<td>7.8M</td>
+<td>78.8%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>resnet18</td>
+<td>11.7M</td>
+<td>69.8%</td>
+<td>CPU, GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>resnet50</td>
+<td>25.6M</td>
+<td>76.1%</td>
+<td>GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>resnet101</td>
+<td>44.5M</td>
+<td>77.4%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>convnext_tiny</td>
+<td>28.6M</td>
+<td>82.1%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>vit_base</td>
+<td>86M</td>
+<td>81.8%</td>
+<td>GPU</td>
+<td>P2</td>
+</tr>
+<tr>
+<td>swin_tiny</td>
+<td>28.3M</td>
+<td>81.3%</td>
+<td>GPU</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_2">物件偵測模型<a class="headerlink" href="#_2" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>模型名稱</th>
+<th>參數量</th>
+<th>COCO mAP</th>
+<th>推薦硬體</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>yolov5n</td>
+<td>1.9M</td>
+<td>28.0%</td>
+<td>CPU, NPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>yolov5s</td>
+<td>7.2M</td>
+<td>37.4%</td>
+<td>CPU, GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>yolov5m</td>
+<td>21.2M</td>
+<td>45.4%</td>
+<td>GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>yolov5l</td>
+<td>46.5M</td>
+<td>49.0%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>yolov9c</td>
+<td>25.3M</td>
+<td>53.0%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>yolov10n</td>
+<td>2.3M</td>
+<td>38.5%</td>
+<td>CPU, NPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>ssd_mobilenet_v2</td>
+<td>4.5M</td>
+<td>22.0%</td>
+<td>CPU, NPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>faster_rcnn_resnet50</td>
+<td>41.8M</td>
+<td>37.0%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>detr_resnet50</td>
+<td>41M</td>
+<td>42.0%</td>
+<td>GPU</td>
+<td>P2</td>
+</tr>
+</tbody>
+</table>
+<h4 id="_3">語意分割模型<a class="headerlink" href="#_3" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>模型名稱</th>
+<th>參數量</th>
+<th>資料集</th>
+<th>mIoU</th>
+<th>推薦硬體</th>
+<th>優先級</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>deeplabv3_mobilenetv3</td>
+<td>11.0M</td>
+<td>VOC</td>
+<td>75.3%</td>
+<td>CPU, NPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>deeplabv3_resnet50</td>
+<td>42.0M</td>
+<td>VOC</td>
+<td>79.7%</td>
+<td>GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>deeplabv3_resnet101</td>
+<td>61.0M</td>
+<td>VOC</td>
+<td>80.9%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>unet_resnet34</td>
+<td>24.4M</td>
+<td>-</td>
+<td>-</td>
+<td>GPU</td>
+<td>P0</td>
+</tr>
+<tr>
+<td>segformer_b0</td>
+<td>3.8M</td>
+<td>ADE20K</td>
+<td>37.4%</td>
+<td>CPU, GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>segformer_b2</td>
+<td>27.5M</td>
+<td>ADE20K</td>
+<td>46.5%</td>
+<td>GPU</td>
+<td>P1</td>
+</tr>
+<tr>
+<td>bisenet_v2</td>
+<td>3.4M</td>
+<td>Cityscapes</td>
+<td>72.6%</td>
+<td>CPU, NPU</td>
+<td>P1</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="7">7. 開發里程碑<a class="headerlink" href="#7" title="Permanent link">&para;</a></h2>
+<h3 id="phase-1-mvp-3">Phase 1: MVP (3 個月)<a class="headerlink" href="#phase-1-mvp-3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>內容</th>
+<th>完成標準</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>核心 API</td>
+<td>統一模型載入與推論介面</td>
+<td>Python/C++ API 完成</td>
+</tr>
+<tr>
+<td>Intel 後端</td>
+<td>OpenVINO 適配器</td>
+<td>CPU/iGPU/NPU 支援</td>
+</tr>
+<tr>
+<td>NVIDIA 後端</td>
+<td>TensorRT 適配器</td>
+<td>dGPU/Jetson 支援</td>
+</tr>
+<tr>
+<td>任務支援</td>
+<td>Classification + Object Detection</td>
+<td>基本功能完成</td>
+</tr>
+<tr>
+<td>Model Zoo</td>
+<td>10+ 預訓練模型</td>
+<td>可下載使用</td>
+</tr>
+<tr>
+<td>文件</td>
+<td>API 文件 + 快速入門</td>
+<td>中英文版本</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-2-3">Phase 2: 功能完善 (3 個月)<a class="headerlink" href="#phase-2-3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>內容</th>
+<th>完成標準</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Qualcomm 後端（規劃中）</td>
+<td>SNPE/QNN 適配器</td>
+<td>ARM SoC 支援</td>
+</tr>
+<tr>
+<td>任務擴展</td>
+<td>Segmentation + Pose + Face</td>
+<td>功能完成</td>
+</tr>
+<tr>
+<td>訓練功能</td>
+<td>Classification 遷移式學習</td>
+<td>訓練 + 匯出</td>
+</tr>
+<tr>
+<td>Model Zoo</td>
+<td>30+ 預訓練模型</td>
+<td>效能基準</td>
+</tr>
+<tr>
+<td>工具</td>
+<td>Visualizer + Profiler</td>
+<td>功能完成</td>
+</tr>
+</tbody>
+</table>
+<h3 id="phase-3-3">Phase 3: 生態建設 (3 個月)<a class="headerlink" href="#phase-3-3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>項目</th>
+<th>內容</th>
+<th>完成標準</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>訓練擴展</td>
+<td>Detection 微調</td>
+<td>功能完成</td>
+</tr>
+<tr>
+<td>進階任務</td>
+<td>OCR + Anomaly Detection</td>
+<td>功能完成</td>
+</tr>
+<tr>
+<td>雲端整合</td>
+<td>Model Zoo 雲端託管</td>
+<td>上線服務</td>
+</tr>
+<tr>
+<td>開發工具</td>
+<td>VS Code 插件</td>
+<td>發布</td>
+</tr>
+<tr>
+<td>社群</td>
+<td>範例專案 + 教學</td>
+<td>完成</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8">8. 驗收標準<a class="headerlink" href="#8" title="Permanent link">&para;</a></h2>
+<h3 id="81">8.1 功能驗收<a class="headerlink" href="#81" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] 所有 P0 需求項目完成</li>
+<li>[ ] Python 和 C++ API 功能對等</li>
+<li>[ ] 三大硬體平台基本功能通過</li>
+<li>[ ] Model Zoo 至少包含 10 個模型</li>
+</ul>
+<h3 id="82">8.2 效能驗收<a class="headerlink" href="#82" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] YOLOX-Nano (640x640) 在 RTX 4090 上 &lt; 5ms</li>
+<li>[ ] YOLOX-Nano (640x640) 在 Jetson Orin 上 &lt; 15ms</li>
+<li>[ ] YOLOX-Nano (640x640) 在 Intel Core Ultra 上 &lt; 20ms</li>
+</ul>
+<h3 id="83">8.3 品質驗收<a class="headerlink" href="#83" title="Permanent link">&para;</a></h3>
+<ul>
+<li>[ ] 程式碼覆蓋率 &gt; 80%</li>
+<li>[ ] API 文件覆蓋率 100%</li>
+<li>[ ] 無 P0/P1 等級 Bug</li>
+<li>[ ] 通過安全性掃描</li>
+</ul>
+<hr />
+<h2 id="9">9. 風險與緩解<a class="headerlink" href="#9" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>風險</th>
+<th>可能性</th>
+<th>影響</th>
+<th>緩解策略</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>硬體廠商 SDK 更新不相容</td>
+<td>高</td>
+<td>高</td>
+<td>抽象層設計、版本鎖定</td>
+</tr>
+<tr>
+<td>模型格式轉換失敗</td>
+<td>中</td>
+<td>中</td>
+<td>使用 ONNX 作為中間格式</td>
+</tr>
+<tr>
+<td>效能達不到預期</td>
+<td>中</td>
+<td>高</td>
+<td>早期效能測試、優化迭代</td>
+</tr>
+<tr>
+<td>跨平台建置問題</td>
+<td>高</td>
+<td>中</td>
+<td>CI/CD 多平台測試</td>
+</tr>
+<tr>
+<td>文件不完整</td>
+<td>中</td>
+<td>中</td>
+<td>文件先行、自動化生成</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="10">10. 附錄<a class="headerlink" href="#10" title="Permanent link">&para;</a></h2>
+<h3 id="a">A. 名詞對照表<a class="headerlink" href="#a" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>英文</th>
+<th>中文</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Classification</td>
+<td>分類</td>
+<td>圖像分類任務</td>
+</tr>
+<tr>
+<td>Object Detection</td>
+<td>物件偵測</td>
+<td>偵測圖像中物件位置與類別</td>
+</tr>
+<tr>
+<td>Semantic Segmentation</td>
+<td>語意分割</td>
+<td>像素級分類</td>
+</tr>
+<tr>
+<td>Instance Segmentation</td>
+<td>實例分割</td>
+<td>區分同類別不同實例</td>
+</tr>
+<tr>
+<td>Pose Estimation</td>
+<td>姿態估計</td>
+<td>人體關鍵點偵測</td>
+</tr>
+<tr>
+<td>Transfer Learning</td>
+<td>遷移式學習</td>
+<td>利用預訓練模型微調</td>
+</tr>
+<tr>
+<td>Inference</td>
+<td>推論</td>
+<td>模型預測</td>
+</tr>
+<tr>
+<td>Backend</td>
+<td>後端</td>
+<td>底層推論引擎</td>
+</tr>
+</tbody>
+</table>
+<h3 id="b">B. 參考資料<a class="headerlink" href="#b" title="Permanent link">&para;</a></h3>
+<ul>
+<li><a href="https://docs.openvino.ai/">OpenVINO Documentation</a></li>
+<li><a href="https://docs.nvidia.com/deeplearning/tensorrt/">TensorRT Documentation</a></li>
+<li><a href="https://developer.qualcomm.com/software/qualcomm-neural-processing-sdk">Qualcomm SNPE Documentation</a></li>
+</ul>
+<hr />
+<p><strong>文件結束</strong></p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到頂部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.tabs", "navigation.top", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u62f7\u8c9d", "clipboard.copy": "\u62f7\u8c9d", "search.result.more.one": "\u6b64\u9801\u5c1a\u6709 1 \u500b\u7b26\u5408\u7684\u9805\u76ee", "search.result.more.other": "\u6b64\u9801\u5c1a\u6709 # \u500b\u7b26\u5408\u7684\u9805\u76ee", "search.result.none": "\u6c92\u6709\u627e\u5230\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.other": "\u627e\u5230 # \u500b\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.placeholder": "\u9375\u5165\u4ee5\u958b\u59cb\u6aa2\u7d22", "search.result.term.missing": "\u7f3a\u5931", "select.version": "\u9078\u64c7\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>

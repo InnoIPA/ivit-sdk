@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['save_0',['save',['../classivit_1_1Results.html#a4537c48107cd8811c9b5915fad7725b9',1,'ivit::Results::save()'],['../structivit_1_1utils_1_1ProfileReport.html#a500264dd04e075b68aa0ac9a1898fbcb',1,'ivit::utils::ProfileReport::save()']]],
+  ['save_5fengine_1',['save_engine',['../classivit_1_1TensorRTRuntime.html#aa838304971cc5b50db466f3c0114ad35',1,'ivit::TensorRTRuntime']]],
+  ['scopedtimer_2',['ScopedTimer',['../classivit_1_1utils_1_1ScopedTimer.html#a3ace8b3bfe857281a5769015af82cc2f',1,'ivit::utils::ScopedTimer']]],
+  ['segmentor_3',['Segmentor',['../classivit_1_1vision_1_1Segmentor.html#ac90a927dcdb2178dfe79ce0b297327dd',1,'ivit::vision::Segmentor::Segmentor(const std::string &amp;model, const std::string &amp;device=&quot;auto&quot;, const LoadConfig &amp;config=LoadConfig{})'],['../classivit_1_1vision_1_1Segmentor.html#aff7689f266ff412e43e5f512a4d09538',1,'ivit::vision::Segmentor::Segmentor(std::shared_ptr&lt; Model &gt; model)']]],
+  ['set_5fasync_4',['set_async',['../classivit_1_1OpenVINORuntime.html#a3454663ba40da943c3fbe3eced6d7b60',1,'ivit::OpenVINORuntime']]],
+  ['set_5fcache_5fdir_5',['set_cache_dir',['../classivit_1_1ModelManager.html#af71d0c27368384c36dfc4a4246df60a1',1,'ivit::ModelManager::set_cache_dir()'],['../classivit_1_1OpenVINORuntime.html#a4335fa0fc623b0d3141d5d4758095b5a',1,'ivit::OpenVINORuntime::set_cache_dir()'],['../namespaceivit.html#aa2fe549d54f4dfe3c6925d068260a596',1,'ivit::set_cache_dir()']]],
+  ['set_5fcolormap_6',['set_colormap',['../classivit_1_1vision_1_1Segmentor.html#a61f28926fff6297d5e6f54c9b7f1ff4c',1,'ivit::vision::Segmentor']]],
+  ['set_5fdevice_7',['set_device',['../classivit_1_1TensorRTRuntime.html#af70688deb02602d6af84c876a8b39eba',1,'ivit::TensorRTRuntime']]],
+  ['set_5flayout_8',['set_layout',['../classivit_1_1Tensor.html#ac104635bfd65f47bc0c5f6dd1f85947d',1,'ivit::Tensor']]],
+  ['set_5flog_5flevel_9',['set_log_level',['../namespaceivit.html#a5c78ac440c9225ec783b37239c4a45a2',1,'ivit']]],
+  ['set_5fname_10',['set_name',['../classivit_1_1Tensor.html#aff225dda7206305bd9499d6502b8c3c3',1,'ivit::Tensor']]],
+  ['set_5fverbose_11',['set_verbose',['../classivit_1_1TensorRTLogger.html#abc51fbfd32507292666d4e8908edfe55',1,'ivit::TensorRTLogger']]],
+  ['shape_12',['shape',['../classivit_1_1Tensor.html#ab7be7926cd0a76f6d74ef00ed04ca2d3',1,'ivit::Tensor']]],
+  ['shutdown_5fasync_13',['shutdown_async',['../classivit_1_1Model.html#aa012727c4f87e6aa34615a5aba136654',1,'ivit::Model']]],
+  ['size_14',['size',['../classivit_1_1Results.html#a6065e51e7704e9ed96c5537e955472f4',1,'ivit::Results']]],
+  ['start_15',['start',['../classivit_1_1utils_1_1Profiler.html#ac3decf1c68003116a61391ae8736b1cf',1,'ivit::utils::Profiler']]],
+  ['stop_16',['stop',['../classivit_1_1utils_1_1Profiler.html#ade9780fe9f87513e6f8148d8662759c1',1,'ivit::utils::Profiler']]],
+  ['stream_17',['stream',['../classivit_1_1Model.html#aef2d0fec5e984e696bb749fbe108e768',1,'ivit::Model']]],
+  ['streamiterator_18',['StreamIterator',['../classivit_1_1Model_1_1StreamIterator.html#a1e7f0a896623a0b27c54984c9889441a',1,'ivit::Model::StreamIterator::StreamIterator()'],['../classivit_1_1Model_1_1StreamIterator.html#a657937e75b249c6459f9f629a5d4827a',1,'ivit::Model::StreamIterator::StreamIterator(Model *model, VideoSource *source, const InferConfig &amp;config)']]],
+  ['submit_5finference_19',['submit_inference',['../classivit_1_1Model.html#ad6c8a7e4d577885462dcbce6696e9d15',1,'ivit::Model']]],
+  ['supported_5fformats_20',['supported_formats',['../classivit_1_1HailoRTRuntime.html#ab62306d9c20691b4cfe81b88fe16cc19',1,'ivit::HailoRTRuntime::supported_formats()'],['../classivit_1_1OpenVINORuntime.html#a5824bcbec4fc8a46d5af7f7ecb0ed9bc',1,'ivit::OpenVINORuntime::supported_formats()'],['../classivit_1_1QNNRuntime.html#ae434455b952de6a5f3744ee58812c0eb',1,'ivit::QNNRuntime::supported_formats()'],['../classivit_1_1IRuntime.html#a4bfb7988c4397833c7b3835ef0d7dda8',1,'ivit::IRuntime::supported_formats()'],['../classivit_1_1TensorRTRuntime.html#a1cc62d1f20d6bdfab57036bc970d4733',1,'ivit::TensorRTRuntime::supported_formats()']]],
+  ['supports_5fformat_21',['supports_format',['../classivit_1_1DeviceManager.html#aa1f3500bc9a2cb679d193eddbe306bff',1,'ivit::DeviceManager']]],
+  ['supports_5fprecision_22',['supports_precision',['../classivit_1_1DeviceManager.html#aabf5a3854ba2f52b048cb1942f681019',1,'ivit::DeviceManager']]]
+];

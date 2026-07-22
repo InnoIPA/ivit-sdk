@@ -1,0 +1,19 @@
+var searchData=
+[
+  ['facedetection_0',['FaceDetection',['../namespaceivit.html#adba075b4f5afa861c4fd131dfd1ac788ad52b2c30778c76c5feb01dd6660877d2',1,'ivit']]],
+  ['facerecognition_1',['FaceRecognition',['../namespaceivit.html#adba075b4f5afa861c4fd131dfd1ac788a22389d771ce5dbd8395c467690c0f61f',1,'ivit']]],
+  ['filter_5fby_5fclass_2',['filter_by_class',['../classivit_1_1Results.html#a43b6852a99273bfb80b9e401ede3c7b3',1,'ivit::Results']]],
+  ['filter_5fby_5fconfidence_3',['filter_by_confidence',['../classivit_1_1Results.html#a267af7028e1a89664173df4026b2ab2b',1,'ivit::Results']]],
+  ['float16_4',['Float16',['../namespaceivit.html#a59051cbeb1f3d4b7c752eee1faf4ab29a26e6ed77470c6f2f830ecf874e6c0d55',1,'ivit']]],
+  ['float32_5',['Float32',['../namespaceivit.html#a59051cbeb1f3d4b7c752eee1faf4ab29a166495adc0d0f53bee6baecc577f5204',1,'ivit']]],
+  ['fn_6',['fn',['../structivit_1_1CallbackEntry.html#a46e513ef5a914c669cebb73cf9e551ac',1,'ivit::CallbackEntry']]],
+  ['font_5fscale_7',['font_scale',['../structivit_1_1utils_1_1VisConfig.html#a4638c25753cfac42c156b5f9dcfa64d2',1,'ivit::utils::VisConfig']]],
+  ['fp16_8',['FP16',['../namespaceivit.html#aca80b8381bfe521b5c14179906b43b8caa4bf99d6945c25077fd6660d536af8a0',1,'ivit']]],
+  ['fp32_9',['FP32',['../namespaceivit.html#aca80b8381bfe521b5c14179906b43b8ca693aa0bef84c25fe81c7e62e72f9313d',1,'ivit']]],
+  ['fps_10',['fps',['../structivit_1_1Model_1_1StreamResult.html#aaff615942c4c32210b11c3bbd4397b70',1,'ivit::Model::StreamResult::fps'],['../classivit_1_1VideoSource.html#abbb4b90ba6c002e1068f0429ca703045',1,'ivit::VideoSource::fps()']]],
+  ['frame_11',['frame',['../structivit_1_1Model_1_1StreamResult.html#a0502768beb2c7a89f06562b61d168cf0',1,'ivit::Model::StreamResult']]],
+  ['frame_5fcount_12',['frame_count',['../classivit_1_1VideoSource.html#a5e1c3318937553fdcc8dc67a0294cfb7',1,'ivit::VideoSource']]],
+  ['frame_5findex_13',['frame_index',['../structivit_1_1CallbackContext.html#a6106fadef9e4dec6e46f20b48feed480',1,'ivit::CallbackContext::frame_index'],['../structivit_1_1Model_1_1StreamResult.html#a17bb71de4ff15e87c5ae9b1989bb09a1',1,'ivit::Model::StreamResult::frame_index']]],
+  ['from_5fcxcywh_14',['from_cxcywh',['../structivit_1_1BBox.html#ad764ad14806af58a11790202f6ed89a1',1,'ivit::BBox']]],
+  ['from_5fxywh_15',['from_xywh',['../structivit_1_1BBox.html#a15a343a2e469b2e1c0f430c68539c857',1,'ivit::BBox']]]
+];

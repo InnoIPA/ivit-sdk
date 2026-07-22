@@ -1,0 +1,26 @@
+var searchData=
+[
+  ['calculate_5fstats_0',['calculate_stats',['../classivit_1_1utils_1_1Profiler.html#a97a53662c8bc47ffe0d2183778861063',1,'ivit::utils::Profiler']]],
+  ['callback_5fcount_1',['callback_count',['../classivit_1_1CallbackManager.html#a23fe81f89dc885018b082f5a7d2d3e18',1,'ivit::CallbackManager']]],
+  ['callback_5fevent_5ffrom_5fstring_2',['callback_event_from_string',['../namespaceivit.html#abaae9ab9f7173c1850946ced98f7302d',1,'ivit']]],
+  ['callback_5fmanager_3',['callback_manager',['../classivit_1_1Model.html#a8329730d587e77cff19d093c283064b9',1,'ivit::Model']]],
+  ['callbackmanager_4',['CallbackManager',['../classivit_1_1CallbackManager.html#a0f6ebbf0d6588b0ec82e96504903cef8',1,'ivit::CallbackManager']]],
+  ['center_5fx_5',['center_x',['../structivit_1_1BBox.html#a925b05a7e2d10b38d934e661fe251a1a',1,'ivit::BBox']]],
+  ['center_5fy_6',['center_y',['../structivit_1_1BBox.html#a3a644d293ab4ef87b5bbeec26492bca4',1,'ivit::BBox']]],
+  ['classes_7',['classes',['../classivit_1_1vision_1_1Classifier.html#aaa45d96eff17f944e6d24746a724b0da',1,'ivit::vision::Classifier::classes()'],['../classivit_1_1vision_1_1Detector.html#afa793829d601ff062d908c2ac03d8d14',1,'ivit::vision::Detector::classes()'],['../classivit_1_1vision_1_1Segmentor.html#a0d425a77fe94559eb8c1e14775944bf4',1,'ivit::vision::Segmentor::classes()']]],
+  ['classificationresult_8',['ClassificationResult',['../structivit_1_1ClassificationResult.html#ae003d385436efcddc2fd4de3b2433b4b',1,'ivit::ClassificationResult::ClassificationResult()=default'],['../structivit_1_1ClassificationResult.html#ae52f6f533a42ad75de0392e9db450104',1,'ivit::ClassificationResult::ClassificationResult(int class_id, const std::string &amp;label, float score)']]],
+  ['classifier_9',['Classifier',['../classivit_1_1vision_1_1Classifier.html#aa6cc40565cf22c40dac436b16e4fce30',1,'ivit::vision::Classifier::Classifier(const std::string &amp;model, const std::string &amp;device=&quot;auto&quot;, const LoadConfig &amp;config=LoadConfig{})'],['../classivit_1_1vision_1_1Classifier.html#a53514524e356c3ae8140c3cbeffc7dee',1,'ivit::vision::Classifier::Classifier(std::shared_ptr&lt; Model &gt; model)']]],
+  ['clear_10',['clear',['../classivit_1_1CallbackManager.html#a8cad058a87c9af813a503705cfb22b0e',1,'ivit::CallbackManager']]],
+  ['clear_5fcache_11',['clear_cache',['../classivit_1_1ModelManager.html#a3341e235cb210061d8c8988cef399525',1,'ivit::ModelManager::clear_cache()'],['../namespaceivit.html#aa8a07bc49c536c79f3477db4c2b559d3',1,'ivit::clear_cache()']]],
+  ['clone_12',['clone',['../classivit_1_1Tensor.html#a78e092c20b3a053cf554bf8ba04027b3',1,'ivit::Tensor']]],
+  ['colorize_5fmask_13',['colorize_mask',['../classivit_1_1Results.html#aa3436acd25c589023a5ef409d92af355',1,'ivit::Results']]],
+  ['colormap_14',['colormap',['../classivit_1_1vision_1_1Segmentor.html#ab8e489e09c57b63a6c02acb68c57c117',1,'ivit::vision::Segmentor']]],
+  ['configure_5fopenvino_15',['configure_openvino',['../classivit_1_1Model.html#a58c2f819dc458ff11871d0a8c865affb',1,'ivit::Model']]],
+  ['configure_5fqnn_16',['configure_qnn',['../classivit_1_1Model.html#ab875d34695e655063f50c14ad929e790',1,'ivit::Model']]],
+  ['configure_5ftensorrt_17',['configure_tensorrt',['../classivit_1_1Model.html#a847afacdc44e082cc0e7ffc6314d8f6e',1,'ivit::Model']]],
+  ['convert_18',['convert',['../classivit_1_1ModelManager.html#ad3e7bf2808d695d255dac522fceb397c',1,'ivit::ModelManager']]],
+  ['convert_5fmodel_19',['convert_model',['../classivit_1_1HailoRTRuntime.html#acdaa8e92427021f46a44c4e51583b395',1,'ivit::HailoRTRuntime::convert_model()'],['../classivit_1_1OpenVINORuntime.html#a601d07995452f8a7c6005d00a4fe7616',1,'ivit::OpenVINORuntime::convert_model()'],['../classivit_1_1QNNRuntime.html#afa78e94c8d3a73c05dd690ba4ee390f4',1,'ivit::QNNRuntime::convert_model()'],['../classivit_1_1IRuntime.html#a23207f5f92244d711cb7b46010fc2724',1,'ivit::IRuntime::convert_model()'],['../classivit_1_1TensorRTRuntime.html#a2d20cb594a3c242fb0fd3e14626110df',1,'ivit::TensorRTRuntime::convert_model()'],['../namespaceivit.html#aae19635dc69cd65bcab7aa9300f22220',1,'ivit::convert_model()']]],
+  ['create_5fcomparison_20',['create_comparison',['../classivit_1_1utils_1_1Visualizer.html#a31242ceb6c5db231ee6b0fd4c02660d1',1,'ivit::utils::Visualizer']]],
+  ['cuda_5fdevice_5fcount_21',['cuda_device_count',['../namespaceivit.html#ad61c194795707107c36cea6444961f63',1,'ivit']]],
+  ['cuda_5fis_5favailable_22',['cuda_is_available',['../namespaceivit.html#abe928776a65a7949556947dd317ab99e',1,'ivit']]]
+];

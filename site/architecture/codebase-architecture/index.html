@@ -1,0 +1,4188 @@
+
+<!doctype html>
+<html lang="zh-Hant" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Innodisk Vision Intelligence Toolkit — 統一電腦視覺推論與訓練 SDK">
+      
+      
+      
+        <link rel="canonical" href="https://ivit-sdk.readthedocs.io/architecture/codebase-architecture/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>iVIT-SDK 程式碼架構完整說明 - iVIT-SDK</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#ivit-sdk" class="md-skip">
+          跳轉至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="頁首">
+    <a href="../.." title="iVIT-SDK" class="md-header__button md-logo" aria-label="iVIT-SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            iVIT-SDK
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              iVIT-SDK 程式碼架構完整說明
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切換至深色模式"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="切換至深色模式" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m17.75 4.09-2.53 1.94.91 3.06-2.63-1.81-2.63 1.81.91-3.06-2.53-1.94L12.44 4l1.06-3 1.06 3zm3.5 6.91-1.64 1.25.59 1.98-1.7-1.17-1.7 1.17.59-1.98L15.75 11l2.06-.05L18.5 9l.69 1.95zm-2.28 4.95c.83-.08 1.72 1.1 1.19 1.85-.32.45-.66.87-1.08 1.27C15.17 23 8.84 23 4.94 19.07c-3.91-3.9-3.91-10.24 0-14.14.4-.4.82-.76 1.27-1.08.75-.53 1.93.36 1.85 1.19-.27 2.86.69 5.83 2.89 8.02a9.96 9.96 0 0 0 8.02 2.89m-1.64 2.02a12.08 12.08 0 0 1-7.8-3.47c-2.17-2.19-3.33-5-3.49-7.82-2.81 3.14-2.7 7.96.31 10.98 3.02 3.01 7.84 3.12 10.98.31"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="切換至淺色模式"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="切換至淺色模式" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 7a5 5 0 0 1 5 5 5 5 0 0 1-5 5 5 5 0 0 1-5-5 5 5 0 0 1 5-5m0 2a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3m0-7 2.39 3.42C13.65 5.15 12.84 5 12 5s-1.65.15-2.39.42zM3.34 7l4.16-.35A7.2 7.2 0 0 0 5.94 8.5c-.44.74-.69 1.5-.83 2.29zm.02 10 1.76-3.77a7.131 7.131 0 0 0 2.38 4.14zM20.65 7l-1.77 3.79a7.02 7.02 0 0 0-2.38-4.15zm-.01 10-4.14.36c.59-.51 1.12-1.14 1.54-1.86.42-.73.69-1.5.83-2.29zM12 22l-2.41-3.44c.74.27 1.55.44 2.41.44.82 0 1.63-.17 2.37-.44z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜尋" placeholder="搜尋" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="搜尋">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空" aria-label="清空" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜尋引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/innodisk-mannywang/ivit-sdk" title="前往倉庫" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    innodisk/ivit-sdk
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="標籤頁" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  首頁
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../getting-started/" class="md-tabs__link">
+          
+  
+  
+  入門
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../deployment/intel-openvino/" class="md-tabs__link">
+          
+  
+  
+  部署
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/reference/" class="md-tabs__link">
+          
+  
+  
+  Python API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../api/cpp/html/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  C++ API Reference
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="導航" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="iVIT-SDK" class="md-nav__button md-logo" aria-label="iVIT-SDK" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    iVIT-SDK
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/innodisk-mannywang/ivit-sdk" title="前往倉庫" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    innodisk/ivit-sdk
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首頁
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    入門
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    入門
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../getting-started/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    快速上手
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    使用手冊
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../model-zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../device-selection/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    裝置選擇
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../performance-tuning/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    效能調校
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    常見問題
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    部署
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    部署
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/intel-openvino/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Intel / OpenVINO
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../deployment/nvidia-tensorrt/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    NVIDIA / TensorRT
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Python API Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Python API Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    總覽
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/vision/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Vision（Detector/Classifier/Segmentor）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/core/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Core（Model/Results/Config）
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/zoo/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model Zoo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/train/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Training
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/utils/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Utils
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Devices & CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/cpp/html/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    C++ API Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目錄">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目錄
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        目錄
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 專案總覽
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 目錄樹狀結構
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. 架構分層圖
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 使用者主要調用入口
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 使用者主要調用入口">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-api-90" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 最常用 API（日常開發 90% 會用到的）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 任務專用 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#43-model-zoo-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.3 Model Zoo API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#44-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.4 裝置管理 API
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#45-cli" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.5 CLI 命令
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. Python 套件模組詳解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. Python 套件模組詳解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-pythonivit__init__py-286" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 python/ivit/__init__.py — 套件進入點（286 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52-pythonivitclipy-1080" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 python/ivit/cli.py — 命令列工具（1080 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53-pythonivitcoreprocessorspy-1176" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 python/ivit/core/processors.py — 前後處理器（1176 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#54-pythonivitcoretypespy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.4 python/ivit/core/types.py — 核心型別定義
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#55-pythonivitcoreexceptionspy" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.5 python/ivit/core/exceptions.py — 例外處理
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#56-pythonivitvisiondetectorpy-176" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.6 python/ivit/vision/detector.py — 偵測器（176 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#57-pythonivitvisionclassifierpy-124" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.7 python/ivit/vision/classifier.py — 分類器（124 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#58-pythonivitzooregistrypy-model-zoo-1004" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.8 python/ivit/zoo/registry.py — Model Zoo 目錄（1004 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#59-pythonivittrain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.9 python/ivit/train/ — 訓練模組
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#510-pythonivitutils" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.10 python/ivit/utils/ — 工具模組
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. C++ 核心模組詳解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6. C++ 核心模組詳解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#61-includeivitcorecommonhpp-255" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.1 include/ivit/core/common.hpp — 全域型別（255 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#62-srccoremodelcpp-1094" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.2 src/core/model.cpp — 核心推論引擎（1094 行）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="6.2 src/core/model.cpp — 核心推論引擎（1094 行）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#inferencemodel-25-553" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        InferenceModel 類別（行 25-553）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#model-555-920" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Model 基礎類別方法（行 555-920）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#modelmanager-980-1094" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        ModelManager 單例（行 980-1094）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#63-includeivitruntimeruntimehpp-165" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.3 include/ivit/runtime/runtime.hpp — 後端抽象介面（165 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#64-srcruntimeruntime_factorycpp-113" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6.4 src/runtime/runtime_factory.cpp — 後端選擇工廠（113 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#7-pybind11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        7. pybind11 綁定層詳解
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="7. pybind11 綁定層詳解">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#pythonivit_bindingcpp800" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        python/ivit/_binding.cpp（~800 行）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#8" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8. 資料流程圖
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="8. 資料流程圖">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#81-yolo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.1 標準推論流程（以 YOLO 偵測為例）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#82" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        8.2 模型載入流程（完整調用鏈）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9. 程式回追路線圖
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="9. 程式回追路線圖">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#91-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.1 回追策略：從使用者 API 往下追蹤
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#92-a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.2 回追路線 A：「模型載入失敗」
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#93-b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.3 回追路線 B：「偵測結果座標錯誤」
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#94-c-class_xxx" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.4 回追路線 C：「分類結果顯示 class_XXX 而非實際名稱」
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#95-dmodel-zoo" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.5 回追路線 D：「Model Zoo 下載失敗」
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#96-e" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        9.6 回追路線 E：「推論速度太慢」
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#10" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10. 後端推論引擎
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="10. 後端推論引擎">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#101-openvinointel" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.1 OpenVINO（Intel）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#102-tensorrtnvidia" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        10.2 TensorRT（NVIDIA）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11. 新增模型修改指南
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11. 新增模型修改指南">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#111-a-yolov9" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.1 情境 A：新增一個已有任務類型的模型（例如新的偵測模型 YOLOv9）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.1 情境 A：新增一個已有任務類型的模型（例如新的偵測模型 YOLOv9）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: 註冊模型資訊
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: 新增模型名稱對照表（如果是新的來源框架）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: 新增匯出函數（如果是新的來源框架）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-download" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: 在 download() 中新增路由
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: 新增後處理器（如果輸出格式不同於現有的）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#112-b-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.2 情境 B：新增一個全新任務類型（例如 OCR 文字辨識）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.2 情境 B：新增一個全新任務類型（例如 OCR 文字辨識）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-c-ocr" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: C++ 列舉擴充（已內建 OCR）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: C++ 後處理擴充
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-c" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: C++ 結果結構擴充
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-pybind11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: pybind11 綁定擴充
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: Python 處理器
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-6-python" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 6: Python 視覺任務封裝（可選）
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-7-__init__py" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 7: 在 __init__.py 匯出（可選）
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#113-c-onnx-runtime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.3 情境 C：新增一個新的推論後端（例如 ONNX Runtime）
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="11.3 情境 C：新增一個新的推論後端（例如 ONNX Runtime）">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#step-1-iruntime" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: 實作 IRuntime 介面
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-2-cpp" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: 實作 .cpp 檔
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-3-backendtype" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: 擴充 BackendType 列舉
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-4-runtimefactory" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 4: 在 RuntimeFactory 中註冊
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#step-5-cmakeliststxt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 5: 更新 CMakeLists.txt
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#114" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        11.4 各情境修改檔案速查表
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#12" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        12. 設計模式總結
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附錄 A：關鍵依賴版本
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#b" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        附錄 B：關鍵檔案行號速查
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="ivit-sdk">iVIT-SDK 程式碼架構完整說明<a class="headerlink" href="#ivit-sdk" title="Permanent link">&para;</a></h1>
+<blockquote>
+<p>文件版本：2026-03-12
+專案：iVIT-SDK (Innodisk Vision Intelligence Toolkit)</p>
+</blockquote>
+<hr />
+<h2 id="_1">目錄<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<ol>
+<li><a href="#1-專案總覽">專案總覽</a></li>
+<li><a href="#2-目錄樹狀結構">目錄樹狀結構</a></li>
+<li><a href="#3-架構分層圖">架構分層圖</a></li>
+<li><a href="#4-使用者主要調用入口">使用者主要調用入口</a></li>
+<li><a href="#5-python-套件模組詳解">Python 套件模組詳解</a></li>
+<li><a href="#6-c-核心模組詳解">C++ 核心模組詳解</a></li>
+<li><a href="#7-pybind11-綁定層詳解">pybind11 綁定層詳解</a></li>
+<li><a href="#8-資料流程圖">資料流程圖</a></li>
+<li><a href="#9-程式回追路線圖">程式回追路線圖</a></li>
+<li><a href="#10-後端推論引擎">後端推論引擎</a></li>
+<li><a href="#11-新增模型修改指南">新增模型修改指南</a></li>
+<li><a href="#12-設計模式總結">設計模式總結</a></li>
+</ol>
+<hr />
+<h2 id="1">1. 專案總覽<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<p>iVIT-SDK 是一個跨硬體平台的統一電腦視覺推論 SDK，核心設計理念是<strong>一次開發，多平台部署</strong>。</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>使用者程式碼
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>     │
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>     ▼
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>Python / C++ 統一 API
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>     │
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>     ▼
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>視覺任務層（分類 / 偵測 / 分割 / 姿態估計）
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>     │
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>     ▼
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>前後處理層（Preprocessor / Postprocessor）
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>     │
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>     ▼
+<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a>後端推論引擎（OpenVINO / TensorRT）
+<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>     │
+<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a>     ▼
+<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a>硬體（Intel CPU/GPU/NPU/VPU、NVIDIA dGPU/Jetson）
+</code></pre></div>
+<hr />
+<h2 id="2">2. 目錄樹狀結構<a class="headerlink" href="#2" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>ivit-sdk/
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>├── CMakeLists.txt                  # 頂層 C++ 建置設定
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>├── pyproject.toml                  # Python 套件打包設定
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>│
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>├── include/ivit/                   # C++ 公開標頭（API 介面）
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>│   ├── ivit.hpp                    # 整合進入點（include all）
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>│   ├── core/
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>│   │   ├── common.hpp              # 全域型別、列舉、例外
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>│   │   ├── tensor.hpp              # Tensor 資料容器
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>│   │   ├── model.hpp               # 統一模型推論介面
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>│   │   ├── result.hpp              # 推論結果結構
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>│   │   ├── device.hpp              # 裝置資訊與管理
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>│   │   ├── callback.hpp            # 事件回呼系統
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>│   │   ├── runtime_config.hpp      # 執行期設定
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>│   │   └── video_source.hpp        # 影片串流抽象
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>│   ├── runtime/
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>│   │   ├── runtime.hpp             # IRuntime 抽象介面
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>│   │   ├── openvino_runtime.hpp    # Intel 後端
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>│   │   └── tensorrt_runtime.hpp    # NVIDIA 後端
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>│   ├── vision/
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>│   │   ├── classifier.hpp          # 分類器
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>│   │   ├── detector.hpp            # 偵測器
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>│   │   └── segmentor.hpp           # 分割器
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a>│   └── utils/
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a>│       ├── visualizer.hpp          # 視覺化工具
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>│       └── profiler.hpp            # 效能分析工具
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>│
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>├── src/                            # C++ 實作
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>│   ├── core/
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>│   │   └── model.cpp               # ★ 核心推論引擎（1094 行）
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>│   ├── runtime/
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>│   │   ├── runtime_factory.cpp     # ★ 後端選擇工廠（113 行）
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>│   │   ├── openvino_runtime.cpp    # OpenVINO 後端實作
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>│   │   └── tensorrt_runtime.cpp    # TensorRT 後端實作
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>│   ├── vision/                     # 視覺任務實作
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>│   └── utils/                      # 工具實作
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>│
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>├── python/ivit/                    # Python 套件（主要開發介面）
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>│   ├── __init__.py                 # ★ 套件進入點、load() API（286 行）
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>│   ├── cli.py                      # ★ CLI 命令列工具（1080 行）
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>│   ├── devices.py                  # 裝置探索與管理
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>│   ├── _binding.cpp                # ★ pybind11 C++↔Python 橋接（~800 行）
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>│   ├── core/
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>│   │   ├── types.py                # 資料型別、資料類別、列舉
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>│   │   ├── exceptions.py           # 自訂例外類別
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>│   │   ├── model.py                # Python 側模型載入
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>│   │   ├── result.py               # 推論結果容器
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>│   │   ├── processors.py           # ★ 前/後處理器（1176 行）
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>│   │   └── callbacks.py            # 回呼定義
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>│   ├── vision/
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>│   │   ├── classifier.py           # ★ 分類器 Python 封裝（124 行）
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>│   │   ├── detector.py             # ★ 偵測器 Python 封裝（176 行）
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>│   │   └── segmentor.py            # 分割器 Python 封裝
+<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>│   ├── runtime/
+<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>│   │   ├── openvino_runtime.py     # OpenVINO Python 封裝
+<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>│   │   └── tensorrt_runtime.py     # TensorRT Python 封裝
+<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>│   ├── train/
+<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>│   │   ├── trainer.py              # 訓練引擎（PyTorch-based）
+<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>│   │   ├── exporter.py             # 模型轉換匯出
+<a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>│   │   ├── dataset.py              # 資料集載入
+<a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>│   │   ├── augmentation.py         # 資料增強
+<a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>│   │   └── callbacks.py            # 訓練回呼
+<a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>│   ├── zoo/
+<a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>│   │   ├── __init__.py             # Model Zoo 進入點
+<a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>│   │   └── registry.py             # ★ 模型目錄與下載管理（1004 行）
+<a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a>│   └── utils/
+<a id="__codelineno-1-67" name="__codelineno-1-67" href="#__codelineno-1-67"></a>│       ├── visualizer.py           # 結果視覺化
+<a id="__codelineno-1-68" name="__codelineno-1-68" href="#__codelineno-1-68"></a>│       ├── profiler.py             # 效能分析
+<a id="__codelineno-1-69" name="__codelineno-1-69" href="#__codelineno-1-69"></a>│       ├── metrics.py              # 評估指標
+<a id="__codelineno-1-70" name="__codelineno-1-70" href="#__codelineno-1-70"></a>│       └── video.py                # 影片處理工具
+<a id="__codelineno-1-71" name="__codelineno-1-71" href="#__codelineno-1-71"></a>│
+<a id="__codelineno-1-72" name="__codelineno-1-72" href="#__codelineno-1-72"></a>├── models/                         # 本地 Model Zoo 暫存
+<a id="__codelineno-1-73" name="__codelineno-1-73" href="#__codelineno-1-73"></a>├── examples/                       # 範例程式
+<a id="__codelineno-1-74" name="__codelineno-1-74" href="#__codelineno-1-74"></a>├── tests/                          # 測試程式碼
+<a id="__codelineno-1-75" name="__codelineno-1-75" href="#__codelineno-1-75"></a>└── docs/                           # 文件
+</code></pre></div>
+<hr />
+<h2 id="3">3. 架構分層圖<a class="headerlink" href="#3" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>┌─────────────────────────────────────────────────────────────────┐
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>│                      使用者 / 應用層                              │
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>│         Python script / C++ 應用程式 / CLI 工具                  │
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>└──────────────────────────┬──────────────────────────────────────┘
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>                           │
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>┌──────────────────────────▼──────────────────────────────────────┐
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>│                       統一 API 層                                 │
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>│                                                                   │
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>│   Python: ivit.load()  ivit.Detector()  ivit.Classifier()        │
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>│   C++:    ivit::Model  ivit::Detector   ivit::Classifier          │
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>│   CLI:    ivit predict / convert / benchmark / zoo               │
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>└──────────────────────────┬──────────────────────────────────────┘
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>                           │
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>┌──────────────────────────▼──────────────────────────────────────┐
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a>│                      視覺任務層                                   │
+<a id="__codelineno-2-16" name="__codelineno-2-16" href="#__codelineno-2-16"></a>│                                                                   │
+<a id="__codelineno-2-17" name="__codelineno-2-17" href="#__codelineno-2-17"></a>│   ┌─────────────┐  ┌─────────────┐  ┌─────────────┐            │
+<a id="__codelineno-2-18" name="__codelineno-2-18" href="#__codelineno-2-18"></a>│   │ Classifier  │  │  Detector   │  │  Segmentor  │  ...        │
+<a id="__codelineno-2-19" name="__codelineno-2-19" href="#__codelineno-2-19"></a>│   │  分類器      │  │   偵測器     │  │   分割器     │            │
+<a id="__codelineno-2-20" name="__codelineno-2-20" href="#__codelineno-2-20"></a>│   └──────┬──────┘  └──────┬──────┘  └──────┬──────┘            │
+<a id="__codelineno-2-21" name="__codelineno-2-21" href="#__codelineno-2-21"></a>└──────────┼────────────────┼────────────────┼────────────────────┘
+<a id="__codelineno-2-22" name="__codelineno-2-22" href="#__codelineno-2-22"></a>           │                │                │
+<a id="__codelineno-2-23" name="__codelineno-2-23" href="#__codelineno-2-23"></a>┌──────────▼────────────────▼────────────────▼────────────────────┐
+<a id="__codelineno-2-24" name="__codelineno-2-24" href="#__codelineno-2-24"></a>│                   前後處理層 (processors.py)                       │
+<a id="__codelineno-2-25" name="__codelineno-2-25" href="#__codelineno-2-25"></a>│                                                                   │
+<a id="__codelineno-2-26" name="__codelineno-2-26" href="#__codelineno-2-26"></a>│  PreProcessors                  PostProcessors                    │
+<a id="__codelineno-2-27" name="__codelineno-2-27" href="#__codelineno-2-27"></a>│  ┌──────────────────────┐      ┌──────────────────────────────┐  │
+<a id="__codelineno-2-28" name="__codelineno-2-28" href="#__codelineno-2-28"></a>│  │ LetterboxPreProcessor│      │ YOLOPostProcessor            │  │
+<a id="__codelineno-2-29" name="__codelineno-2-29" href="#__codelineno-2-29"></a>│  │ CenterCropPreProcess │      │ YOLOXPostProcessor           │  │
+<a id="__codelineno-2-30" name="__codelineno-2-30" href="#__codelineno-2-30"></a>│  │ (可擴展新增)          │      │ RTDETRPostProcessor          │  │
+<a id="__codelineno-2-31" name="__codelineno-2-31" href="#__codelineno-2-31"></a>│  └──────────────────────┘      │ RTMPosePostProcessor         │  │
+<a id="__codelineno-2-32" name="__codelineno-2-32" href="#__codelineno-2-32"></a>│                                │ ClassificationPostProcessor   │  │
+<a id="__codelineno-2-33" name="__codelineno-2-33" href="#__codelineno-2-33"></a>│                                │ TorchVisionDetPostProcessor   │  │
+<a id="__codelineno-2-34" name="__codelineno-2-34" href="#__codelineno-2-34"></a>│                                └──────────────────────────────┘  │
+<a id="__codelineno-2-35" name="__codelineno-2-35" href="#__codelineno-2-35"></a>└──────────────────────────┬──────────────────────────────────────┘
+<a id="__codelineno-2-36" name="__codelineno-2-36" href="#__codelineno-2-36"></a>                           │
+<a id="__codelineno-2-37" name="__codelineno-2-37" href="#__codelineno-2-37"></a>┌──────────────────────────▼──────────────────────────────────────┐
+<a id="__codelineno-2-38" name="__codelineno-2-38" href="#__codelineno-2-38"></a>│                    後端推論引擎層                                  │
+<a id="__codelineno-2-39" name="__codelineno-2-39" href="#__codelineno-2-39"></a>│                                                                   │
+<a id="__codelineno-2-40" name="__codelineno-2-40" href="#__codelineno-2-40"></a>│   ┌─────────────────────────────────────────────────────────┐   │
+<a id="__codelineno-2-41" name="__codelineno-2-41" href="#__codelineno-2-41"></a>│   │                  IRuntime（抽象介面）                      │   │
+<a id="__codelineno-2-42" name="__codelineno-2-42" href="#__codelineno-2-42"></a>│   │  load_model() / unload_model() / infer() / convert()    │   │
+<a id="__codelineno-2-43" name="__codelineno-2-43" href="#__codelineno-2-43"></a>│   └──────────────────────────────────────────────────────────┘  │
+<a id="__codelineno-2-44" name="__codelineno-2-44" href="#__codelineno-2-44"></a>│            │                              │                       │
+<a id="__codelineno-2-45" name="__codelineno-2-45" href="#__codelineno-2-45"></a>│   ┌────────▼────────┐          ┌──────────▼──────────┐          │
+<a id="__codelineno-2-46" name="__codelineno-2-46" href="#__codelineno-2-46"></a>│   │ OpenVINO Runtime│          │ TensorRT Runtime     │          │
+<a id="__codelineno-2-47" name="__codelineno-2-47" href="#__codelineno-2-47"></a>│   │  (Intel 後端)   │          │  (NVIDIA 後端)        │          │
+<a id="__codelineno-2-48" name="__codelineno-2-48" href="#__codelineno-2-48"></a>│   └────────┬────────┘          └──────────┬──────────┘          │
+<a id="__codelineno-2-49" name="__codelineno-2-49" href="#__codelineno-2-49"></a>└────────────┼─────────────────────────────┼──────────────────────┘
+<a id="__codelineno-2-50" name="__codelineno-2-50" href="#__codelineno-2-50"></a>             │                             │
+<a id="__codelineno-2-51" name="__codelineno-2-51" href="#__codelineno-2-51"></a>┌────────────▼──────────┐    ┌────────────▼──────────────────────┐
+<a id="__codelineno-2-52" name="__codelineno-2-52" href="#__codelineno-2-52"></a>│  Intel Hardware        │    │  NVIDIA Hardware                   │
+<a id="__codelineno-2-53" name="__codelineno-2-53" href="#__codelineno-2-53"></a>│  CPU / iGPU / NPU     │    │  dGPU / Jetson                     │
+<a id="__codelineno-2-54" name="__codelineno-2-54" href="#__codelineno-2-54"></a>│  VPU (Myriad)         │    │  CUDA Acceleration                  │
+<a id="__codelineno-2-55" name="__codelineno-2-55" href="#__codelineno-2-55"></a>└───────────────────────┘    └────────────────────────────────────┘
+</code></pre></div>
+<hr />
+<h2 id="4">4. 使用者主要調用入口<a class="headerlink" href="#4" title="Permanent link">&para;</a></h2>
+<p>當你使用 iVIT-SDK 時，以下是<strong>最常被呼叫的函數和類別</strong>，按使用頻率排序：</p>
+<h3 id="41-api-90">4.1 最常用 API（日常開發 90% 會用到的）<a class="headerlink" href="#41-api-90" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>使用方式</th>
+<th>對應程式碼位置</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>import ivit</code></td>
+<td><code>python/ivit/__init__.py:1-286</code></td>
+<td>套件入口，import 後即可使用所有 API</td>
+</tr>
+<tr>
+<td><code>ivit.load(source, device, task)</code></td>
+<td><code>python/ivit/__init__.py:168-205</code></td>
+<td><strong>最核心的一行程式</strong>，載入模型</td>
+</tr>
+<tr>
+<td><code>model.predict(image)</code></td>
+<td><code>src/core/model.cpp:77-101</code> (C++)</td>
+<td>單張影像推論</td>
+</tr>
+<tr>
+<td><code>model.predict_batch(images)</code></td>
+<td><code>src/core/model.cpp:103-203</code> (C++)</td>
+<td>批次推論</td>
+</tr>
+<tr>
+<td><code>results.detections</code></td>
+<td><code>python/ivit/_binding.cpp:312</code></td>
+<td>取得偵測結果列表</td>
+</tr>
+<tr>
+<td><code>results.classifications</code></td>
+<td><code>python/ivit/_binding.cpp:307</code></td>
+<td>取得分類結果列表</td>
+</tr>
+<tr>
+<td><code>results.to_json()</code></td>
+<td><code>python/ivit/_binding.cpp:358</code></td>
+<td>結果序列化</td>
+</tr>
+<tr>
+<td><code>results.visualize(image)</code></td>
+<td><code>python/ivit/_binding.cpp:347-355</code></td>
+<td>結果視覺化</td>
+</tr>
+</tbody>
+</table>
+<h3 id="42-api">4.2 任務專用 API<a class="headerlink" href="#42-api" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>使用方式</th>
+<th>對應程式碼位置</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ivit.Detector(model, device)</code></td>
+<td><code>python/ivit/vision/detector.py:32-53</code></td>
+<td>建立偵測器</td>
+</tr>
+<tr>
+<td><code>detector.predict(image, conf, iou)</code></td>
+<td><code>python/ivit/vision/detector.py:55-78</code></td>
+<td>物件偵測</td>
+</tr>
+<tr>
+<td><code>detector.predict_video(source, callback)</code></td>
+<td><code>python/ivit/vision/detector.py:126-155</code></td>
+<td>影片串流偵測</td>
+</tr>
+<tr>
+<td><code>ivit.Classifier(model, device)</code></td>
+<td><code>python/ivit/vision/classifier.py:27-48</code></td>
+<td>建立分類器</td>
+</tr>
+<tr>
+<td><code>classifier.predict(image, top_k)</code></td>
+<td><code>python/ivit/vision/classifier.py:50-67</code></td>
+<td>影像分類</td>
+</tr>
+<tr>
+<td><code>ivit.Segmentor(model, device)</code></td>
+<td><code>python/ivit/vision/segmentor.py</code></td>
+<td>建立分割器</td>
+</tr>
+</tbody>
+</table>
+<h3 id="43-model-zoo-api">4.3 Model Zoo API<a class="headerlink" href="#43-model-zoo-api" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>使用方式</th>
+<th>對應程式碼位置</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ivit.zoo.list_models(task)</code></td>
+<td><code>python/ivit/zoo/registry.py:331-351</code></td>
+<td>列出所有可用模型</td>
+</tr>
+<tr>
+<td><code>ivit.zoo.search(query)</code></td>
+<td><code>python/ivit/zoo/registry.py:354-388</code></td>
+<td>搜尋模型</td>
+</tr>
+<tr>
+<td><code>ivit.zoo.download(name, format)</code></td>
+<td><code>python/ivit/zoo/registry.py:413-481</code></td>
+<td>下載模型</td>
+</tr>
+<tr>
+<td><code>ivit.zoo.load(name, device)</code></td>
+<td><code>python/ivit/zoo/registry.py:933-971</code></td>
+<td>下載 + 載入一步完成</td>
+</tr>
+<tr>
+<td><code>ivit.zoo.get_model_info(name)</code></td>
+<td><code>python/ivit/zoo/registry.py:391-410</code></td>
+<td>查詢模型詳細資訊</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-api">4.4 裝置管理 API<a class="headerlink" href="#44-api" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>使用方式</th>
+<th>對應程式碼位置</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ivit.devices.best()</code></td>
+<td><code>python/ivit/devices.py</code></td>
+<td>自動選取最佳裝置</td>
+</tr>
+<tr>
+<td><code>ivit.list_devices()</code></td>
+<td>C++ binding → <code>DeviceManager::enumerate()</code></td>
+<td>列出所有裝置</td>
+</tr>
+</tbody>
+</table>
+<h3 id="45-cli">4.5 CLI 命令<a class="headerlink" href="#45-cli" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>對應程式碼位置</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ivit predict &lt;image&gt; -m &lt;model&gt;</code></td>
+<td><code>python/ivit/cli.py</code> → <code>cmd_predict()</code></td>
+<td>命令列推論</td>
+</tr>
+<tr>
+<td><code>ivit convert &lt;model&gt; --to openvino</code></td>
+<td><code>python/ivit/cli.py</code> → <code>cmd_convert()</code></td>
+<td>模型轉換</td>
+</tr>
+<tr>
+<td><code>ivit benchmark -m &lt;model&gt;</code></td>
+<td><code>python/ivit/cli.py</code> → <code>cmd_benchmark()</code></td>
+<td>效能測試</td>
+</tr>
+<tr>
+<td><code>ivit zoo list</code></td>
+<td><code>python/ivit/cli.py</code> → <code>cmd_zoo_list()</code></td>
+<td>列出 Zoo 模型</td>
+</tr>
+<tr>
+<td><code>ivit zoo download &lt;name&gt;</code></td>
+<td><code>python/ivit/cli.py</code> → <code>cmd_zoo_download()</code></td>
+<td>下載模型</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="5-python">5. Python 套件模組詳解<a class="headerlink" href="#5-python" title="Permanent link">&para;</a></h2>
+<h3 id="51-pythonivit__init__py-286">5.1 <code>python/ivit/__init__.py</code> — 套件進入點（286 行）<a class="headerlink" href="#51-pythonivit__init__py-286" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：整個 Python 套件的對外 API 進入點，提供最高層次的簡化介面。</p>
+<p><strong>關鍵程式碼解析</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># 行 29-36: 預載入 C++ 共享函式庫</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">_libivit_path</span> <span class="o">=</span> <span class="n">_os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_package_dir</span><span class="p">,</span> <span class="s2">&quot;libivit.so&quot;</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a><span class="k">if</span> <span class="n">_os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">_libivit_path</span><span class="p">):</span>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a>    <span class="n">_ctypes</span><span class="o">.</span><span class="n">CDLL</span><span class="p">(</span><span class="n">_libivit_path</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">_ctypes</span><span class="o">.</span><span class="n">RTLD_GLOBAL</span><span class="p">)</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a><span class="c1"># 行 42-101: 從 C++ binding 匯入所有核心類別</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a><span class="kn">from</span><span class="w"> </span><span class="nn">._ivit_core</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">Model</span><span class="p">,</span> <span class="n">load_model</span><span class="p">,</span> <span class="n">Classifier</span><span class="p">,</span> <span class="n">Detector</span><span class="p">,</span> <span class="n">Segmentor</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">LoadConfig</span><span class="p">,</span> <span class="n">InferConfig</span><span class="p">,</span> <span class="n">Results</span><span class="p">,</span> <span class="o">...</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a><span class="p">)</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a><span class="c1"># 行 168-205: load() 是使用者最常呼叫的函數</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a><span class="k">def</span><span class="w"> </span><span class="nf">load</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="n">task</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>    <span class="n">_require_cpp</span><span class="p">()</span>           <span class="c1"># 確保 C++ binding 可用</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>    <span class="n">config</span> <span class="o">=</span> <span class="n">LoadConfig</span><span class="p">()</span>    <span class="c1"># 建立載入設定</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="n">config</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a>    <span class="k">if</span> <span class="n">task</span><span class="p">:</span>
+<a id="__codelineno-3-18" name="__codelineno-3-18" href="#__codelineno-3-18"></a>        <span class="n">config</span><span class="o">.</span><span class="n">task</span> <span class="o">=</span> <span class="n">task</span>
+<a id="__codelineno-3-19" name="__codelineno-3-19" href="#__codelineno-3-19"></a>    <span class="k">return</span> <span class="n">load_model</span><span class="p">(</span><span class="n">source</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>  <span class="c1"># 委派給 C++ ModelManager</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>函數 / 物件</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>load(source, device, task, **kwargs)</code></td>
+<td>168-205</td>
+<td>核心函數。依據副檔名或 task 參數自動選擇 Classifier/Detector/Segmentor</td>
+</tr>
+<tr>
+<td><code>is_cpp_available()</code></td>
+<td>109-111</td>
+<td>檢測 C++ binding 是否可用</td>
+</tr>
+<tr>
+<td><code>_require_cpp()</code></td>
+<td>114-121</td>
+<td>C++ binding 檢查（內部用）</td>
+</tr>
+<tr>
+<td><code>get_runtime_info()</code></td>
+<td>124-130</td>
+<td>取得 SDK 執行期資訊</td>
+</tr>
+<tr>
+<td><code>Classifier</code></td>
+<td>由 C++ binding import (行 67)</td>
+<td>分類器</td>
+</tr>
+<tr>
+<td><code>Detector</code></td>
+<td>由 C++ binding import (行 68)</td>
+<td>偵測器</td>
+</tr>
+<tr>
+<td><code>Segmentor</code></td>
+<td>由 C++ binding import (行 69)</td>
+<td>分割器</td>
+</tr>
+<tr>
+<td><code>devices</code></td>
+<td>149-156</td>
+<td><code>DeviceManager</code> 單例</td>
+</tr>
+<tr>
+<td><code>zoo</code></td>
+<td>159</td>
+<td>Model Zoo 模組</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="52-pythonivitclipy-1080">5.2 <code>python/ivit/cli.py</code> — 命令列工具（1080 行）<a class="headerlink" href="#52-pythonivitclipy-1080" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：提供 <code>ivit</code> CLI，讓使用者無需寫程式碼就能操作 SDK 全部功能。</p>
+<table>
+<thead>
+<tr>
+<th>子命令</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ivit info</code></td>
+<td>顯示 SDK 版本、Python 版本、已安裝後端</td>
+</tr>
+<tr>
+<td><code>ivit devices</code></td>
+<td>列出可用裝置，支援 <code>--json</code> 輸出</td>
+</tr>
+<tr>
+<td><code>ivit benchmark</code></td>
+<td>對指定模型進行效能測試</td>
+</tr>
+<tr>
+<td><code>ivit predict</code></td>
+<td>對圖片/影片執行推論</td>
+</tr>
+<tr>
+<td><code>ivit convert</code></td>
+<td>將 ONNX 轉換為 OpenVINO IR 或 TensorRT engine</td>
+</tr>
+<tr>
+<td><code>ivit export</code></td>
+<td>匯出最佳化模型</td>
+</tr>
+<tr>
+<td><code>ivit serve</code></td>
+<td>啟動 HTTP 推論伺服器</td>
+</tr>
+<tr>
+<td><code>ivit zoo list/search/download</code></td>
+<td>Model Zoo 操作</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="53-pythonivitcoreprocessorspy-1176">5.3 <code>python/ivit/core/processors.py</code> — 前後處理器（1176 行）<a class="headerlink" href="#53-pythonivitcoreprocessorspy-1176" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：模型推論前的影像前處理，以及推論後的輸出解碼。這是連接影像與模型的<strong>關鍵橋樑</strong>。</p>
+<p><strong>前處理器</strong></p>
+<table>
+<thead>
+<tr>
+<th>類別</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BasePreProcessor</code></td>
+<td>18-58</td>
+<td>抽象基礎類別，定義 <code>process()</code> 介面</td>
+</tr>
+<tr>
+<td><code>LetterboxPreProcessor</code></td>
+<td>116-176</td>
+<td>Letterbox 縮放：保持長寬比，填充灰色邊框（偵測模型用）</td>
+</tr>
+<tr>
+<td><code>CenterCropPreProcessor</code></td>
+<td>179-251</td>
+<td>中心裁切：裁切中央區域，ImageNet 標準化（分類模型用）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>後處理器</strong></p>
+<table>
+<thead>
+<tr>
+<th>類別</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>BasePostProcessor</code></td>
+<td>61-113</td>
+<td>抽象基礎類別，定義 <code>process()</code> 介面</td>
+</tr>
+<tr>
+<td><code>YOLOPostProcessor</code></td>
+<td>254-420</td>
+<td>解碼 YOLOv5/v8 輸出（含向量化 NMS）</td>
+</tr>
+<tr>
+<td><code>ClassificationPostProcessor</code></td>
+<td>423-496</td>
+<td>解碼分類輸出（Softmax + Top-K）</td>
+</tr>
+<tr>
+<td><code>YOLOXPostProcessor</code></td>
+<td>499-647</td>
+<td>解碼 YOLOX 輸出（含 obj_conf × class_conf）</td>
+</tr>
+<tr>
+<td><code>RTDETRPostProcessor</code></td>
+<td>650-769</td>
+<td>解碼 RT-DETR 輸出（Transformer，免 NMS）</td>
+</tr>
+<tr>
+<td><code>RTMPosePostProcessor</code></td>
+<td>781-993</td>
+<td>解碼姿態估計輸出（SimCC / Heatmap / Coordinates）</td>
+</tr>
+<tr>
+<td><code>TorchVisionDetectionPostProcessor</code></td>
+<td>996-1117</td>
+<td>解碼 torchvision 偵測模型（已內建 NMS）</td>
+</tr>
+</tbody>
+</table>
+<p><strong>處理器登錄表</strong>（行 1120-1133）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="n">_PREPROCESSORS</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>    <span class="s2">&quot;letterbox&quot;</span><span class="p">:</span> <span class="n">LetterboxPreProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>    <span class="s2">&quot;center_crop&quot;</span><span class="p">:</span> <span class="n">CenterCropPreProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a><span class="p">}</span>
+<a id="__codelineno-4-5" name="__codelineno-4-5" href="#__codelineno-4-5"></a><span class="n">_POSTPROCESSORS</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-4-6" name="__codelineno-4-6" href="#__codelineno-4-6"></a>    <span class="s2">&quot;yolo&quot;</span><span class="p">:</span> <span class="n">YOLOPostProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-7" name="__codelineno-4-7" href="#__codelineno-4-7"></a>    <span class="s2">&quot;yolox&quot;</span><span class="p">:</span> <span class="n">YOLOXPostProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-8" name="__codelineno-4-8" href="#__codelineno-4-8"></a>    <span class="s2">&quot;rtdetr&quot;</span><span class="p">:</span> <span class="n">RTDETRPostProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-9" name="__codelineno-4-9" href="#__codelineno-4-9"></a>    <span class="s2">&quot;rtmpose&quot;</span><span class="p">:</span> <span class="n">RTMPosePostProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-10" name="__codelineno-4-10" href="#__codelineno-4-10"></a>    <span class="s2">&quot;classification&quot;</span><span class="p">:</span> <span class="n">ClassificationPostProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-11" name="__codelineno-4-11" href="#__codelineno-4-11"></a>    <span class="s2">&quot;torchvision_detection&quot;</span><span class="p">:</span> <span class="n">TorchVisionDetectionPostProcessor</span><span class="p">,</span>
+<a id="__codelineno-4-12" name="__codelineno-4-12" href="#__codelineno-4-12"></a><span class="p">}</span>
+</code></pre></div>
+<p><strong>工具函數</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>函數</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>get_preprocessor(name)</code></td>
+<td>1136-1149</td>
+<td>依名稱取得前處理器實例</td>
+</tr>
+<tr>
+<td><code>get_postprocessor(name)</code></td>
+<td>1152-1165</td>
+<td>依名稱取得後處理器實例</td>
+</tr>
+<tr>
+<td><code>register_preprocessor(name, cls)</code></td>
+<td>1168-1170</td>
+<td>註冊自訂前處理器</td>
+</tr>
+<tr>
+<td><code>register_postprocessor(name, cls)</code></td>
+<td>1173-1175</td>
+<td>註冊自訂後處理器</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="54-pythonivitcoretypespy">5.4 <code>python/ivit/core/types.py</code> — 核心型別定義<a class="headerlink" href="#54-pythonivitcoretypespy" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：定義整個 SDK 使用的標準型別，確保 Python 與 C++ 型別對齊。</p>
+<table>
+<thead>
+<tr>
+<th>型別</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>DataType</code> (Enum)</td>
+<td>Float32 / Float16 / Int8 / UInt8 / Int32 / Int64 / Bool</td>
+</tr>
+<tr>
+<td><code>TaskType</code> (Enum)</td>
+<td>Classification / Detection / Segmentation / Pose / Face / OCR</td>
+</tr>
+<tr>
+<td><code>BackendType</code> (Enum)</td>
+<td>OpenVINO / TensorRT / QNN / Auto</td>
+</tr>
+<tr>
+<td><code>Precision</code> (Enum)</td>
+<td>FP32 / FP16 / INT8 / INT4</td>
+</tr>
+<tr>
+<td><code>LoadConfig</code> (dataclass)</td>
+<td>模型載入設定：device、backend、task、precision、batch_size、cache_dir、use_cache</td>
+</tr>
+<tr>
+<td><code>InferConfig</code> (dataclass)</td>
+<td>推論設定：conf_threshold、iou_threshold、max_detections、class_filter</td>
+</tr>
+<tr>
+<td><code>TensorInfo</code> (dataclass)</td>
+<td>Tensor 描述：name、shape、dtype</td>
+</tr>
+<tr>
+<td><code>DeviceInfo</code> (dataclass)</td>
+<td>裝置描述：id、type、backend、vendor、memory_mb、compute_units</td>
+</tr>
+<tr>
+<td><code>BBox</code> (dataclass)</td>
+<td>邊界框：x1、y1、x2、y2，附 <code>iou()</code> 計算方法</td>
+</tr>
+<tr>
+<td><code>Detection</code> (dataclass)</td>
+<td>偵測結果：bbox、class_id、class_name、confidence</td>
+</tr>
+<tr>
+<td><code>ClassificationResult</code> (dataclass)</td>
+<td>分類結果：class_id、class_name、score</td>
+</tr>
+<tr>
+<td><code>Keypoint</code> (dataclass)</td>
+<td>關鍵點：x、y、score、name</td>
+</tr>
+<tr>
+<td><code>Pose</code> (dataclass)</td>
+<td>姿態估計結果：keypoints 列表、bbox</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="55-pythonivitcoreexceptionspy">5.5 <code>python/ivit/core/exceptions.py</code> — 例外處理<a class="headerlink" href="#55-pythonivitcoreexceptionspy" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>IVITError（基礎例外）
+<a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>├── ModelLoadError      # 模型載入失敗（路徑錯誤、格式不支援）
+<a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>├── DeviceNotFoundError # 找不到指定裝置
+<a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>├── BackendNotAvailableError  # 後端未安裝（未裝 OpenVINO/TensorRT）
+<a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a>├── InferenceError      # 推論過程中發生錯誤
+<a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a>├── ConversionError     # 模型格式轉換失敗
+<a id="__codelineno-5-7" name="__codelineno-5-7" href="#__codelineno-5-7"></a>└── ZooDownloadError    # Model Zoo 下載失敗
+</code></pre></div>
+<hr />
+<h3 id="56-pythonivitvisiondetectorpy-176">5.6 <code>python/ivit/vision/detector.py</code> — 偵測器（176 行）<a class="headerlink" href="#56-pythonivitvisiondetectorpy-176" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：物件偵測任務的高階封裝。</p>
+<p><strong>關鍵程式碼解析</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="c1"># 行 32-53: 建構子 - 建立 C++ 偵測器</span>
+<a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">Detector</span><span class="p">:</span>
+<a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+<a id="__codelineno-6-4" name="__codelineno-6-4" href="#__codelineno-6-4"></a>        <span class="n">config</span> <span class="o">=</span> <span class="n">_CppLoadConfig</span><span class="p">()</span>
+<a id="__codelineno-6-5" name="__codelineno-6-5" href="#__codelineno-6-5"></a>        <span class="n">config</span><span class="o">.</span><span class="n">device</span> <span class="o">=</span> <span class="n">device</span>
+<a id="__codelineno-6-6" name="__codelineno-6-6" href="#__codelineno-6-6"></a>        <span class="bp">self</span><span class="o">.</span><span class="n">_cpp_detector</span> <span class="o">=</span> <span class="n">_CppDetector</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">config</span><span class="p">)</span>  <span class="c1"># 委派 C++</span>
+<a id="__codelineno-6-7" name="__codelineno-6-7" href="#__codelineno-6-7"></a>
+<a id="__codelineno-6-8" name="__codelineno-6-8" href="#__codelineno-6-8"></a>    <span class="c1"># 行 55-78: predict - 對單張影像偵測</span>
+<a id="__codelineno-6-9" name="__codelineno-6-9" href="#__codelineno-6-9"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">,</span> <span class="n">conf_threshold</span><span class="o">=</span><span class="mf">0.25</span><span class="p">,</span> <span class="n">iou_threshold</span><span class="o">=</span><span class="mf">0.45</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<a id="__codelineno-6-10" name="__codelineno-6-10" href="#__codelineno-6-10"></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_cpp_detector</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">conf_threshold</span><span class="p">,</span> <span class="n">iou_threshold</span><span class="p">)</span>
+<a id="__codelineno-6-11" name="__codelineno-6-11" href="#__codelineno-6-11"></a>
+<a id="__codelineno-6-12" name="__codelineno-6-12" href="#__codelineno-6-12"></a>    <span class="c1"># 行 126-155: predict_video - 影片串流偵測</span>
+<a id="__codelineno-6-13" name="__codelineno-6-13" href="#__codelineno-6-13"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict_video</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">callback</span><span class="p">,</span> <span class="o">...</span><span class="p">):</span>
+<a id="__codelineno-6-14" name="__codelineno-6-14" href="#__codelineno-6-14"></a>        <span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+<a id="__codelineno-6-15" name="__codelineno-6-15" href="#__codelineno-6-15"></a>        <span class="k">while</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
+<a id="__codelineno-6-16" name="__codelineno-6-16" href="#__codelineno-6-16"></a>            <span class="n">ret</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+<a id="__codelineno-6-17" name="__codelineno-6-17" href="#__codelineno-6-17"></a>            <span class="n">results</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">frame</span><span class="p">,</span> <span class="o">...</span><span class="p">)</span>
+<a id="__codelineno-6-18" name="__codelineno-6-18" href="#__codelineno-6-18"></a>            <span class="n">callback</span><span class="p">(</span><span class="n">results</span><span class="p">,</span> <span class="n">frame</span><span class="p">)</span>  <span class="c1"># 使用者回呼</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>方法 / 屬性</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init__(model, device, **kwargs)</code></td>
+<td>32-53</td>
+<td>建立偵測器，建構 C++ 底層物件</td>
+</tr>
+<tr>
+<td><code>predict(image, conf, iou)</code></td>
+<td>55-78</td>
+<td>對單張影像偵測</td>
+</tr>
+<tr>
+<td><code>__call__(image, ...)</code></td>
+<td>80-89</td>
+<td>簡寫呼叫（等同 predict）</td>
+</tr>
+<tr>
+<td><code>predict_batch(images, ...)</code></td>
+<td>91-124</td>
+<td>批次偵測</td>
+</tr>
+<tr>
+<td><code>predict_video(source, callback)</code></td>
+<td>126-155</td>
+<td>影片串流逐幀偵測</td>
+</tr>
+<tr>
+<td><code>classes</code></td>
+<td>157-160</td>
+<td>類別名稱列表</td>
+</tr>
+<tr>
+<td><code>num_classes</code></td>
+<td>162-165</td>
+<td>類別數量</td>
+</tr>
+<tr>
+<td><code>input_size</code></td>
+<td>167-170</td>
+<td>模型輸入尺寸</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="57-pythonivitvisionclassifierpy-124">5.7 <code>python/ivit/vision/classifier.py</code> — 分類器（124 行）<a class="headerlink" href="#57-pythonivitvisionclassifierpy-124" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>方法 / 屬性</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>__init__(model, device, **kwargs)</code></td>
+<td>27-48</td>
+<td>建立分類器</td>
+</tr>
+<tr>
+<td><code>predict(image, top_k)</code></td>
+<td>50-67</td>
+<td>對單張影像分類</td>
+</tr>
+<tr>
+<td><code>predict_batch(images, top_k)</code></td>
+<td>77-103</td>
+<td>批次分類</td>
+</tr>
+<tr>
+<td><code>classes</code></td>
+<td>105-108</td>
+<td>類別名稱列表</td>
+</tr>
+<tr>
+<td><code>num_classes</code></td>
+<td>110-113</td>
+<td>類別數量</td>
+</tr>
+<tr>
+<td><code>input_size</code></td>
+<td>115-118</td>
+<td>模型輸入尺寸</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="58-pythonivitzooregistrypy-model-zoo-1004">5.8 <code>python/ivit/zoo/registry.py</code> — Model Zoo 目錄（1004 行）<a class="headerlink" href="#58-pythonivitzooregistrypy-model-zoo-1004" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：維護所有預設模型的完整資訊、下載與轉換流程。</p>
+<p><strong>核心資料結構</strong>（行 17-31）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="nd">@dataclass</span>
+<a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="k">class</span><span class="w"> </span><span class="nc">ModelInfo</span><span class="p">:</span>
+<a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a>    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span>               <span class="c1"># 模型名稱</span>
+<a id="__codelineno-7-4" name="__codelineno-7-4" href="#__codelineno-7-4"></a>    <span class="n">task</span><span class="p">:</span> <span class="nb">str</span>               <span class="c1"># detect, classify, segment, pose</span>
+<a id="__codelineno-7-5" name="__codelineno-7-5" href="#__codelineno-7-5"></a>    <span class="n">description</span><span class="p">:</span> <span class="nb">str</span>        <span class="c1"># 描述</span>
+<a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>    <span class="n">input_size</span><span class="p">:</span> <span class="nb">tuple</span>       <span class="c1"># (H, W) 輸入尺寸</span>
+<a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">num_classes</span><span class="p">:</span> <span class="nb">int</span>        <span class="c1"># 類別數</span>
+<a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a>    <span class="n">formats</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>      <span class="c1"># 可用格式：onnx, openvino, tensorrt</span>
+<a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a>    <span class="n">url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>      <span class="c1"># 原始權重下載 URL</span>
+<a id="__codelineno-7-10" name="__codelineno-7-10" href="#__codelineno-7-10"></a>    <span class="n">onnx_url</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="c1"># 預轉換 ONNX URL</span>
+<a id="__codelineno-7-11" name="__codelineno-7-11" href="#__codelineno-7-11"></a>    <span class="n">source</span><span class="p">:</span> <span class="nb">str</span>             <span class="c1"># torchvision, megvii, paddlepaddle, mmpose</span>
+<a id="__codelineno-7-12" name="__codelineno-7-12" href="#__codelineno-7-12"></a>    <span class="n">license</span><span class="p">:</span> <span class="nb">str</span>            <span class="c1"># 授權</span>
+<a id="__codelineno-7-13" name="__codelineno-7-13" href="#__codelineno-7-13"></a>    <span class="n">metrics</span><span class="p">:</span> <span class="n">Dict</span>           <span class="c1"># 精度指標</span>
+<a id="__codelineno-7-14" name="__codelineno-7-14" href="#__codelineno-7-14"></a>    <span class="n">tags</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>         <span class="c1"># 標籤（供搜尋用）</span>
+</code></pre></div>
+<p><strong>模型登錄表 MODEL_REGISTRY</strong>（行 36-318）：</p>
+<table>
+<thead>
+<tr>
+<th>模型系列</th>
+<th>行號範圍</th>
+<th>模型</th>
+<th>任務</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>YOLOX (Apache-2.0)</td>
+<td>40-109</td>
+<td>nano / tiny / s / m / l</td>
+<td>物件偵測</td>
+</tr>
+<tr>
+<td>RT-DETR (Apache-2.0)</td>
+<td>114-141</td>
+<td>l / x</td>
+<td>物件偵測</td>
+</tr>
+<tr>
+<td>torchvision 偵測 (BSD-3)</td>
+<td>146-205</td>
+<td>fasterrcnn, retinanet, ssdlite, fcos</td>
+<td>物件偵測</td>
+</tr>
+<tr>
+<td>torchvision 分類 (BSD-3)</td>
+<td>210-257</td>
+<td>resnet18/50, mobilenetv3, efficientnet-b0</td>
+<td>分類</td>
+</tr>
+<tr>
+<td>torchvision 分割 (BSD-3)</td>
+<td>262-285</td>
+<td>deeplabv3-resnet50, deeplabv3-mobilenetv3</td>
+<td>語意分割</td>
+</tr>
+<tr>
+<td>RTMPose (Apache-2.0)</td>
+<td>290-317</td>
+<td>rtmpose-s, rtmpose-m</td>
+<td>姿態估計</td>
+</tr>
+</tbody>
+</table>
+<p><strong>模型名稱 → 原始框架 對照表</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>對照表</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_TORCHVISION_MODEL_MAP</code></td>
+<td>484-499</td>
+<td>torchvision 模型名 → 函數名映射</td>
+</tr>
+<tr>
+<td><code>_YOLOX_MODEL_MAP</code></td>
+<td>744-750</td>
+<td>YOLOX 名稱 → (config, depth, width) 映射</td>
+</tr>
+<tr>
+<td><code>_RTDETR_MODEL_MAP</code></td>
+<td>834-837</td>
+<td>RT-DETR 名稱 → PaddleDetection config 映射</td>
+</tr>
+<tr>
+<td><code>_RTMPOSE_MODEL_MAP</code></td>
+<td>892-899</td>
+<td>RTMPose 名稱 → MMPose config 映射</td>
+</tr>
+</tbody>
+</table>
+<p><strong>匯出函數</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>函數</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>_export_torchvision_onnx()</code></td>
+<td>502-675</td>
+<td>torchvision → ONNX 匯出（含分類/偵測/分割特殊處理）</td>
+</tr>
+<tr>
+<td><code>_export_yolox_onnx()</code></td>
+<td>753-831</td>
+<td>YOLOX .pth → ONNX 匯出</td>
+</tr>
+<tr>
+<td><code>_export_rtdetr_onnx()</code></td>
+<td>840-888</td>
+<td>RT-DETR → ONNX（需 PaddlePaddle）</td>
+</tr>
+<tr>
+<td><code>_export_mmpose_onnx()</code></td>
+<td>902-930</td>
+<td>RTMPose → ONNX（需 MMPose）</td>
+</tr>
+<tr>
+<td><code>_download_onnx_direct()</code></td>
+<td>706-740</td>
+<td>直接從 URL 下載預轉換 ONNX</td>
+</tr>
+<tr>
+<td><code>_download_file()</code></td>
+<td>678-699</td>
+<td>通用檔案下載（含進度條）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="59-pythonivittrain">5.9 <code>python/ivit/train/</code> — 訓練模組<a class="headerlink" href="#59-pythonivittrain" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>模組</th>
+<th>類別/函數</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>trainer.py</code></td>
+<td><code>Trainer</code></td>
+<td>訓練引擎：<code>fit()</code>、<code>evaluate()</code>、<code>resume()</code></td>
+</tr>
+<tr>
+<td><code>exporter.py</code></td>
+<td><code>Exporter</code></td>
+<td>PyTorch → ONNX → 目標格式匯出</td>
+</tr>
+<tr>
+<td><code>dataset.py</code></td>
+<td><code>IVITDataset</code></td>
+<td>統一資料集介面</td>
+</tr>
+<tr>
+<td><code>augmentation.py</code></td>
+<td><code>build_augmentation()</code></td>
+<td>資料增強管線</td>
+</tr>
+<tr>
+<td><code>callbacks.py</code></td>
+<td><code>EarlyStopping</code>, <code>ModelCheckpoint</code></td>
+<td>訓練回呼</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="510-pythonivitutils">5.10 <code>python/ivit/utils/</code> — 工具模組<a class="headerlink" href="#510-pythonivitutils" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>模組</th>
+<th>主要類別/函數</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>visualizer.py</code></td>
+<td><code>Visualizer</code></td>
+<td>繪製 bbox、mask、keypoint、標籤</td>
+</tr>
+<tr>
+<td><code>profiler.py</code></td>
+<td><code>Profiler</code></td>
+<td>延遲/吞吐量/記憶體測量</td>
+</tr>
+<tr>
+<td><code>metrics.py</code></td>
+<td><code>mAP()</code>, <code>IoU()</code>, <code>Accuracy()</code></td>
+<td>模型評估指標</td>
+</tr>
+<tr>
+<td><code>video.py</code></td>
+<td><code>VideoReader</code>, <code>VideoWriter</code></td>
+<td>影片讀寫封裝</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="6-c">6. C++ 核心模組詳解<a class="headerlink" href="#6-c" title="Permanent link">&para;</a></h2>
+<h3 id="61-includeivitcorecommonhpp-255">6.1 <code>include/ivit/core/common.hpp</code> — 全域型別（255 行）<a class="headerlink" href="#61-includeivitcorecommonhpp-255" title="Permanent link">&para;</a></h3>
+<p><strong>關鍵定義</strong>（所有列舉是跨層溝通的基礎）：</p>
+<table>
+<thead>
+<tr>
+<th>定義</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>enum class DataType</code></td>
+<td>36-45</td>
+<td>Float32, Float16, Int8, UInt8, Int32, Int64, Bool</td>
+</tr>
+<tr>
+<td><code>enum class Layout</code></td>
+<td>50-57</td>
+<td>NCHW, NHWC, NC, CHW, HWC</td>
+</tr>
+<tr>
+<td><code>enum class Precision</code></td>
+<td>62-68</td>
+<td>FP32, FP16, INT8, INT4</td>
+</tr>
+<tr>
+<td><code>enum class TaskType</code></td>
+<td>73-84</td>
+<td>Classification, Detection, Segmentation, InstanceSegmentation, PoseEstimation, FaceDetection, FaceRecognition, OCR, AnomalyDetection</td>
+</tr>
+<tr>
+<td><code>enum class BackendType</code></td>
+<td>92-98</td>
+<td>OpenVINO, TensorRT, QNN, Auto</td>
+</tr>
+<tr>
+<td><code>struct LoadConfig</code></td>
+<td>107-115</td>
+<td>模型載入設定</td>
+</tr>
+<tr>
+<td><code>struct InferConfig</code></td>
+<td>120-126</td>
+<td>推論設定</td>
+</tr>
+<tr>
+<td><code>class IVITError</code></td>
+<td>135-139</td>
+<td>基礎例外</td>
+</tr>
+<tr>
+<td><code>class ModelLoadError</code></td>
+<td>153-157</td>
+<td>模型載入錯誤</td>
+</tr>
+<tr>
+<td><code>class DeviceNotFoundError</code></td>
+<td>180-184</td>
+<td>裝置找不到錯誤</td>
+</tr>
+<tr>
+<td><code>class InferenceError</code></td>
+<td>189-193</td>
+<td>推論錯誤</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="62-srccoremodelcpp-1094">6.2 <code>src/core/model.cpp</code> — 核心推論引擎（1094 行）<a class="headerlink" href="#62-srccoremodelcpp-1094" title="Permanent link">&para;</a></h3>
+<p><strong>這是整個 SDK 最核心的 C++ 檔案</strong>，包含 <code>InferenceModel</code> 類別和 <code>ModelManager</code> 單例。</p>
+<h4 id="inferencemodel-25-553">InferenceModel 類別（行 25-553）<a class="headerlink" href="#inferencemodel-25-553" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>InferenceModel()</code> 建構子</td>
+<td>27-42</td>
+<td>接收 runtime、handle、task，取得輸入/輸出資訊</td>
+</tr>
+<tr>
+<td><code>predict(cv::Mat, InferConfig)</code></td>
+<td>77-101</td>
+<td><strong>核心推論方法</strong>：前處理 → runtime 推論 → 後處理 → 計時</td>
+</tr>
+<tr>
+<td><code>predict_batch(images, config)</code></td>
+<td>103-203</td>
+<td>批次推論（支援動態 batch 或逐張回退）</td>
+</tr>
+<tr>
+<td><code>infer_raw(inputs)</code></td>
+<td>205-209</td>
+<td>直接送 Tensor（繞過前後處理）</td>
+</tr>
+<tr>
+<td><code>warmup(iterations)</code></td>
+<td>211-225</td>
+<td>暖機推論（TensorRT 首次較慢）</td>
+</tr>
+<tr>
+<td><code>preprocess(cv::Mat)</code></td>
+<td>228-277</td>
+<td><strong>影像前處理</strong>：resize → normalize → BGR2RGB → NCHW</td>
+</tr>
+<tr>
+<td><code>postprocess(outputs, size, config, results)</code></td>
+<td>279-300</td>
+<td><strong>任務路由 switch</strong>：依 TaskType 分派到對應後處理</td>
+</tr>
+<tr>
+<td><code>postprocess_classification()</code></td>
+<td>302-352</td>
+<td>分類後處理：softmax → top-K → 映射 label</td>
+</tr>
+<tr>
+<td><code>postprocess_detection()</code></td>
+<td>354-437</td>
+<td>偵測後處理：YOLO decode → conf filter → NMS</td>
+</tr>
+<tr>
+<td><code>postprocess_segmentation()</code></td>
+<td>439-482</td>
+<td>分割後處理：argmax → resize mask</td>
+</tr>
+<tr>
+<td><code>apply_nms()</code></td>
+<td>484-543</td>
+<td>per-class NMS（使用 OpenCV cv::dnn::NMSBoxes）</td>
+</tr>
+</tbody>
+</table>
+<h4 id="model-555-920">Model 基礎類別方法（行 555-920）<a class="headerlink" href="#model-555-920" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>predict(string image_path)</code></td>
+<td>559-568</td>
+<td>讀取圖片再呼叫 predict(Mat)</td>
+</tr>
+<tr>
+<td><code>predict_async(image, config)</code></td>
+<td>574-584</td>
+<td>非同步推論（std::async）</td>
+</tr>
+<tr>
+<td><code>submit_inference(image, callback)</code></td>
+<td>602-621</td>
+<td>Fire-and-forget 推論（detached thread）</td>
+</tr>
+<tr>
+<td><code>predict_concurrent(images, max_concurrent)</code></td>
+<td>635-680</td>
+<td>限制並行數的併行推論</td>
+</tr>
+<tr>
+<td><code>ensure_executor()</code> / <code>shutdown_async()</code></td>
+<td>686-718</td>
+<td>非同步執行器管理</td>
+</tr>
+<tr>
+<td><code>on(event, callback)</code></td>
+<td>724-730</td>
+<td>註冊推論事件回呼</td>
+</tr>
+<tr>
+<td><code>predict_tta(image, augmentations)</code></td>
+<td>837-920</td>
+<td>TTA（Test-Time Augmentation）推論</td>
+</tr>
+<tr>
+<td><code>stream(source, config)</code></td>
+<td>932-941</td>
+<td>影片串流迭代器</td>
+</tr>
+</tbody>
+</table>
+<h4 id="modelmanager-980-1094">ModelManager 單例（行 980-1094）<a class="headerlink" href="#modelmanager-980-1094" title="Permanent link">&para;</a></h4>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>instance()</code></td>
+<td>984-987</td>
+<td>取得單例</td>
+</tr>
+<tr>
+<td><code>load(path, config)</code></td>
+<td>989-1063</td>
+<td><strong>模型載入主流程</strong>（見下方回追路線）</td>
+</tr>
+<tr>
+<td><code>convert(src, dst, backend, precision)</code></td>
+<td>1065-1082</td>
+<td>模型格式轉換</td>
+</tr>
+<tr>
+<td><code>clear_cache()</code></td>
+<td>1084-1087</td>
+<td>清除模型快取</td>
+</tr>
+<tr>
+<td><code>set_cache_dir(path)</code></td>
+<td>1089-1092</td>
+<td>設定快取目錄</td>
+</tr>
+</tbody>
+</table>
+<p><strong>ModelManager::load() 詳細步驟</strong>（行 989-1063）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a>行 993-1001: 快取查找 (thread-safe)
+<a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a>     ↓ cache miss
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a>行 1005-1006: RuntimeFactory::get_best_runtime(path, device)
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a>     ↓ 取得適合的後端
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a>行 1012-1025: 建立 RuntimeConfig (device, precision, cache_dir)
+<a id="__codelineno-8-6" name="__codelineno-8-6" href="#__codelineno-8-6"></a>     ↓
+<a id="__codelineno-8-7" name="__codelineno-8-7" href="#__codelineno-8-7"></a>行 1028: runtime-&gt;load_model(path, rt_config)  ← 後端載入模型
+<a id="__codelineno-8-8" name="__codelineno-8-8" href="#__codelineno-8-8"></a>     ↓
+<a id="__codelineno-8-9" name="__codelineno-8-9" href="#__codelineno-8-9"></a>行 1031-1038: 解析 task type (config.task → TaskType enum)
+<a id="__codelineno-8-10" name="__codelineno-8-10" href="#__codelineno-8-10"></a>     ↓
+<a id="__codelineno-8-11" name="__codelineno-8-11" href="#__codelineno-8-11"></a>行 1041-1047: new InferenceModel(runtime, handle, path, task, device)
+<a id="__codelineno-8-12" name="__codelineno-8-12" href="#__codelineno-8-12"></a>     ↓
+<a id="__codelineno-8-13" name="__codelineno-8-13" href="#__codelineno-8-13"></a>行 1050-1060: 存入快取 (thread-safe, double-check)
+</code></pre></div>
+<hr />
+<h3 id="63-includeivitruntimeruntimehpp-165">6.3 <code>include/ivit/runtime/runtime.hpp</code> — 後端抽象介面（165 行）<a class="headerlink" href="#63-includeivitruntimeruntimehpp-165" title="Permanent link">&para;</a></h3>
+<p><strong>IRuntime 介面</strong>（行 36-116）— 所有後端必須實作：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">IRuntime</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">BackendType</span><span class="w"> </span><span class="nf">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">           </span><span class="c1">// 行 43</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">string</span><span class="w"> </span><span class="nf">name</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">                </span><span class="c1">// 行 48</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_available</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">          </span><span class="c1">// 行 53</span>
+<a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">supported_formats</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// 行 58</span>
+<a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">DeviceInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_devices</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">   </span><span class="c1">// 行 63</span>
+<a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">load_model</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">     </span><span class="c1">// 行 72-75 ← 載入模型</span>
+<a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">unload_model</span><span class="p">(</span><span class="n">handle</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">          </span><span class="c1">// 行 80</span>
+<a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">TensorInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_input_info</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w">  </span><span class="c1">// 行 85</span>
+<a id="__codelineno-9-10" name="__codelineno-9-10" href="#__codelineno-9-10"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">vector</span><span class="o">&lt;</span><span class="n">TensorInfo</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_output_info</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// 行 90</span>
+<a id="__codelineno-9-11" name="__codelineno-9-11" href="#__codelineno-9-11"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">infer</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="n">inputs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// 行 99-102 ← 執行推論</span>
+<a id="__codelineno-9-12" name="__codelineno-9-12" href="#__codelineno-9-12"></a><span class="w">    </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">convert_model</span><span class="p">(</span><span class="n">src</span><span class="p">,</span><span class="w"> </span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="c1">// 行 111-115</span>
+<a id="__codelineno-9-13" name="__codelineno-9-13" href="#__codelineno-9-13"></a><span class="p">};</span>
+</code></pre></div>
+<p><strong>RuntimeFactory 工廠</strong>（行 121-161）：</p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>instance()</code></td>
+<td>126</td>
+<td>取得單例</td>
+</tr>
+<tr>
+<td><code>get_runtime(BackendType)</code></td>
+<td>131</td>
+<td>依後端類型取得 runtime</td>
+</tr>
+<tr>
+<td><code>get_runtime_for_device(device)</code></td>
+<td>136</td>
+<td>依裝置選取 runtime</td>
+</tr>
+<tr>
+<td><code>get_best_runtime(model_path, device)</code></td>
+<td>141-144</td>
+<td>依模型格式+裝置自動選取最佳 runtime</td>
+</tr>
+<tr>
+<td><code>register_runtime(runtime)</code></td>
+<td>149</td>
+<td>註冊新後端</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="64-srcruntimeruntime_factorycpp-113">6.4 <code>src/runtime/runtime_factory.cpp</code> — 後端選擇工廠（113 行）<a class="headerlink" href="#64-srcruntimeruntime_factorycpp-113" title="Permanent link">&para;</a></h3>
+<p><strong><code>get_best_runtime()</code> 選擇邏輯</strong>（行 61-99）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a>解析模型副檔名 (ext)
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a>    │
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    ├─ .engine / .trt    → TensorRT
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    ├─ .xml / .bin       → OpenVINO
+<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a>    ├─ .dlc / .serialized → QNN
+<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>    ├─ .onnx             → 依裝置決定：
+<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a>    │   ├─ device=&quot;cpu&quot; / &quot;npu&quot; / &quot;gpu&quot;  → OpenVINO (行 84-86)
+<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a>    │   ├─ device=&quot;cuda:*&quot;                → TensorRT (行 90-91)
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    │   └─ 預設優先序：TensorRT &gt; OpenVINO (行 89-94)
+<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    └─ 其他 → fallback: get_runtime_for_device() (行 98)
+</code></pre></div>
+<p><strong><code>get_runtime_for_device()</code> 裝置選擇邏輯</strong>（行 40-59）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a>device → BackendType 對照
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a>    │
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    ├─ &quot;cuda:*&quot;  → TensorRT
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    ├─ &quot;cpu&quot;     → OpenVINO
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    ├─ &quot;gpu:*&quot;   → OpenVINO (Intel GPU)
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    ├─ &quot;npu&quot;     → OpenVINO (Intel NPU)
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a>    └─ &quot;auto&quot;    → 優先序：TensorRT &gt; OpenVINO (行 46-55)
+</code></pre></div>
+<hr />
+<h2 id="7-pybind11">7. pybind11 綁定層詳解<a class="headerlink" href="#7-pybind11" title="Permanent link">&para;</a></h2>
+<h3 id="pythonivit_bindingcpp800"><code>python/ivit/_binding.cpp</code>（~800 行）<a class="headerlink" href="#pythonivit_bindingcpp800" title="Permanent link">&para;</a></h3>
+<p><strong>功能</strong>：C++ ↔ Python 的橋接層，透過 pybind11 實現 numpy/OpenCV 互操作。</p>
+<p><strong>關鍵結構</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>區塊</th>
+<th>行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mat ↔ NumPy 轉換</td>
+<td>31-121</td>
+<td><code>mat_to_numpy()</code> 和 <code>numpy_to_mat()</code></td>
+</tr>
+<tr>
+<td>模組定義 <code>PYBIND11_MODULE</code></td>
+<td>127</td>
+<td>模組名稱 <code>_ivit_core</code></td>
+</tr>
+<tr>
+<td>列舉綁定</td>
+<td>137-163</td>
+<td>DataType, Precision, Layout</td>
+</tr>
+<tr>
+<td>LoadConfig 綁定</td>
+<td>169-178</td>
+<td>模型載入設定</td>
+</tr>
+<tr>
+<td>InferConfig 綁定</td>
+<td>180-189</td>
+<td>推論設定</td>
+</tr>
+<tr>
+<td>TensorInfo 綁定</td>
+<td>195-211</td>
+<td>Tensor 資訊</td>
+</tr>
+<tr>
+<td>DeviceInfo 綁定</td>
+<td>213-225</td>
+<td>裝置資訊</td>
+</tr>
+<tr>
+<td>BBox 綁定</td>
+<td>231-252</td>
+<td>邊界框（含 iou, to_xywh 等方法）</td>
+</tr>
+<tr>
+<td>Detection 綁定</td>
+<td>258-267</td>
+<td>偵測結果</td>
+</tr>
+<tr>
+<td>ClassificationResult 綁定</td>
+<td>273-281</td>
+<td>分類結果</td>
+</tr>
+<tr>
+<td>Keypoint / Pose 綁定</td>
+<td>287-297</td>
+<td>姿態估計結果</td>
+</tr>
+<tr>
+<td><strong>Results 綁定</strong></td>
+<td>303-382</td>
+<td>統一結果容器（含 visualize, to_json 等）</td>
+</tr>
+<tr>
+<td><strong>Classifier 綁定</strong></td>
+<td>388-432</td>
+<td>分類器（predict, predict_batch, __call__）</td>
+</tr>
+<tr>
+<td><strong>Detector 綁定</strong></td>
+<td>438-496</td>
+<td>偵測器（predict, predict_batch, predict_config, __call__）</td>
+</tr>
+<tr>
+<td><strong>Segmentor 綁定</strong></td>
+<td>502-535</td>
+<td>分割器</td>
+</tr>
+<tr>
+<td>Callback 綁定</td>
+<td>541-565</td>
+<td>回呼事件系統</td>
+</tr>
+<tr>
+<td>OpenVINOConfig 綁定</td>
+<td>571-580</td>
+<td>OpenVINO 設定</td>
+</tr>
+<tr>
+<td>TensorRTConfig 綁定</td>
+<td>582-593</td>
+<td>TensorRT 設定</td>
+</tr>
+<tr>
+<td>QNNConfig 綁定</td>
+<td>595+</td>
+<td>QNN 設定</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Python 與 C++ 的資料轉換方式</strong>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a>Python numpy array → numpy_to_mat() (行 85-121) → cv::Mat → C++ 推論
+<a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a>C++ cv::Mat 結果 → mat_to_numpy() (行 31-80) → numpy array → Python
+</code></pre></div>
+<hr />
+<h2 id="8">8. 資料流程圖<a class="headerlink" href="#8" title="Permanent link">&para;</a></h2>
+<h3 id="81-yolo">8.1 標準推論流程（以 YOLO 偵測為例）<a class="headerlink" href="#81-yolo" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a>輸入影像（numpy / PIL / 路徑）
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a>        │
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a>        ▼
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a>  LetterboxPreProcessor                     ← processors.py:116-176
+<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a>  ┌─────────────────────────────────┐
+<a id="__codelineno-13-6" name="__codelineno-13-6" href="#__codelineno-13-6"></a>  │ 1. resize with padding          │
+<a id="__codelineno-13-7" name="__codelineno-13-7" href="#__codelineno-13-7"></a>  │ 2. normalize (÷255, BGR→RGB)    │
+<a id="__codelineno-13-8" name="__codelineno-13-8" href="#__codelineno-13-8"></a>  │ 3. HWC → NCHW, float32          │
+<a id="__codelineno-13-9" name="__codelineno-13-9" href="#__codelineno-13-9"></a>  └─────────────────────────────────┘
+<a id="__codelineno-13-10" name="__codelineno-13-10" href="#__codelineno-13-10"></a>        │ input_tensor (1, 3, H, W)
+<a id="__codelineno-13-11" name="__codelineno-13-11" href="#__codelineno-13-11"></a>        ▼
+<a id="__codelineno-13-12" name="__codelineno-13-12" href="#__codelineno-13-12"></a>  IRuntime.infer()                          ← runtime.hpp:99-102
+<a id="__codelineno-13-13" name="__codelineno-13-13" href="#__codelineno-13-13"></a>  ┌─────────────────────────────────┐
+<a id="__codelineno-13-14" name="__codelineno-13-14" href="#__codelineno-13-14"></a>  │ OpenVINO / TensorRT 推論         │
+<a id="__codelineno-13-15" name="__codelineno-13-15" href="#__codelineno-13-15"></a>  │ 硬體加速（GPU/NPU/CPU）           │
+<a id="__codelineno-13-16" name="__codelineno-13-16" href="#__codelineno-13-16"></a>  └─────────────────────────────────┘
+<a id="__codelineno-13-17" name="__codelineno-13-17" href="#__codelineno-13-17"></a>        │ raw_output (1, N, 85) 或類似
+<a id="__codelineno-13-18" name="__codelineno-13-18" href="#__codelineno-13-18"></a>        ▼
+<a id="__codelineno-13-19" name="__codelineno-13-19" href="#__codelineno-13-19"></a>  YOLOPostProcessor / YOLOXPostProcessor    ← processors.py:254-647
+<a id="__codelineno-13-20" name="__codelineno-13-20" href="#__codelineno-13-20"></a>  ┌─────────────────────────────────┐
+<a id="__codelineno-13-21" name="__codelineno-13-21" href="#__codelineno-13-21"></a>  │ 1. decode bbox (xywh → xyxy)    │
+<a id="__codelineno-13-22" name="__codelineno-13-22" href="#__codelineno-13-22"></a>  │ 2. filter by conf_threshold     │
+<a id="__codelineno-13-23" name="__codelineno-13-23" href="#__codelineno-13-23"></a>  │ 3. NMS（去除重疊框）              │
+<a id="__codelineno-13-24" name="__codelineno-13-24" href="#__codelineno-13-24"></a>  │ 4. 座標縮放回原始圖尺寸           │
+<a id="__codelineno-13-25" name="__codelineno-13-25" href="#__codelineno-13-25"></a>  │ 5. 映射 class_id → class_name   │
+<a id="__codelineno-13-26" name="__codelineno-13-26" href="#__codelineno-13-26"></a>  └─────────────────────────────────┘
+<a id="__codelineno-13-27" name="__codelineno-13-27" href="#__codelineno-13-27"></a>        │
+<a id="__codelineno-13-28" name="__codelineno-13-28" href="#__codelineno-13-28"></a>        ▼
+<a id="__codelineno-13-29" name="__codelineno-13-29" href="#__codelineno-13-29"></a>  Results（Detection 列表）
+<a id="__codelineno-13-30" name="__codelineno-13-30" href="#__codelineno-13-30"></a>        │
+<a id="__codelineno-13-31" name="__codelineno-13-31" href="#__codelineno-13-31"></a>        ▼
+<a id="__codelineno-13-32" name="__codelineno-13-32" href="#__codelineno-13-32"></a>  results.visualize() / results.save() / results.to_json()
+</code></pre></div>
+<h3 id="82">8.2 模型載入流程（完整調用鏈）<a class="headerlink" href="#82" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a>使用者程式碼                                        檔案位置
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a>──────────────────────────────────────────────────────────────
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a>ivit.load(&quot;yolox-s.onnx&quot;, device=&quot;auto&quot;)
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a>        │                                       __init__.py:168
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a>        ▼
+<a id="__codelineno-14-6" name="__codelineno-14-6" href="#__codelineno-14-6"></a>  _require_cpp()                                __init__.py:189
+<a id="__codelineno-14-7" name="__codelineno-14-7" href="#__codelineno-14-7"></a>  devices.best() → device = &quot;cuda:0&quot;           __init__.py:193-195
+<a id="__codelineno-14-8" name="__codelineno-14-8" href="#__codelineno-14-8"></a>  config = LoadConfig(device=device)            __init__.py:197-203
+<a id="__codelineno-14-9" name="__codelineno-14-9" href="#__codelineno-14-9"></a>  load_model(source, config)                    __init__.py:205
+<a id="__codelineno-14-10" name="__codelineno-14-10" href="#__codelineno-14-10"></a>        │                                       ↓ C++ binding
+<a id="__codelineno-14-11" name="__codelineno-14-11" href="#__codelineno-14-11"></a>        ▼
+<a id="__codelineno-14-12" name="__codelineno-14-12" href="#__codelineno-14-12"></a>  _ivit_core.load_model()                       _binding.cpp → ivit.hpp
+<a id="__codelineno-14-13" name="__codelineno-14-13" href="#__codelineno-14-13"></a>        │
+<a id="__codelineno-14-14" name="__codelineno-14-14" href="#__codelineno-14-14"></a>        ▼
+<a id="__codelineno-14-15" name="__codelineno-14-15" href="#__codelineno-14-15"></a>  ModelManager::load(path, config)              model.cpp:989
+<a id="__codelineno-14-16" name="__codelineno-14-16" href="#__codelineno-14-16"></a>        │
+<a id="__codelineno-14-17" name="__codelineno-14-17" href="#__codelineno-14-17"></a>        ├→ cache lookup (thread-safe)           model.cpp:996-1001
+<a id="__codelineno-14-18" name="__codelineno-14-18" href="#__codelineno-14-18"></a>        │    hit? → return cached model
+<a id="__codelineno-14-19" name="__codelineno-14-19" href="#__codelineno-14-19"></a>        │
+<a id="__codelineno-14-20" name="__codelineno-14-20" href="#__codelineno-14-20"></a>        ├→ RuntimeFactory::get_best_runtime()   runtime_factory.cpp:61
+<a id="__codelineno-14-21" name="__codelineno-14-21" href="#__codelineno-14-21"></a>        │    ├ ext=&quot;.onnx&quot; + device=&quot;cuda:0&quot;
+<a id="__codelineno-14-22" name="__codelineno-14-22" href="#__codelineno-14-22"></a>        │    └→ return TensorRT runtime          runtime_factory.cpp:90
+<a id="__codelineno-14-23" name="__codelineno-14-23" href="#__codelineno-14-23"></a>        │
+<a id="__codelineno-14-24" name="__codelineno-14-24" href="#__codelineno-14-24"></a>        ├→ runtime-&gt;load_model(path, config)    TensorRT: build engine
+<a id="__codelineno-14-25" name="__codelineno-14-25" href="#__codelineno-14-25"></a>        │                                       OpenVINO: compile_model
+<a id="__codelineno-14-26" name="__codelineno-14-26" href="#__codelineno-14-26"></a>        │
+<a id="__codelineno-14-27" name="__codelineno-14-27" href="#__codelineno-14-27"></a>        ├→ 解析 task type                        model.cpp:1031-1038
+<a id="__codelineno-14-28" name="__codelineno-14-28" href="#__codelineno-14-28"></a>        │    config.task=&quot;detection&quot; → TaskType::Detection
+<a id="__codelineno-14-29" name="__codelineno-14-29" href="#__codelineno-14-29"></a>        │
+<a id="__codelineno-14-30" name="__codelineno-14-30" href="#__codelineno-14-30"></a>        ├→ new InferenceModel(runtime, handle,  model.cpp:1041-1047
+<a id="__codelineno-14-31" name="__codelineno-14-31" href="#__codelineno-14-31"></a>        │                      path, task, device)
+<a id="__codelineno-14-32" name="__codelineno-14-32" href="#__codelineno-14-32"></a>        │
+<a id="__codelineno-14-33" name="__codelineno-14-33" href="#__codelineno-14-33"></a>        └→ cache_.insert(key, model)            model.cpp:1050-1060
+<a id="__codelineno-14-34" name="__codelineno-14-34" href="#__codelineno-14-34"></a>
+<a id="__codelineno-14-35" name="__codelineno-14-35" href="#__codelineno-14-35"></a>  return model  ← 回到 Python
+</code></pre></div>
+<hr />
+<h2 id="9">9. 程式回追路線圖<a class="headerlink" href="#9" title="Permanent link">&para;</a></h2>
+<h3 id="91-api">9.1 回追策略：從使用者 API 往下追蹤<a class="headerlink" href="#91-api" title="Permanent link">&para;</a></h3>
+<p><strong>原則</strong>：iVIT-SDK 的調用鏈是 <strong>Python 薄封裝 → C++ binding → C++ 核心</strong>，所以回追時遵循：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a>Step 1: Python API 入口（python/ivit/__init__.py 或 vision/*.py）
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>Step 2: C++ binding 轉接（python/ivit/_binding.cpp）
+<a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>Step 3: C++ 核心邏輯（src/core/model.cpp）
+<a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>Step 4: 後端推論（src/runtime/openvino_runtime.cpp 或 tensorrt_runtime.cpp）
+</code></pre></div>
+<h3 id="92-a">9.2 回追路線 A：「模型載入失敗」<a class="headerlink" href="#92-a" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a>問題：ivit.load(&quot;model.onnx&quot;) 丟出 ModelLoadError
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>
+<a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>回追路線：
+<a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>1. python/ivit/__init__.py:168-205     ← load() 入口
+<a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>   → 檢查 device 是否正確
+<a id="__codelineno-16-6" name="__codelineno-16-6" href="#__codelineno-16-6"></a>   → 檢查 config 參數
+<a id="__codelineno-16-7" name="__codelineno-16-7" href="#__codelineno-16-7"></a>
+<a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a>2. python/ivit/_binding.cpp:127+       ← C++ binding 的 load_model 綁定
+<a id="__codelineno-16-9" name="__codelineno-16-9" href="#__codelineno-16-9"></a>   → 這裡會把 Python 參數轉成 C++ LoadConfig
+<a id="__codelineno-16-10" name="__codelineno-16-10" href="#__codelineno-16-10"></a>
+<a id="__codelineno-16-11" name="__codelineno-16-11" href="#__codelineno-16-11"></a>3. src/core/model.cpp:989-1063         ← ModelManager::load()
+<a id="__codelineno-16-12" name="__codelineno-16-12" href="#__codelineno-16-12"></a>   → 行 1006: get_best_runtime() 是否找到 runtime?
+<a id="__codelineno-16-13" name="__codelineno-16-13" href="#__codelineno-16-13"></a>   → 行 1008-1010: &quot;No suitable runtime found&quot; = 後端未安裝
+<a id="__codelineno-16-14" name="__codelineno-16-14" href="#__codelineno-16-14"></a>   → 行 1028: runtime-&gt;load_model() 失敗? = 模型格式問題
+<a id="__codelineno-16-15" name="__codelineno-16-15" href="#__codelineno-16-15"></a>
+<a id="__codelineno-16-16" name="__codelineno-16-16" href="#__codelineno-16-16"></a>4. src/runtime/runtime_factory.cpp:61-99  ← 後端選擇
+<a id="__codelineno-16-17" name="__codelineno-16-17" href="#__codelineno-16-17"></a>   → 行 84-94: .onnx 檔對應哪個後端？
+<a id="__codelineno-16-18" name="__codelineno-16-18" href="#__codelineno-16-18"></a>   → 有沒有安裝對應後端？
+<a id="__codelineno-16-19" name="__codelineno-16-19" href="#__codelineno-16-19"></a>
+<a id="__codelineno-16-20" name="__codelineno-16-20" href="#__codelineno-16-20"></a>5. src/runtime/openvino_runtime.cpp 或 tensorrt_runtime.cpp
+<a id="__codelineno-16-21" name="__codelineno-16-21" href="#__codelineno-16-21"></a>   → 實際的模型載入錯誤
+</code></pre></div>
+<h3 id="93-b">9.3 回追路線 B：「偵測結果座標錯誤」<a class="headerlink" href="#93-b" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>問題：偵測到物件但 bbox 座標不正確
+<a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>
+<a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>回追路線（C++ 路徑）：
+<a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>1. src/core/model.cpp:77-101           ← predict() 入口
+<a id="__codelineno-17-5" name="__codelineno-17-5" href="#__codelineno-17-5"></a>2. src/core/model.cpp:228-277          ← preprocess()
+<a id="__codelineno-17-6" name="__codelineno-17-6" href="#__codelineno-17-6"></a>   → 行 244: resize 是否正確？
+<a id="__codelineno-17-7" name="__codelineno-17-7" href="#__codelineno-17-7"></a>   → 行 261-272: NCHW 轉換是否正確？
+<a id="__codelineno-17-8" name="__codelineno-17-8" href="#__codelineno-17-8"></a>3. src/core/model.cpp:354-437          ← postprocess_detection()
+<a id="__codelineno-17-9" name="__codelineno-17-9" href="#__codelineno-17-9"></a>   → 行 380: confidence 解析
+<a id="__codelineno-17-10" name="__codelineno-17-10" href="#__codelineno-17-10"></a>   → 行 409-417: 座標反算（center → corner, × image_size）
+<a id="__codelineno-17-11" name="__codelineno-17-11" href="#__codelineno-17-11"></a>   → 行 431: NMS 是否過濾過多？
+<a id="__codelineno-17-12" name="__codelineno-17-12" href="#__codelineno-17-12"></a>
+<a id="__codelineno-17-13" name="__codelineno-17-13" href="#__codelineno-17-13"></a>回追路線（Python processors.py 路徑）：
+<a id="__codelineno-17-14" name="__codelineno-17-14" href="#__codelineno-17-14"></a>1. python/ivit/core/processors.py:116-176  ← LetterboxPreProcessor
+<a id="__codelineno-17-15" name="__codelineno-17-15" href="#__codelineno-17-15"></a>   → 行 152-154: scale, pad_w, pad_h 計算是否正確？
+<a id="__codelineno-17-16" name="__codelineno-17-16" href="#__codelineno-17-16"></a>2. python/ivit/core/processors.py:254-420  ← YOLOPostProcessor
+<a id="__codelineno-17-17" name="__codelineno-17-17" href="#__codelineno-17-17"></a>   → 行 322-325: 座標反算（減去 padding，除以 scale）
+<a id="__codelineno-17-18" name="__codelineno-17-18" href="#__codelineno-17-18"></a>   → 行 328-331: clip to image bounds
+<a id="__codelineno-17-19" name="__codelineno-17-19" href="#__codelineno-17-19"></a>3. python/ivit/core/processors.py:499-647  ← YOLOXPostProcessor
+<a id="__codelineno-17-20" name="__codelineno-17-20" href="#__codelineno-17-20"></a>   → 行 545-546: YOLOX 特殊格式 (obj_conf 和 class_scores 分開)
+<a id="__codelineno-17-21" name="__codelineno-17-21" href="#__codelineno-17-21"></a>   → 行 567-570: 座標反算
+</code></pre></div>
+<h3 id="94-c-class_xxx">9.4 回追路線 C：「分類結果顯示 class_XXX 而非實際名稱」<a class="headerlink" href="#94-c-class_xxx" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-18-1" name="__codelineno-18-1" href="#__codelineno-18-1"></a>問題：分類結果的 label 是 &quot;class_42&quot; 不是 &quot;cat&quot;
+<a id="__codelineno-18-2" name="__codelineno-18-2" href="#__codelineno-18-2"></a>
+<a id="__codelineno-18-3" name="__codelineno-18-3" href="#__codelineno-18-3"></a>回追路線：
+<a id="__codelineno-18-4" name="__codelineno-18-4" href="#__codelineno-18-4"></a>1. src/core/model.cpp:346-348          ← postprocess_classification()
+<a id="__codelineno-18-5" name="__codelineno-18-5" href="#__codelineno-18-5"></a>   → labels_[class_id] 是否有值？
+<a id="__codelineno-18-6" name="__codelineno-18-6" href="#__codelineno-18-6"></a>   → 如果 labels_ 是空的，會回退到 &quot;class_&quot; + id
+<a id="__codelineno-18-7" name="__codelineno-18-7" href="#__codelineno-18-7"></a>
+<a id="__codelineno-18-8" name="__codelineno-18-8" href="#__codelineno-18-8"></a>2. src/core/model.cpp:72-74            ← set_labels() 是否被呼叫？
+<a id="__codelineno-18-9" name="__codelineno-18-9" href="#__codelineno-18-9"></a>   → labels_ 在哪裡被設定？
+<a id="__codelineno-18-10" name="__codelineno-18-10" href="#__codelineno-18-10"></a>
+<a id="__codelineno-18-11" name="__codelineno-18-11" href="#__codelineno-18-11"></a>3. python/ivit/zoo/registry.py:664-673 ← _export_torchvision_onnx()
+<a id="__codelineno-18-12" name="__codelineno-18-12" href="#__codelineno-18-12"></a>   → 行 665-671: 匯出時是否有儲存 labels .txt 檔？
+<a id="__codelineno-18-13" name="__codelineno-18-13" href="#__codelineno-18-13"></a>
+<a id="__codelineno-18-14" name="__codelineno-18-14" href="#__codelineno-18-14"></a>4. 檢查模型目錄下是否有 &lt;model_name&gt;.txt 標籤檔
+</code></pre></div>
+<h3 id="95-dmodel-zoo">9.5 回追路線 D：「Model Zoo 下載失敗」<a class="headerlink" href="#95-dmodel-zoo" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-19-1" name="__codelineno-19-1" href="#__codelineno-19-1"></a>回追路線：
+<a id="__codelineno-19-2" name="__codelineno-19-2" href="#__codelineno-19-2"></a>1. python/ivit/zoo/registry.py:413-481 ← download()
+<a id="__codelineno-19-3" name="__codelineno-19-3" href="#__codelineno-19-3"></a>   → 行 437: get_model_info() 找不到模型？
+<a id="__codelineno-19-4" name="__codelineno-19-4" href="#__codelineno-19-4"></a>   → 行 461-462: 有 onnx_url？走直接下載
+<a id="__codelineno-19-5" name="__codelineno-19-5" href="#__codelineno-19-5"></a>   → 行 465-479: 依 source 路由到對應匯出函數
+<a id="__codelineno-19-6" name="__codelineno-19-6" href="#__codelineno-19-6"></a>
+<a id="__codelineno-19-7" name="__codelineno-19-7" href="#__codelineno-19-7"></a>2. python/ivit/zoo/registry.py:706-740 ← _download_onnx_direct()
+<a id="__codelineno-19-8" name="__codelineno-19-8" href="#__codelineno-19-8"></a>   → 行 728: 下載檔案
+<a id="__codelineno-19-9" name="__codelineno-19-9" href="#__codelineno-19-9"></a>   → 行 731-737: 檔案太小？可能 URL 失效
+<a id="__codelineno-19-10" name="__codelineno-19-10" href="#__codelineno-19-10"></a>
+<a id="__codelineno-19-11" name="__codelineno-19-11" href="#__codelineno-19-11"></a>3. python/ivit/zoo/registry.py:678-699 ← _download_file()
+<a id="__codelineno-19-12" name="__codelineno-19-12" href="#__codelineno-19-12"></a>   → HTTP 請求是否成功？
+</code></pre></div>
+<h3 id="96-e">9.6 回追路線 E：「推論速度太慢」<a class="headerlink" href="#96-e" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-20-1" name="__codelineno-20-1" href="#__codelineno-20-1"></a>回追路線：
+<a id="__codelineno-20-2" name="__codelineno-20-2" href="#__codelineno-20-2"></a>1. src/core/model.cpp:85-98            ← predict() 的計時區段
+<a id="__codelineno-20-3" name="__codelineno-20-3" href="#__codelineno-20-3"></a>   → inference_time_ms 包含前處理+推論+後處理
+<a id="__codelineno-20-4" name="__codelineno-20-4" href="#__codelineno-20-4"></a>
+<a id="__codelineno-20-5" name="__codelineno-20-5" href="#__codelineno-20-5"></a>2. 前處理：src/core/model.cpp:228-277
+<a id="__codelineno-20-6" name="__codelineno-20-6" href="#__codelineno-20-6"></a>   → 行 244: cv::resize 可能是瓶頸
+<a id="__codelineno-20-7" name="__codelineno-20-7" href="#__codelineno-20-7"></a>   → 行 262-272: channel split + memcpy
+<a id="__codelineno-20-8" name="__codelineno-20-8" href="#__codelineno-20-8"></a>
+<a id="__codelineno-20-9" name="__codelineno-20-9" href="#__codelineno-20-9"></a>3. 推論：src/core/model.cpp:91
+<a id="__codelineno-20-10" name="__codelineno-20-10" href="#__codelineno-20-10"></a>   → runtime-&gt;infer() 是實際推論時間
+<a id="__codelineno-20-11" name="__codelineno-20-11" href="#__codelineno-20-11"></a>   → 用 model.warmup(5) 排除首次編譯延遲
+<a id="__codelineno-20-12" name="__codelineno-20-12" href="#__codelineno-20-12"></a>
+<a id="__codelineno-20-13" name="__codelineno-20-13" href="#__codelineno-20-13"></a>4. 後處理：
+<a id="__codelineno-20-14" name="__codelineno-20-14" href="#__codelineno-20-14"></a>   → NMS (model.cpp:484-543 或 processors.py:349-420)
+<a id="__codelineno-20-15" name="__codelineno-20-15" href="#__codelineno-20-15"></a>   → 如果偵測結果過多（數千個），NMS 會變慢
+<a id="__codelineno-20-16" name="__codelineno-20-16" href="#__codelineno-20-16"></a>
+<a id="__codelineno-20-17" name="__codelineno-20-17" href="#__codelineno-20-17"></a>5. 裝置選擇：
+<a id="__codelineno-20-18" name="__codelineno-20-18" href="#__codelineno-20-18"></a>   → 確認 device 是否用到 GPU/NPU
+<a id="__codelineno-20-19" name="__codelineno-20-19" href="#__codelineno-20-19"></a>   → ivit.devices.best() 回傳的裝置
+</code></pre></div>
+<hr />
+<h2 id="10">10. 後端推論引擎<a class="headerlink" href="#10" title="Permanent link">&para;</a></h2>
+<h3 id="101-openvinointel">10.1 OpenVINO（Intel）<a class="headerlink" href="#101-openvinointel" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-21-1" name="__codelineno-21-1" href="#__codelineno-21-1"></a>ONNX / PyTorch
+<a id="__codelineno-21-2" name="__codelineno-21-2" href="#__codelineno-21-2"></a>      │
+<a id="__codelineno-21-3" name="__codelineno-21-3" href="#__codelineno-21-3"></a>      ▼  mo (Model Optimizer)
+<a id="__codelineno-21-4" name="__codelineno-21-4" href="#__codelineno-21-4"></a>OpenVINO IR (.xml + .bin)
+<a id="__codelineno-21-5" name="__codelineno-21-5" href="#__codelineno-21-5"></a>      │
+<a id="__codelineno-21-6" name="__codelineno-21-6" href="#__codelineno-21-6"></a>      ▼  compile_model(device=&quot;CPU&quot;/&quot;GPU&quot;/&quot;NPU&quot;)
+<a id="__codelineno-21-7" name="__codelineno-21-7" href="#__codelineno-21-7"></a>Compiled Model
+<a id="__codelineno-21-8" name="__codelineno-21-8" href="#__codelineno-21-8"></a>      │
+<a id="__codelineno-21-9" name="__codelineno-21-9" href="#__codelineno-21-9"></a>      ▼  infer_request.infer()
+<a id="__codelineno-21-10" name="__codelineno-21-10" href="#__codelineno-21-10"></a>Output Tensors
+</code></pre></div>
+<p>支援量化：NNCF（Neural Network Compression Framework）INT8 校準</p>
+<h3 id="102-tensorrtnvidia">10.2 TensorRT（NVIDIA）<a class="headerlink" href="#102-tensorrtnvidia" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-22-1" name="__codelineno-22-1" href="#__codelineno-22-1"></a>ONNX
+<a id="__codelineno-22-2" name="__codelineno-22-2" href="#__codelineno-22-2"></a>  │
+<a id="__codelineno-22-3" name="__codelineno-22-3" href="#__codelineno-22-3"></a>  ▼  trt.OnnxParser → trt.Builder
+<a id="__codelineno-22-4" name="__codelineno-22-4" href="#__codelineno-22-4"></a>TensorRT Engine (.engine)
+<a id="__codelineno-22-5" name="__codelineno-22-5" href="#__codelineno-22-5"></a>  │  （快取到 cache_dir，避免重複編譯）
+<a id="__codelineno-22-6" name="__codelineno-22-6" href="#__codelineno-22-6"></a>  ▼  trt.IExecutionContext
+<a id="__codelineno-22-7" name="__codelineno-22-7" href="#__codelineno-22-7"></a>CUDA 推論（cudaMalloc / cudaMemcpy）
+<a id="__codelineno-22-8" name="__codelineno-22-8" href="#__codelineno-22-8"></a>  │
+<a id="__codelineno-22-9" name="__codelineno-22-9" href="#__codelineno-22-9"></a>  ▼
+<a id="__codelineno-22-10" name="__codelineno-22-10" href="#__codelineno-22-10"></a>Output Tensors
+</code></pre></div>
+<p>支援量化：INT8 校準（需提供 calibration dataset）</p>
+<hr />
+<h2 id="11">11. 新增模型修改指南<a class="headerlink" href="#11" title="Permanent link">&para;</a></h2>
+<h3 id="111-a-yolov9">11.1 情境 A：新增一個<strong>已有任務類型</strong>的模型（例如新的偵測模型 YOLOv9）<a class="headerlink" href="#111-a-yolov9" title="Permanent link">&para;</a></h3>
+<p><strong>只需改 Python，不需改 C++！</strong></p>
+<h4 id="step-1">Step 1: 註冊模型資訊<a class="headerlink" href="#step-1" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/zoo/registry.py</code></p>
+<p>在 <code>MODEL_REGISTRY</code> 字典中新增（行 36 之後，依類別分組）：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-23-1" name="__codelineno-23-1" href="#__codelineno-23-1"></a><span class="c1"># 在行 109 之後（YOLOX 區塊末尾）新增：</span>
+<a id="__codelineno-23-2" name="__codelineno-23-2" href="#__codelineno-23-2"></a><span class="s2">&quot;yolov9-s&quot;</span><span class="p">:</span> <span class="n">ModelInfo</span><span class="p">(</span>
+<a id="__codelineno-23-3" name="__codelineno-23-3" href="#__codelineno-23-3"></a>    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;yolov9-s&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-4" name="__codelineno-23-4" href="#__codelineno-23-4"></a>    <span class="n">task</span><span class="o">=</span><span class="s2">&quot;detect&quot;</span><span class="p">,</span>                          <span class="c1"># ← 已有的任務類型</span>
+<a id="__codelineno-23-5" name="__codelineno-23-5" href="#__codelineno-23-5"></a>    <span class="n">description</span><span class="o">=</span><span class="s2">&quot;YOLOv9 Small - State-of-the-art detection&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-6" name="__codelineno-23-6" href="#__codelineno-23-6"></a>    <span class="n">input_size</span><span class="o">=</span><span class="p">(</span><span class="mi">640</span><span class="p">,</span> <span class="mi">640</span><span class="p">),</span>
+<a id="__codelineno-23-7" name="__codelineno-23-7" href="#__codelineno-23-7"></a>    <span class="n">num_classes</span><span class="o">=</span><span class="mi">80</span><span class="p">,</span>
+<a id="__codelineno-23-8" name="__codelineno-23-8" href="#__codelineno-23-8"></a>    <span class="n">formats</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;onnx&quot;</span><span class="p">,</span> <span class="s2">&quot;openvino&quot;</span><span class="p">,</span> <span class="s2">&quot;tensorrt&quot;</span><span class="p">],</span>
+<a id="__codelineno-23-9" name="__codelineno-23-9" href="#__codelineno-23-9"></a>    <span class="n">url</span><span class="o">=</span><span class="s2">&quot;https://...&quot;</span><span class="p">,</span>                      <span class="c1"># 原始權重 URL</span>
+<a id="__codelineno-23-10" name="__codelineno-23-10" href="#__codelineno-23-10"></a>    <span class="n">onnx_url</span><span class="o">=</span><span class="s2">&quot;https://...&quot;</span><span class="p">,</span>                 <span class="c1"># 預轉換 ONNX URL（推薦）</span>
+<a id="__codelineno-23-11" name="__codelineno-23-11" href="#__codelineno-23-11"></a>    <span class="n">source</span><span class="o">=</span><span class="s2">&quot;custom&quot;</span><span class="p">,</span>                        <span class="c1"># 或對應的框架名</span>
+<a id="__codelineno-23-12" name="__codelineno-23-12" href="#__codelineno-23-12"></a>    <span class="n">license</span><span class="o">=</span><span class="s2">&quot;GPL-3.0&quot;</span><span class="p">,</span>
+<a id="__codelineno-23-13" name="__codelineno-23-13" href="#__codelineno-23-13"></a>    <span class="n">metrics</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;mAP50-95&quot;</span><span class="p">:</span> <span class="mf">51.0</span><span class="p">,</span> <span class="s2">&quot;params_m&quot;</span><span class="p">:</span> <span class="mf">7.2</span><span class="p">},</span>
+<a id="__codelineno-23-14" name="__codelineno-23-14" href="#__codelineno-23-14"></a>    <span class="n">tags</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;yolov9&quot;</span><span class="p">,</span> <span class="s2">&quot;detection&quot;</span><span class="p">,</span> <span class="s2">&quot;accurate&quot;</span><span class="p">],</span>
+<a id="__codelineno-23-15" name="__codelineno-23-15" href="#__codelineno-23-15"></a><span class="p">),</span>
+</code></pre></div>
+<h4 id="step-2">Step 2: 新增模型名稱對照表（如果是新的來源框架）<a class="headerlink" href="#step-2" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/zoo/registry.py</code></p>
+<p>在行 750 之後新增：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-24-1" name="__codelineno-24-1" href="#__codelineno-24-1"></a><span class="n">_YOLOV9_MODEL_MAP</span> <span class="o">=</span> <span class="p">{</span>
+<a id="__codelineno-24-2" name="__codelineno-24-2" href="#__codelineno-24-2"></a>    <span class="s2">&quot;yolov9-s&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;yolov9-s&quot;</span><span class="p">,</span> <span class="s2">&quot;gelan-s&quot;</span><span class="p">),</span>
+<a id="__codelineno-24-3" name="__codelineno-24-3" href="#__codelineno-24-3"></a>    <span class="s2">&quot;yolov9-m&quot;</span><span class="p">:</span> <span class="p">(</span><span class="s2">&quot;yolov9-m&quot;</span><span class="p">,</span> <span class="s2">&quot;gelan-m&quot;</span><span class="p">),</span>
+<a id="__codelineno-24-4" name="__codelineno-24-4" href="#__codelineno-24-4"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="step-3">Step 3: 新增匯出函數（如果是新的來源框架）<a class="headerlink" href="#step-3" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/zoo/registry.py</code></p>
+<p>在行 930 之後新增：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-25-1" name="__codelineno-25-1" href="#__codelineno-25-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">_export_yolov9_onnx</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">onnx_path</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">force</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<a id="__codelineno-25-2" name="__codelineno-25-2" href="#__codelineno-25-2"></a>    <span class="c1"># 下載權重 → 載入模型 → torch.onnx.export → 儲存標籤</span>
+<a id="__codelineno-25-3" name="__codelineno-25-3" href="#__codelineno-25-3"></a>    <span class="o">...</span>
+</code></pre></div>
+<h4 id="step-4-download">Step 4: 在 download() 中新增路由<a class="headerlink" href="#step-4-download" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/zoo/registry.py:464-479</code></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-26-1" name="__codelineno-26-1" href="#__codelineno-26-1"></a><span class="k">elif</span> <span class="n">info</span><span class="o">.</span><span class="n">source</span> <span class="o">==</span> <span class="s2">&quot;yolov9&quot;</span><span class="p">:</span>
+<a id="__codelineno-26-2" name="__codelineno-26-2" href="#__codelineno-26-2"></a>    <span class="k">if</span> <span class="nb">format</span> <span class="o">==</span> <span class="s2">&quot;onnx&quot;</span><span class="p">:</span>
+<a id="__codelineno-26-3" name="__codelineno-26-3" href="#__codelineno-26-3"></a>        <span class="n">model_path</span> <span class="o">=</span> <span class="n">_export_yolov9_onnx</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">model_path</span><span class="p">,</span> <span class="n">info</span><span class="p">,</span> <span class="n">force</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="step-5">Step 5: 新增後處理器（如果輸出格式不同於現有的）<a class="headerlink" href="#step-5" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/core/processors.py</code></p>
+<p>如果新模型的輸出格式與現有的 YOLOPostProcessor 不同：</p>
+<ol>
+<li>
+<p>在行 1117 之後新增新類別：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-27-1" name="__codelineno-27-1" href="#__codelineno-27-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">YOLOv9PostProcessor</span><span class="p">(</span><span class="n">BasePostProcessor</span><span class="p">):</span>
+<a id="__codelineno-27-2" name="__codelineno-27-2" href="#__codelineno-27-2"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outputs</span><span class="p">,</span> <span class="n">orig_size</span><span class="p">,</span> <span class="n">preprocess_info</span><span class="p">,</span> <span class="n">config</span><span class="p">,</span> <span class="n">labels</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<a id="__codelineno-27-3" name="__codelineno-27-3" href="#__codelineno-27-3"></a>        <span class="c1"># 解碼 YOLOv9 的特殊輸出格式</span>
+<a id="__codelineno-27-4" name="__codelineno-27-4" href="#__codelineno-27-4"></a>        <span class="o">...</span>
+</code></pre></div></p>
+</li>
+<li>
+<p>在 <code>_POSTPROCESSORS</code> 登錄表（行 1126-1133）新增：
+<div class="highlight"><pre><span></span><code><a id="__codelineno-28-1" name="__codelineno-28-1" href="#__codelineno-28-1"></a><span class="s2">&quot;yolov9&quot;</span><span class="p">:</span> <span class="n">YOLOv9PostProcessor</span><span class="p">,</span>
+</code></pre></div></p>
+</li>
+</ol>
+<hr />
+<h3 id="112-b-ocr">11.2 情境 B：新增一個<strong>全新任務類型</strong>（例如 OCR 文字辨識）<a class="headerlink" href="#112-b-ocr" title="Permanent link">&para;</a></h3>
+<p>需要同時修改 C++ 和 Python。</p>
+<h4 id="step-1-c-ocr">Step 1: C++ 列舉擴充（已內建 OCR）<a class="headerlink" href="#step-1-c-ocr" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>include/ivit/core/common.hpp:73-84</code></p>
+<p>確認 <code>TaskType</code> 已有所需值：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-29-1" name="__codelineno-29-1" href="#__codelineno-29-1"></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">TaskType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-29-2" name="__codelineno-29-2" href="#__codelineno-29-2"></a><span class="w">    </span><span class="n">Classification</span><span class="p">,</span>
+<a id="__codelineno-29-3" name="__codelineno-29-3" href="#__codelineno-29-3"></a><span class="w">    </span><span class="n">Detection</span><span class="p">,</span>
+<a id="__codelineno-29-4" name="__codelineno-29-4" href="#__codelineno-29-4"></a><span class="w">    </span><span class="n">Segmentation</span><span class="p">,</span>
+<a id="__codelineno-29-5" name="__codelineno-29-5" href="#__codelineno-29-5"></a><span class="w">    </span><span class="n">InstanceSegmentation</span><span class="p">,</span>
+<a id="__codelineno-29-6" name="__codelineno-29-6" href="#__codelineno-29-6"></a><span class="w">    </span><span class="n">PoseEstimation</span><span class="p">,</span>
+<a id="__codelineno-29-7" name="__codelineno-29-7" href="#__codelineno-29-7"></a><span class="w">    </span><span class="n">FaceDetection</span><span class="p">,</span>
+<a id="__codelineno-29-8" name="__codelineno-29-8" href="#__codelineno-29-8"></a><span class="w">    </span><span class="n">FaceRecognition</span><span class="p">,</span>
+<a id="__codelineno-29-9" name="__codelineno-29-9" href="#__codelineno-29-9"></a><span class="w">    </span><span class="n">OCR</span><span class="p">,</span><span class="w">                    </span><span class="c1">// ← 已存在</span>
+<a id="__codelineno-29-10" name="__codelineno-29-10" href="#__codelineno-29-10"></a><span class="w">    </span><span class="n">AnomalyDetection</span><span class="p">,</span>
+<a id="__codelineno-29-11" name="__codelineno-29-11" href="#__codelineno-29-11"></a><span class="w">    </span><span class="c1">// 新增：</span>
+<a id="__codelineno-29-12" name="__codelineno-29-12" href="#__codelineno-29-12"></a><span class="w">    </span><span class="n">TextDetection</span><span class="p">,</span><span class="w">          </span><span class="c1">// ← 如果需要新的</span>
+<a id="__codelineno-29-13" name="__codelineno-29-13" href="#__codelineno-29-13"></a><span class="w">    </span><span class="n">Unknown</span>
+<a id="__codelineno-29-14" name="__codelineno-29-14" href="#__codelineno-29-14"></a><span class="p">};</span>
+</code></pre></div>
+<h4 id="step-2-c">Step 2: C++ 後處理擴充<a class="headerlink" href="#step-2-c" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>src/core/model.cpp</code></p>
+<ol>
+<li>在 <code>postprocess()</code> switch（行 286-299）新增 case：</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-30-1" name="__codelineno-30-1" href="#__codelineno-30-1"></a><span class="k">case</span><span class="w"> </span><span class="no">TaskType</span><span class="o">::</span><span class="no">OCR</span><span class="p">:</span>
+<a id="__codelineno-30-2" name="__codelineno-30-2" href="#__codelineno-30-2"></a><span class="w">    </span><span class="n">postprocess_ocr</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span><span class="w"> </span><span class="n">image_size</span><span class="p">,</span><span class="w"> </span><span class="n">config</span><span class="p">,</span><span class="w"> </span><span class="n">results</span><span class="p">);</span>
+<a id="__codelineno-30-3" name="__codelineno-30-3" href="#__codelineno-30-3"></a><span class="w">    </span><span class="k">break</span><span class="p">;</span>
+</code></pre></div>
+<ol>
+<li>新增 <code>postprocess_ocr()</code> 方法（在行 482 之後）：</li>
+</ol>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-31-1" name="__codelineno-31-1" href="#__codelineno-31-1"></a><span class="kt">void</span><span class="w"> </span><span class="nf">postprocess_ocr</span><span class="p">(</span>
+<a id="__codelineno-31-2" name="__codelineno-31-2" href="#__codelineno-31-2"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">outputs</span><span class="p">,</span>
+<a id="__codelineno-31-3" name="__codelineno-31-3" href="#__codelineno-31-3"></a><span class="w">    </span><span class="n">cv</span><span class="o">::</span><span class="n">Size</span><span class="w"> </span><span class="n">image_size</span><span class="p">,</span>
+<a id="__codelineno-31-4" name="__codelineno-31-4" href="#__codelineno-31-4"></a><span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">InferConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">,</span>
+<a id="__codelineno-31-5" name="__codelineno-31-5" href="#__codelineno-31-5"></a><span class="w">    </span><span class="n">Results</span><span class="o">&amp;</span><span class="w"> </span><span class="n">results</span>
+<a id="__codelineno-31-6" name="__codelineno-31-6" href="#__codelineno-31-6"></a><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-31-7" name="__codelineno-31-7" href="#__codelineno-31-7"></a><span class="w">    </span><span class="c1">// OCR 特殊後處理邏輯</span>
+<a id="__codelineno-31-8" name="__codelineno-31-8" href="#__codelineno-31-8"></a><span class="p">}</span>
+</code></pre></div>
+<h4 id="step-3-c">Step 3: C++ 結果結構擴充<a class="headerlink" href="#step-3-c" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>include/ivit/core/result.hpp</code></p>
+<p>新增 OCR 結果欄位：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-32-1" name="__codelineno-32-1" href="#__codelineno-32-1"></a><span class="k">struct</span><span class="w"> </span><span class="nc">Results</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-32-2" name="__codelineno-32-2" href="#__codelineno-32-2"></a><span class="w">    </span><span class="c1">// ... 現有欄位 ...</span>
+<a id="__codelineno-32-3" name="__codelineno-32-3" href="#__codelineno-32-3"></a><span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">TextResult</span><span class="o">&gt;</span><span class="w"> </span><span class="n">texts</span><span class="p">;</span><span class="w">  </span><span class="c1">// 新增</span>
+<a id="__codelineno-32-4" name="__codelineno-32-4" href="#__codelineno-32-4"></a><span class="p">};</span>
+</code></pre></div>
+<h4 id="step-4-pybind11">Step 4: pybind11 綁定擴充<a class="headerlink" href="#step-4-pybind11" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/_binding.cpp</code></p>
+<p>在 Results 綁定區塊（行 303-382）新增：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-33-1" name="__codelineno-33-1" href="#__codelineno-33-1"></a><span class="p">.</span><span class="n">def_readwrite</span><span class="p">(</span><span class="s">&quot;texts&quot;</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">ivit</span><span class="o">::</span><span class="n">Results</span><span class="o">::</span><span class="n">texts</span><span class="p">)</span>
+</code></pre></div>
+<h4 id="step-5-python">Step 5: Python 處理器<a class="headerlink" href="#step-5-python" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/core/processors.py</code></p>
+<p>新增 OCR 後處理器，並註冊到 <code>_POSTPROCESSORS</code>。</p>
+<h4 id="step-6-python">Step 6: Python 視覺任務封裝（可選）<a class="headerlink" href="#step-6-python" title="Permanent link">&para;</a></h4>
+<p>新增 <code>python/ivit/vision/ocr.py</code>：</p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-34-1" name="__codelineno-34-1" href="#__codelineno-34-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">OCRReader</span><span class="p">:</span>
+<a id="__codelineno-34-2" name="__codelineno-34-2" href="#__codelineno-34-2"></a>    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span> <span class="o">...</span>
+<a id="__codelineno-34-3" name="__codelineno-34-3" href="#__codelineno-34-3"></a>    <span class="k">def</span><span class="w"> </span><span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">image</span><span class="p">):</span> <span class="o">...</span>
+</code></pre></div>
+<h4 id="step-7-__init__py">Step 7: 在 <code>__init__.py</code> 匯出（可選）<a class="headerlink" href="#step-7-__init__py" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>python/ivit/__init__.py</code></p>
+<p>在 import 區塊和 <code>__all__</code> 列表新增 <code>OCRReader</code>。</p>
+<hr />
+<h3 id="113-c-onnx-runtime">11.3 情境 C：新增一個<strong>新的推論後端</strong>（例如 ONNX Runtime）<a class="headerlink" href="#113-c-onnx-runtime" title="Permanent link">&para;</a></h3>
+<h4 id="step-1-iruntime">Step 1: 實作 IRuntime 介面<a class="headerlink" href="#step-1-iruntime" title="Permanent link">&para;</a></h4>
+<p><strong>新增檔案</strong>：<code>include/ivit/runtime/onnxruntime_runtime.hpp</code></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-35-1" name="__codelineno-35-1" href="#__codelineno-35-1"></a><span class="k">class</span><span class="w"> </span><span class="nc">OnnxRuntimeRuntime</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">IRuntime</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-35-2" name="__codelineno-35-2" href="#__codelineno-35-2"></a><span class="w">    </span><span class="n">BackendType</span><span class="w"> </span><span class="nf">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">BackendType</span><span class="o">::</span><span class="n">OnnxRuntime</span><span class="p">;</span><span class="w"> </span><span class="p">}</span>
+<a id="__codelineno-35-3" name="__codelineno-35-3" href="#__codelineno-35-3"></a><span class="w">    </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">load_model</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">RuntimeConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<a id="__codelineno-35-4" name="__codelineno-35-4" href="#__codelineno-35-4"></a><span class="w">    </span><span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">infer</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">handle</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">map</span><span class="o">&lt;</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">inputs</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<a id="__codelineno-35-5" name="__codelineno-35-5" href="#__codelineno-35-5"></a><span class="w">    </span><span class="kt">void</span><span class="w"> </span><span class="nf">convert_model</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">src</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dst</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">RuntimeConfig</span><span class="o">&amp;</span><span class="w"> </span><span class="n">config</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<a id="__codelineno-35-6" name="__codelineno-35-6" href="#__codelineno-35-6"></a><span class="w">    </span><span class="c1">// ... 其他純虛函數</span>
+<a id="__codelineno-35-7" name="__codelineno-35-7" href="#__codelineno-35-7"></a><span class="p">};</span>
+</code></pre></div>
+<h4 id="step-2-cpp">Step 2: 實作 .cpp 檔<a class="headerlink" href="#step-2-cpp" title="Permanent link">&para;</a></h4>
+<p><strong>新增檔案</strong>：<code>src/runtime/onnxruntime_runtime.cpp</code></p>
+<h4 id="step-3-backendtype">Step 3: 擴充 BackendType 列舉<a class="headerlink" href="#step-3-backendtype" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>include/ivit/core/common.hpp:92-98</code></p>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-36-1" name="__codelineno-36-1" href="#__codelineno-36-1"></a><span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">BackendType</span><span class="w"> </span><span class="p">{</span>
+<a id="__codelineno-36-2" name="__codelineno-36-2" href="#__codelineno-36-2"></a><span class="w">    </span><span class="n">OpenVINO</span><span class="p">,</span>
+<a id="__codelineno-36-3" name="__codelineno-36-3" href="#__codelineno-36-3"></a><span class="w">    </span><span class="n">TensorRT</span><span class="p">,</span>
+<a id="__codelineno-36-4" name="__codelineno-36-4" href="#__codelineno-36-4"></a><span class="w">    </span><span class="n">QNN</span><span class="p">,</span>
+<a id="__codelineno-36-5" name="__codelineno-36-5" href="#__codelineno-36-5"></a><span class="w">    </span><span class="n">OnnxRuntime</span><span class="p">,</span><span class="w">   </span><span class="c1">// ← 新增</span>
+<a id="__codelineno-36-6" name="__codelineno-36-6" href="#__codelineno-36-6"></a><span class="w">    </span><span class="n">Auto</span><span class="p">,</span>
+<a id="__codelineno-36-7" name="__codelineno-36-7" href="#__codelineno-36-7"></a><span class="w">    </span><span class="n">Unknown</span>
+<a id="__codelineno-36-8" name="__codelineno-36-8" href="#__codelineno-36-8"></a><span class="p">};</span>
+</code></pre></div>
+<h4 id="step-4-runtimefactory">Step 4: 在 RuntimeFactory 中註冊<a class="headerlink" href="#step-4-runtimefactory" title="Permanent link">&para;</a></h4>
+<p><strong>檔案</strong>：<code>src/runtime/runtime_factory.cpp</code></p>
+<p>在 <code>get_best_runtime()</code> 邏輯中新增 .onnx 的選擇支援。</p>
+<h4 id="step-5-cmakeliststxt">Step 5: 更新 CMakeLists.txt<a class="headerlink" href="#step-5-cmakeliststxt" title="Permanent link">&para;</a></h4>
+<p>新增 ONNX Runtime 的 find_package 和連結設定。</p>
+<hr />
+<h3 id="114">11.4 各情境修改檔案速查表<a class="headerlink" href="#114" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>修改項目</th>
+<th style="text-align: center;">情境 A（新模型）</th>
+<th style="text-align: center;">情境 B（新任務）</th>
+<th style="text-align: center;">情境 C（新後端）</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>python/ivit/zoo/registry.py</code> (MODEL_REGISTRY)</td>
+<td style="text-align: center;">✅ 必改</td>
+<td style="text-align: center;">✅ 必改</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>python/ivit/zoo/registry.py</code> (匯出函數)</td>
+<td style="text-align: center;">⚠️ 可能</td>
+<td style="text-align: center;">⚠️ 可能</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>python/ivit/core/processors.py</code> (後處理器)</td>
+<td style="text-align: center;">⚠️ 可能</td>
+<td style="text-align: center;">✅ 必改</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>include/ivit/core/common.hpp</code> (TaskType)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">⚠️ 可能</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>include/ivit/core/common.hpp</code> (BackendType)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+</tr>
+<tr>
+<td><code>src/core/model.cpp</code> (postprocess switch)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>src/core/model.cpp</code> (postprocess 函數)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>include/ivit/core/result.hpp</code> (結果結構)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">⚠️ 可能</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>python/ivit/_binding.cpp</code> (綁定)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">⚠️ 可能</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>include/ivit/runtime/runtime.hpp</code></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>src/runtime/runtime_factory.cpp</code></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+</tr>
+<tr>
+<td>新增 <code>src/runtime/*_runtime.cpp</code></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+</tr>
+<tr>
+<td>新增 <code>include/ivit/runtime/*_runtime.hpp</code></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+</tr>
+<tr>
+<td><code>python/ivit/vision/*.py</code> (視覺封裝)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">⚠️ 可選</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>python/ivit/__init__.py</code> (匯出)</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">⚠️ 可選</td>
+<td style="text-align: center;">-</td>
+</tr>
+<tr>
+<td><code>CMakeLists.txt</code></td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">-</td>
+<td style="text-align: center;">✅ 必改</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="12">12. 設計模式總結<a class="headerlink" href="#12" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>模式</th>
+<th>應用位置</th>
+<th>檔案:行號</th>
+<th>說明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Strategy（策略）</strong></td>
+<td><code>IRuntime</code> + 各後端</td>
+<td><code>runtime.hpp:36-116</code></td>
+<td>後端可替換，不影響上層呼叫者</td>
+</tr>
+<tr>
+<td><strong>Factory（工廠）</strong></td>
+<td><code>RuntimeFactory</code></td>
+<td><code>runtime_factory.cpp:61-99</code></td>
+<td>依模型格式+裝置自動建立 runtime</td>
+</tr>
+<tr>
+<td><strong>Factory（工廠）</strong></td>
+<td><code>ivit.load()</code></td>
+<td><code>__init__.py:168-205</code></td>
+<td>依參數自動建立推論器</td>
+</tr>
+<tr>
+<td><strong>Adapter（適配器）</strong></td>
+<td>Python vision classes</td>
+<td><code>detector.py</code>, <code>classifier.py</code></td>
+<td>統一不同後端的 Python 介面</td>
+</tr>
+<tr>
+<td><strong>Template Method</strong></td>
+<td>Pre/PostProcessor 基類</td>
+<td><code>processors.py:18-113</code></td>
+<td>定義處理流程骨架，子類別實作細節</td>
+</tr>
+<tr>
+<td><strong>Observer（觀察者）</strong></td>
+<td>Callback 系統</td>
+<td><code>model.cpp:724-760</code></td>
+<td>在推論各階段注入自訂邏輯</td>
+</tr>
+<tr>
+<td><strong>Registry（登錄）</strong></td>
+<td>Model Zoo</td>
+<td><code>registry.py:36-318</code></td>
+<td>統一管理模型元資料</td>
+</tr>
+<tr>
+<td><strong>Registry（登錄）</strong></td>
+<td>Processor 登錄</td>
+<td><code>processors.py:1120-1175</code></td>
+<td>依名稱查找前後處理器</td>
+</tr>
+<tr>
+<td><strong>PIMPL（橋接）</strong></td>
+<td><code>InferenceModel</code> 使用 <code>IRuntime</code></td>
+<td><code>model.cpp:25-553</code></td>
+<td>隱藏後端實作</td>
+</tr>
+<tr>
+<td><strong>Singleton（單例）</strong></td>
+<td><code>ModelManager</code>, <code>RuntimeFactory</code></td>
+<td><code>model.cpp:984-987</code>, <code>runtime_factory.cpp:17-20</code></td>
+<td>全域唯一管理器</td>
+</tr>
+<tr>
+<td><strong>Iterator（迭代器）</strong></td>
+<td><code>StreamIterator</code></td>
+<td><code>model.cpp:926-978</code></td>
+<td>影片串流逐幀推論</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="a">附錄 A：關鍵依賴版本<a class="headerlink" href="#a" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>依賴</th>
+<th>版本需求</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Python</td>
+<td>≥ 3.9</td>
+<td>主要開發語言</td>
+</tr>
+<tr>
+<td>C++</td>
+<td>17</td>
+<td>核心引擎</td>
+</tr>
+<tr>
+<td>OpenCV</td>
+<td>≥ 4.5</td>
+<td>影像讀寫/前處理</td>
+</tr>
+<tr>
+<td>OpenVINO</td>
+<td>≥ 2024.0</td>
+<td>Intel 推論後端</td>
+</tr>
+<tr>
+<td>TensorRT</td>
+<td>≥ 8.6</td>
+<td>NVIDIA 推論後端</td>
+</tr>
+<tr>
+<td>CUDA</td>
+<td>≥ 11.8</td>
+<td>GPU 運算</td>
+</tr>
+<tr>
+<td>pybind11</td>
+<td>≥ 2.10</td>
+<td>C++↔Python 橋接</td>
+</tr>
+<tr>
+<td>PyTorch</td>
+<td>≥ 2.0</td>
+<td>訓練模組（可選）</td>
+</tr>
+<tr>
+<td>ONNX</td>
+<td>≥ 1.14</td>
+<td>模型交換格式</td>
+</tr>
+<tr>
+<td>numpy</td>
+<td>≥ 1.21</td>
+<td>數值運算</td>
+</tr>
+<tr>
+<td>albumentations</td>
+<td>≥ 1.3</td>
+<td>資料增強（訓練用）</td>
+</tr>
+<tr>
+<td>NNCF</td>
+<td>≥ 2.7</td>
+<td>INT8 量化（OpenVINO）</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="b">附錄 B：關鍵檔案行號速查<a class="headerlink" href="#b" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>元件</th>
+<th>檔案</th>
+<th>行號</th>
+<th>功能</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Python 入口</strong></td>
+<td><code>python/ivit/__init__.py</code></td>
+<td>168-205</td>
+<td><code>load()</code> 函數</td>
+</tr>
+<tr>
+<td><strong>C++ binding</strong></td>
+<td><code>python/ivit/_binding.cpp</code></td>
+<td>127-600</td>
+<td>pybind11 模組定義</td>
+</tr>
+<tr>
+<td><strong>模型載入</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>989-1063</td>
+<td><code>ModelManager::load()</code></td>
+</tr>
+<tr>
+<td><strong>任務偵測</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>1031-1038</td>
+<td>task string → TaskType</td>
+</tr>
+<tr>
+<td><strong>推論入口</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>77-101</td>
+<td><code>InferenceModel::predict()</code></td>
+</tr>
+<tr>
+<td><strong>前處理</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>228-277</td>
+<td>C++ 前處理</td>
+</tr>
+<tr>
+<td><strong>後處理路由</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>279-300</td>
+<td>switch(task_)</td>
+</tr>
+<tr>
+<td><strong>分類後處理</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>302-352</td>
+<td>softmax + top-K</td>
+</tr>
+<tr>
+<td><strong>偵測後處理</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>354-437</td>
+<td>YOLO decode + NMS</td>
+</tr>
+<tr>
+<td><strong>分割後處理</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>439-482</td>
+<td>argmax + resize</td>
+</tr>
+<tr>
+<td><strong>NMS</strong></td>
+<td><code>src/core/model.cpp</code></td>
+<td>484-543</td>
+<td>per-class NMS</td>
+</tr>
+<tr>
+<td><strong>後端選擇</strong></td>
+<td><code>src/runtime/runtime_factory.cpp</code></td>
+<td>61-99</td>
+<td>模型格式→後端映射</td>
+</tr>
+<tr>
+<td><strong>IRuntime 介面</strong></td>
+<td><code>include/ivit/runtime/runtime.hpp</code></td>
+<td>36-116</td>
+<td>純虛擬介面定義</td>
+</tr>
+<tr>
+<td><strong>全域列舉</strong></td>
+<td><code>include/ivit/core/common.hpp</code></td>
+<td>36-98</td>
+<td>DataType, TaskType, BackendType</td>
+</tr>
+<tr>
+<td><strong>Model Zoo</strong></td>
+<td><code>python/ivit/zoo/registry.py</code></td>
+<td>36-318</td>
+<td>MODEL_REGISTRY 字典</td>
+</tr>
+<tr>
+<td><strong>Zoo 下載</strong></td>
+<td><code>python/ivit/zoo/registry.py</code></td>
+<td>413-481</td>
+<td>download() 路由</td>
+</tr>
+<tr>
+<td><strong>Zoo 匯出</strong></td>
+<td><code>python/ivit/zoo/registry.py</code></td>
+<td>502-930</td>
+<td>各框架→ONNX 匯出</td>
+</tr>
+<tr>
+<td><strong>Python 偵測</strong></td>
+<td><code>python/ivit/vision/detector.py</code></td>
+<td>32-176</td>
+<td>Detector wrapper</td>
+</tr>
+<tr>
+<td><strong>Python 分類</strong></td>
+<td><code>python/ivit/vision/classifier.py</code></td>
+<td>27-124</td>
+<td>Classifier wrapper</td>
+</tr>
+<tr>
+<td><strong>前處理器</strong></td>
+<td><code>python/ivit/core/processors.py</code></td>
+<td>116-251</td>
+<td>Letterbox / CenterCrop</td>
+</tr>
+<tr>
+<td><strong>後處理器</strong></td>
+<td><code>python/ivit/core/processors.py</code></td>
+<td>254-1117</td>
+<td>YOLO/YOLOX/RTDETR/RTMPose/Classification</td>
+</tr>
+<tr>
+<td><strong>處理器登錄</strong></td>
+<td><code>python/ivit/core/processors.py</code></td>
+<td>1120-1175</td>
+<td>登錄表 + 工具函數</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  回到頂部
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.tabs", "navigation.top", "content.code.copy", "search.suggest", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u62f7\u8c9d", "clipboard.copy": "\u62f7\u8c9d", "search.result.more.one": "\u6b64\u9801\u5c1a\u6709 1 \u500b\u7b26\u5408\u7684\u9805\u76ee", "search.result.more.other": "\u6b64\u9801\u5c1a\u6709 # \u500b\u7b26\u5408\u7684\u9805\u76ee", "search.result.none": "\u6c92\u6709\u627e\u5230\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.other": "\u627e\u5230 # \u500b\u7b26\u5408\u689d\u4ef6\u7684\u7d50\u679c", "search.result.placeholder": "\u9375\u5165\u4ee5\u958b\u59cb\u6aa2\u7d22", "search.result.term.missing": "\u7f3a\u5931", "select.version": "\u9078\u64c7\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
