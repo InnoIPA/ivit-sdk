@@ -65,6 +65,11 @@ and C++ applications must be rebuilt after a minor upgrade.
   selection, `classes`/`max_detections`, `use_cache`).
 
 ### Removed
+- `scripts/download_deps.sh` and the `deps/install` lookup in CMake (`IVIT_DEPS_DIR`): it fetched
+  OpenVINO 2024.6 and only told you to download TensorRT by hand, and no install path used it.
+- The `tensorrt` and `cuda` pip extras: the SDK never loads the pip `tensorrt` package, and
+  `tensorrt>=8.6` could pull a different major than the SDK was built with.
+- Unused Black and mypy settings and dev dependencies (neither ever ran; CI runs Flake8).
 - Dead or unsupported code: `python/ivit/core/model.py` (only used by three tests that were always
   skipped, VideoSource moved to C++), the `ivit serve` command (an unauthenticated stdlib HTTP
   server; the SDK does not provide a server), the Zoo's `_export_rtdetr_onnx` and
@@ -235,6 +240,12 @@ and C++ applications must be rebuilt after a minor upgrade.
   be written is now a warning; the built engine is used and rebuilt on the next load.
 - `simple_inference clear-cache` printed the directory it would clear but passed an empty path,
   so nothing was deleted from disk.
+- `ivit info` reported whether pip `openvino`/`tensorrt` packages were importable, so an apt
+  install with TensorRT said "Not installed". It now shows the backends the SDK loaded and their
+  runtime versions.
+- The YOLOX training error suggested `pip install 'ivit-sdk[training-yolox]'` (no such extra) and
+  `pip install yolox` (does not build); it now says how to use the YOLOX source tree.
+- Project URLs in `pyproject.toml` point to github.com/InnoIPA/ivit-sdk.
 - The release notes named the Jetson deb `..._arm64-jetson.deb`; CMake builds `..._arm64-nvidia.deb`.
 - `ivit.zoo.list_models(task=...)` returned `[]` for an unknown task name (for example
   `"classification"`, the `LoadConfig` spelling); it now raises `ValueError` listing `classify`,

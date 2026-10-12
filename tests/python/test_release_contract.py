@@ -276,15 +276,10 @@ def test_removed_public_api_stays_removed():
 # ------------------------------------------------------------------ packaging defects stay fixed
 
 
-def test_download_deps_builds_a_real_openvino_url_and_keeps_its_version():
-    script = read("scripts/download_deps.sh")
-    # /etc/os-release defines VERSION; sourcing it in the function overwrote the OpenVINO version.
-    assert '$(. /etc/os-release && echo "${VERSION_ID}")' in script
-    assert "\n        . /etc/os-release\n" not in script
-    # Real archive names: packages/<release>/linux/..._<full build id>_<x86_64|arm64>.tgz
-    assert re.search(r'OV_BUILD="\d{4}\.\d+\.\d+\.\d+\.[0-9a-f]+"', script)
-    assert "packages/${OV_RELEASE}/linux/l_openvino_toolkit_${OS_SUFFIX}_${OV_BUILD}_${OV_ARCH}.tgz" in script
-    assert 'ARCH_SUFFIX}.tgz' not in script  # the old "x64" suffix matched no archive
+def test_unused_dependency_downloader_stays_removed():
+    # Every install path uses pip (CI, install_sdk.sh) or apt (release); deps/ was never read.
+    assert not (ROOT / "scripts/download_deps.sh").exists()
+    assert "IVIT_DEPS_DIR" not in read("CMakeLists.txt")
 
 
 def test_verify_package_counts_checks_and_greps_the_package_not_its_own_output():

@@ -12,7 +12,6 @@ option(IVIT_USE_TENSORRT "Enable TensorRT backend" ON)
 
 # 依賴打包選項
 option(IVIT_BUNDLE_DEPS "Bundle dependencies into SDK for redistribution" OFF)
-set(IVIT_DEPS_DIR "${CMAKE_SOURCE_DIR}/deps" CACHE PATH "Dependencies directory")
 
 # ============================================================================
 # C++ Standard
@@ -33,7 +32,7 @@ if(IVIT_BUNDLE_DEPS)
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
     # Build 時也使用相對路徑
-    set(CMAKE_BUILD_RPATH "$ORIGIN;${CMAKE_BINARY_DIR}/lib;${IVIT_DEPS_DIR}/install/runtime/lib/intel64;${IVIT_DEPS_DIR}/install/tensorrt/lib")
+    set(CMAKE_BUILD_RPATH "$ORIGIN;${CMAKE_BINARY_DIR}/lib")
 
     message(STATUS "Bundle mode enabled - dependencies will be packaged with SDK")
 endif()
@@ -63,12 +62,6 @@ message(STATUS "OpenCV include: ${OpenCV_INCLUDE_DIRS}")
 # OpenVINO
 # ============================================================================
 if(IVIT_USE_OPENVINO)
-    # 優先使用打包的 OpenVINO
-    if(IVIT_BUNDLE_DEPS AND EXISTS "${IVIT_DEPS_DIR}/install/runtime/cmake")
-        set(OpenVINO_DIR "${IVIT_DEPS_DIR}/install/runtime/cmake")
-        message(STATUS "Using bundled OpenVINO from: ${OpenVINO_DIR}")
-    endif()
-
     find_package(OpenVINO QUIET COMPONENTS Runtime)
 
     # 若未找到，嘗試偵測 pip 安裝的 OpenVINO
@@ -115,12 +108,6 @@ endif()
 # TensorRT
 # ============================================================================
 if(IVIT_USE_TENSORRT)
-    # 優先使用打包的 TensorRT
-    if(IVIT_BUNDLE_DEPS AND EXISTS "${IVIT_DEPS_DIR}/install/tensorrt")
-        set(TENSORRT_ROOT "${IVIT_DEPS_DIR}/install/tensorrt")
-        message(STATUS "Using bundled TensorRT from: ${TENSORRT_ROOT}")
-    endif()
-
     find_package(CUDAToolkit QUIET)
     if(CUDAToolkit_FOUND)
         find_path(TENSORRT_INCLUDE_DIR NvInfer.h
@@ -511,7 +498,6 @@ message(STATUS "")
 message(STATUS "Packaging:")
 message(STATUS "  Bundle deps:    ${IVIT_BUNDLE_DEPS}")
 if(IVIT_BUNDLE_DEPS)
-    message(STATUS "  Deps dir:       ${IVIT_DEPS_DIR}")
     list(LENGTH IVIT_BUNDLE_LIBRARIES NUM_BUNDLE_LIBS)
     message(STATUS "  Libraries:      ${NUM_BUNDLE_LIBS} files to bundle")
 endif()

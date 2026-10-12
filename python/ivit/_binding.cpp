@@ -790,6 +790,18 @@ PYBIND11_MODULE(_ivit_core, m) {
 
     m.def("version", &ivit::version, "Get iVIT-SDK version");
 
+    // For `ivit info`: the backends this SDK build registered (compiled in and usable here) and the
+    // runtime version each one reports. Not part of the public API.
+    m.def("_backend_versions", []() {
+        std::map<std::string, std::string> versions;
+        auto &factory = ivit::RuntimeFactory::instance();
+        for (auto type : factory.list_available_runtimes()) {
+            if (auto runtime = factory.get_runtime(type))
+                versions[ivit::to_string(type)] = runtime->get_version();
+        }
+        return versions;
+    });
+
     m.def("list_devices", &ivit::list_devices, "List available inference devices");
 
     m.def("get_best_device", &ivit::get_best_device,

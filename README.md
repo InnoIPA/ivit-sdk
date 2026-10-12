@@ -50,7 +50,7 @@ OpenVINO CPU／GPU 與 TensorRT FP32／FP16 有本機驗證紀錄；OpenVINO NPU
 | `LICENSE` | Apache-2.0 授權 |
 | `.gitignore` | 排除本機環境與生成產物 |
 
-`.venv/`、`build/`、`deps/` 是安裝／開發時產生的目錄；`models/` 是自行放置模型的慣例目錄（Zoo 快取預設在 `~/.cache/ivit/models`）。這些都不包含在乾淨來源中。`python/` 與 `bindings/` 的位置由目前建置流程使用；兩者角色不同。
+`.venv/`、`build/` 是安裝／開發時產生的目錄；`models/` 是自行放置模型的慣例目錄（Zoo 快取預設在 `~/.cache/ivit/models`）。這些都不包含在乾淨來源中。`python/` 與 `bindings/` 的位置由目前建置流程使用；兩者角色不同。
 
 ## 文件與上版
 

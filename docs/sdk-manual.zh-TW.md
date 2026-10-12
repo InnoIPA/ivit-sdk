@@ -201,7 +201,7 @@ cmake --build build-openvino -j
 ./build-openvino/bin/simple_inference devices
 ```
 
-若 CMake 無法找到 OpenVINO，將 `OpenVINO_DIR` 指向 runtime 的 CMake 設定目錄。若需下載 bundled 依賴，參考 `scripts/download_deps.sh` 與 `IVIT_BUNDLE_DEPS=ON`。
+若 CMake 無法找到 OpenVINO，將 `OpenVINO_DIR` 指向 runtime 的 CMake 設定目錄；TensorRT 則以 `TENSORRT_ROOT` 指向其安裝目錄。
 
 ### 3.4 純 C++：TensorRT 版本
 

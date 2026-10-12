@@ -40,7 +40,6 @@ logs/
 
 # Downloaded models and dependencies
 models/
-deps/
 
 # Example outputs
 *_output.jpg

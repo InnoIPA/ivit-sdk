@@ -60,9 +60,9 @@ class YoloxBackend:
             import yolox  # noqa: F401
         except ImportError as e:
             raise ImportError(
-                "YOLOX is required for YOLOX training. "
-                "Install with: pip install 'ivit-sdk[training-yolox]'\n"
-                "(or: pip install yolox)"
+                "YOLOX training needs the yolox package. Its PyPI release (0.3.0) does not "
+                "build with current setuptools; put the YOLOX source tree on PYTHONPATH "
+                "instead (e.g. unpack `pip download --no-deps --no-binary :all: yolox`)."
             ) from e
 
         if model not in _YOLOX_OFFICIAL_EXP_MODULES:

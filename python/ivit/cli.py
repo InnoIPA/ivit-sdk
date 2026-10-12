@@ -49,21 +49,17 @@ def cmd_info(args):
     print(f"  Python:         {platform.python_version()}")
     print()
 
-    # Backend availability
+    # Backends this SDK build actually loaded, with the runtime version they report (not
+    # whichever pip packages happen to be installed: an apt-installed SDK has none).
     print("Backends:")
-    try:
-        import openvino
+    versions = {}
+    if ivit.is_cpp_available():
+        from ivit import _ivit_core
 
-        print(f"  OpenVINO:       {openvino.__version__}")
-    except ImportError:
-        print("  OpenVINO:       Not installed")
-
-    try:
-        import tensorrt
-
-        print(f"  TensorRT:       {tensorrt.__version__}")
-    except ImportError:
-        print("  TensorRT:       Not installed")
+        versions = _ivit_core._backend_versions()
+    for key, label in (("openvino", "OpenVINO"), ("tensorrt", "TensorRT")):
+        version = versions.get(key)
+        print(f"  {label + ':':<15} {version or 'Not available (not built in, or no device)'}")
 
     print()
 

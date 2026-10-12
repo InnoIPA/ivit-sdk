@@ -202,3 +202,21 @@ def test_convert_pt_to_tensorrt_builds_an_engine_that_matches_torch(
         expected = torch.softmax(model(torch.zeros(1, 3, 24, 32)), dim=1)[0].numpy()
     scores = {item.class_id: item.score for item in actual.classifications}
     np.testing.assert_allclose([scores[i] for i in range(4)], expected, atol=1e-4)
+
+
+def test_info_reports_the_backends_the_sdk_loaded_not_pip_packages(monkeypatch, capsys):
+    from ivit import _ivit_core
+
+    versions = _ivit_core._backend_versions()
+    assert versions  # the CI builds always have at least OpenVINO CPU
+    # A pip "tensorrt"/"openvino" package must not decide what is shown.
+    monkeypatch.setitem(sys.modules, "tensorrt", None)
+    monkeypatch.setitem(sys.modules, "openvino", None)
+    code, out, _ = run(monkeypatch, capsys, "info")
+    assert code == 0
+    for key, label in (("openvino", "OpenVINO"), ("tensorrt", "TensorRT")):
+        line = next(line for line in out.splitlines() if line.strip().startswith(label + ":"))
+        if key in versions:
+            assert versions[key] in line
+        else:
+            assert "Not available" in line
