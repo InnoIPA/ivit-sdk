@@ -228,25 +228,3 @@ class Profiler:
             float(np.percentile(times, 95)),
             float(np.percentile(times, 99)),
         )
-
-
-class ScopedTimer:
-    """
-    Scoped timer for automatic timing.
-
-    Examples:
-        >>> profiler = Profiler()
-        >>> with ScopedTimer(profiler):
-        ...     model.predict(image)
-        >>> print(f"Elapsed: {profiler.elapsed_ms():.2f} ms")
-    """
-
-    def __init__(self, profiler: Profiler):
-        self._profiler = profiler
-
-    def __enter__(self):
-        self._profiler.start()
-        return self
-
-    def __exit__(self, *args):
-        self._profiler.stop()

@@ -283,7 +283,6 @@ class SegmentationTrainer(BaseTrainer):
         torchvision 的 segmentation 模型 forward 回傳 OrderedDict({"out", "aux"})，
         torch.onnx.export 不支援 dict 輸出 — 包一層 nn.Module 取出 "out"。
         """
-        import torch.nn as nn
 
         wrapped = _SegOutOnly(self.model)
         from .exporter import ModelExporter

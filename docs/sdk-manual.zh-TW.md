@@ -306,7 +306,7 @@ labels 優先順序為明確 `labels`、`labels_path`、`model.labels.txt`、目
 | `predict_concurrent(images, max_concurrent=4, config)` | ✓ | ✓ | 前後處理會並行；推論本身在 OpenVINO 與 `num_instances=1` 的 TensorRT 上依序執行，TensorRT 設 `num_instances>1` 才會真正同時在 GPU 上執行 |
 | `submit_inference(image, callback, config)` | ✓ | ✓ | Callback 模式；需確認 shutdown 與例外處理 |
 | `stream(source, config)` | 迭代器 | StreamIterator | 影片、攝影機字串 `"0"`、RTSP |
-| `on(event, callback, priority=0)` | ✓ | ✓ | 註冊 callback；存在不代表所有路徑都觸發 |
+| `on(event, callback, priority=0)` | ✓ | ✓ | 註冊 callback。`predict`／`predict_batch` 依序觸發 `pre_process`、`infer_start`、`infer_end`（`latency_ms` 為推論本身耗時）、`post_process`（`latency_ms` 為整次呼叫耗時）；真正合併成一批推論的 `predict_batch` 每次呼叫只觸發一組、`batch_size` 為張數。`predict_concurrent` 另觸發 `batch_start`／`batch_end`，串流觸發 `stream_start`／`stream_frame`／`stream_end`。`infer_raw` 不觸發任何事件。callback 在推論執行緒同步執行，丟出的例外會使該次推論失敗 |
 | `remove_callback(event, id)`、`remove_all_callbacks(event)` | ✓ | ✓ | 移除 callback |
 | `predict_tta(image, augmentations, config)` | ✓ | ✓ | 測試時增強；需驗證合併與座標還原 |
 

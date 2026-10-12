@@ -2,9 +2,9 @@
 Training callbacks for monitoring and controlling the training process.
 """
 
-from typing import Dict, Any, Optional, Callable
+from typing import Dict, Optional
 from pathlib import Path
-from abc import ABC, abstractmethod
+from abc import ABC
 import numpy as np
 import logging
 import time
@@ -28,31 +28,25 @@ class TrainingCallback(ABC):
 
     def on_train_start(self, trainer: "Trainer", **kwargs) -> None:
         """Called when training starts."""
-        pass
 
     def on_train_end(self, trainer: "Trainer", **kwargs) -> None:
         """Called when training ends."""
-        pass
 
     def on_epoch_start(self, trainer: "Trainer", epoch: int, **kwargs) -> None:
         """Called at the start of each epoch."""
-        pass
 
     def on_epoch_end(
         self, trainer: "Trainer", epoch: int, metrics: Dict[str, float], **kwargs
     ) -> None:
         """Called at the end of each epoch."""
-        pass
 
     def on_batch_start(self, trainer: "Trainer", batch_idx: int, **kwargs) -> None:
         """Called before each batch."""
-        pass
 
     def on_batch_end(
         self, trainer: "Trainer", batch_idx: int, loss: float, **kwargs
     ) -> None:
         """Called after each batch."""
-        pass
 
 
 class EarlyStopping(TrainingCallback):

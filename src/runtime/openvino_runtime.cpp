@@ -49,7 +49,7 @@ bool OpenVINORuntime::is_available() const {
 }
 
 std::vector<std::string> OpenVINORuntime::supported_formats() const {
-    return {".onnx", ".xml", ".bin", ".pdmodel"};
+    return {".onnx", ".xml", ".bin"};
 }
 
 std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
@@ -179,9 +179,6 @@ void *OpenVINORuntime::load_model(const std::string &path, const RuntimeConfig &
             model = core_.read_model(path);
         } else if (ext == ".onnx") {
             // ONNX format
-            model = core_.read_model(path);
-        } else if (ext == ".pdmodel") {
-            // PaddlePaddle format
             model = core_.read_model(path);
         } else {
             throw UnsupportedFormatError(ext);

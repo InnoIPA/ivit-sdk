@@ -72,7 +72,11 @@ class InferenceModel : public Model {
 
     // Inference
     Results predict(const cv::Mat &image, const InferConfig &config) override {
-        return detail::predict_image(*this, contract_, image, config);
+        return detail::predict_image(*this, contract_, image, config,
+                                     [this](CallbackEvent event, double latency_ms,
+                                            const Results *results) {
+                                         trigger_callback(event, latency_ms, 1, -1, results);
+                                     });
     }
 
     std::vector<Results> predict_batch(const std::vector<cv::Mat> &images,
@@ -101,6 +105,11 @@ class InferenceModel : public Model {
             for (const auto &img : images) {
                 orig_sizes.push_back(img.size());
             }
+
+            // One pre_process / infer_start / infer_end / post_process per batch call,
+            // with batch_size set; post_process carries no results pointer (there are many).
+            const int batch = static_cast<int>(images.size());
+            trigger_callback(CallbackEvent::PreProcess, 0.0, batch);
 
             // Batch preprocess: preprocess each image and concatenate
             std::vector<std::map<std::string, Tensor>> all_inputs;
@@ -132,7 +141,14 @@ class InferenceModel : public Model {
             // Single batch inference call
             std::map<std::string, Tensor> batch_inputs;
             batch_inputs[info.name] = std::move(batched_input);
+            const auto infer_started = std::chrono::high_resolution_clock::now();
+            trigger_callback(CallbackEvent::InferStart, 0.0, batch);
             auto outputs = runtime_->infer(handle_, batch_inputs);
+            trigger_callback(CallbackEvent::InferEnd,
+                             std::chrono::duration<double, std::milli>(
+                                 std::chrono::high_resolution_clock::now() - infer_started)
+                                 .count(),
+                             batch);
 
             auto end = std::chrono::high_resolution_clock::now();
             auto duration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
@@ -169,6 +185,7 @@ class InferenceModel : public Model {
                 results_list.push_back(std::move(results));
             }
 
+            trigger_callback(CallbackEvent::PostProcess, total_time, batch);
             return results_list;
         }
 

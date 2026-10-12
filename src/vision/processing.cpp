@@ -498,19 +498,30 @@ Results decode_outputs(const std::map<std::string, Tensor> &outputs, cv::Size im
 }
 
 Results predict_image(Model &model, const LoadConfig &c, const cv::Mat &image,
-                      const InferConfig &config) {
+                      const InferConfig &config, const StageNotifier &notify) {
     validate_inference(config);
     const auto inputs = model.input_info();
     if (inputs.size() != 1)
         throw InferenceError("Image API requires one input; use infer_raw");
-    const auto started = std::chrono::steady_clock::now();
+    using clock = std::chrono::steady_clock;
+    const auto ms_since = [](clock::time_point from) {
+        return std::chrono::duration<double, std::milli>(clock::now() - from).count();
+    };
+    const auto started = clock::now();
+    if (notify)
+        notify(CallbackEvent::PreProcess, 0.0, nullptr);
     auto tensor = preprocess_image(image, inputs[0], c, model.task());
+    const auto infer_started = clock::now();
+    if (notify)
+        notify(CallbackEvent::InferStart, 0.0, nullptr);
     auto outputs = model.infer_raw({{inputs[0].name, std::move(tensor)}});
+    if (notify)
+        notify(CallbackEvent::InferEnd, ms_since(infer_started), nullptr);
     auto result = decode_outputs(outputs, image.size(), inputs[0], c, model.task(), config);
     result.device_used = model.device();
-    result.inference_time_ms =
-        std::chrono::duration<float, std::milli>(std::chrono::steady_clock::now() - started)
-            .count();
+    result.inference_time_ms = static_cast<float>(ms_since(started));
+    if (notify)
+        notify(CallbackEvent::PostProcess, result.inference_time_ms, &result);
     return result;
 }
 } // namespace ivit::detail

@@ -30,18 +30,8 @@ Examples:
     >>> model = ivit.load("model.onnx", device=ivit.devices.best())
 """
 
-from typing import List, Optional, Union
+from typing import List, Optional
 from dataclasses import dataclass
-from enum import Enum
-
-
-class DeviceType(Enum):
-    """Device type enumeration."""
-    CPU = "cpu"
-    CUDA = "cuda"      # NVIDIA GPU
-    GPU = "gpu"        # Intel GPU (OpenVINO)
-    NPU = "npu"        # Intel NPU
-    AUTO = "auto"
 
 
 @dataclass

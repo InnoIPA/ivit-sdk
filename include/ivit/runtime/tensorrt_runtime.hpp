@@ -26,10 +26,6 @@ namespace ivit {
 class TensorRTLogger : public nvinfer1::ILogger {
 public:
     void log(Severity severity, const char* msg) noexcept override;
-    void set_verbose(bool verbose) { verbose_ = verbose; }
-
-private:
-    bool verbose_ = false;
 };
 
 /**
@@ -129,11 +125,6 @@ public:
     );
 
     /**
-     * @brief Set device ID
-     */
-    void set_device(int device_id);
-
-    /**
      * @brief Get TensorRT version
      */
     std::string get_version() const;
@@ -155,13 +146,11 @@ private:
     ) const;
 
     DataType nv_to_dtype(nvinfer1::DataType nv_type) const;
-    nvinfer1::DataType dtype_to_nv(DataType dtype) const;
 
     TensorRTLogger logger_;
     std::shared_ptr<nvinfer1::IRuntime> runtime_;
     std::mutex mutex_;
     bool initialized_ = false;
-    int default_device_ = 0;
 };
 
 /**

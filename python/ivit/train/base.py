@@ -6,8 +6,7 @@ BaseTrainer ABC：共用訓練生命週期、callback、optimizer/device 初始�
 """
 
 from abc import ABC, abstractmethod
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 import logging
 import time
 

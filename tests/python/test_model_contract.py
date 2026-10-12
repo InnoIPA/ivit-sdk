@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 
 import numpy as np
 import pytest
@@ -233,3 +232,40 @@ def test_detection_label_count_is_checked_for_each_decoder_layout(sdk, tmp_path)
     # auto with an ambiguous (square) head cannot tell the layouts apart: no load-time check.
     square = model_file(tmp_path / "sq.onnx", [1, 3, 64, 64], np.zeros((1, 8, 8), np.float32))
     load_with(sdk, square, task="detection", decoder="auto", labels=["x"])
+
+
+def test_paddle_models_are_rejected(sdk, tmp_path):
+    # PaddlePaddle (.pdmodel) was never tested or packaged (the deb has no Paddle frontend).
+    path = tmp_path / "model.pdmodel"
+    path.write_bytes(b"\0")
+    with pytest.raises(sdk.IVITError, match=r"\.pdmodel"):
+        sdk.load(str(path), device="cpu", backend="openvino")
+
+
+STAGES = ("pre_process", "infer_start", "infer_end", "post_process")
+
+
+def test_stage_callbacks_fire_in_order_for_single_and_batch_predict(sdk, tmp_path):
+    # Output [N, 3] follows the batch, so predict_batch runs as one batched inference.
+    path = model_file(tmp_path / "dynamic.onnx", ["N", 3, 2, 4])
+    model = load_with(sdk, path, decoder="logits")
+    seen = []
+    for stage in STAGES:
+        model.on(stage, lambda ctx, stage=stage: seen.append((stage, ctx.batch_size, ctx.latency_ms)))
+    image = np.zeros((2, 4, 3), np.uint8)
+
+    model.predict(image, infer_config(sdk))
+    assert [s for s, _, _ in seen] == list(STAGES)
+    assert all(batch == 1 for _, batch, _ in seen)
+    assert all(latency >= 0 for _, _, latency in seen)
+
+    seen.clear()
+    model.predict_batch([image, image], infer_config(sdk))  # dynamic batch: one batched call
+    assert [s for s, _, _ in seen] == list(STAGES)
+    assert all(batch == 2 for _, batch, _ in seen)
+
+    for stage in STAGES:
+        model.remove_all_callbacks(stage)
+    seen.clear()
+    model.predict(image, infer_config(sdk))
+    assert not seen

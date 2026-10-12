@@ -167,8 +167,8 @@ void TensorRTLogger::log(Severity severity, const char *msg) noexcept {
         break;
     }
 
-    // Also respect verbose_ flag for backward compatibility
-    if (severity == Severity::kVERBOSE && !verbose_) {
+    // TensorRT's kVERBOSE output (per-tactic builder traces) is never forwarded, even at DEBUG.
+    if (severity == Severity::kVERBOSE) {
         should_log = false;
     }
 
@@ -754,8 +754,6 @@ void TensorRTRuntime::save_engine(nvinfer1::ICudaEngine *engine, const std::stri
     }
 }
 
-void TensorRTRuntime::set_device(int device_id) { default_device_ = device_id; }
-
 std::string TensorRTRuntime::get_version() const {
     return std::to_string(NV_TENSORRT_MAJOR) + "." + std::to_string(NV_TENSORRT_MINOR) + "." +
            std::to_string(NV_TENSORRT_PATCH);
@@ -914,29 +912,6 @@ DataType TensorRTRuntime::nv_to_dtype(nvinfer1::DataType nv_type) const {
         return DataType::Bool;
     default:
         return DataType::Unknown;
-    }
-}
-
-nvinfer1::DataType TensorRTRuntime::dtype_to_nv(DataType dtype) const {
-    switch (dtype) {
-    case DataType::Float32:
-        return nvinfer1::DataType::kFLOAT;
-    case DataType::Float16:
-        return nvinfer1::DataType::kHALF;
-    case DataType::Int8:
-        return nvinfer1::DataType::kINT8;
-    case DataType::Int32:
-        return nvinfer1::DataType::kINT32;
-#if NV_TENSORRT_MAJOR >= 9
-    case DataType::Int64:
-        return nvinfer1::DataType::kINT64;
-    case DataType::UInt8:
-        return nvinfer1::DataType::kUINT8;
-#endif
-    case DataType::Bool:
-        return nvinfer1::DataType::kBOOL;
-    default:
-        return nvinfer1::DataType::kFLOAT;
     }
 }
 

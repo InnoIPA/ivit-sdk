@@ -219,7 +219,7 @@ bool DeviceManager::supports_format(const std::string &device_id, const std::str
     switch (backend) {
     case BackendType::OpenVINO:
         // OpenVINO supports IR format (.xml + .bin) and ONNX
-        return (fmt == ".xml" || fmt == ".bin" || fmt == ".onnx" || fmt == ".pdmodel");
+        return (fmt == ".xml" || fmt == ".bin" || fmt == ".onnx");
 
     case BackendType::TensorRT:
         // TensorRT supports compiled engines and ONNX (for runtime compilation)

@@ -4,7 +4,7 @@ Data augmentation transforms for training.
 Provides composable transforms for images.
 """
 
-from typing import List, Tuple, Optional, Union, Any, Dict
+from typing import List, Tuple, Union, Any
 import numpy as np
 import logging
 
@@ -281,7 +281,7 @@ class ColorJitter:
         self.hue = hue
 
     def __call__(self, image: np.ndarray, target: Any = None) -> Any:
-        import cv2
+        pass
 
         # Random order of adjustments
         adjustments = [

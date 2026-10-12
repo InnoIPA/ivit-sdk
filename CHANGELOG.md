@@ -65,6 +65,12 @@ and C++ applications must be rebuilt after a minor upgrade.
   selection, `classes`/`max_detections`, `use_cache`).
 
 ### Removed
+- OpenVINO `.pdmodel` (PaddlePaddle) loading: never tested or documented, and the Intel deb has
+  no Paddle frontend. Loading one now fails with an unsupported-format error.
+- Dead code: `TensorRTRuntime::set_device`/`dtype_to_nv`, `TensorRTLogger::set_verbose` (TensorRT
+  verbose output was already never forwarded), Python `ivit.devices.DeviceType`,
+  `ivit.train.exporter.export_model` (not exported from `ivit.train`, so its own example failed),
+  `ivit.utils.profiler.ScopedTimer`, and unused imports.
 - `scripts/download_deps.sh` and the `deps/install` lookup in CMake (`IVIT_DEPS_DIR`): it fetched
   OpenVINO 2024.6 and only told you to download TensorRT by hand, and no install path used it.
 - The `tensorrt` and `cuda` pip extras: the SDK never loads the pip `tensorrt` package, and
@@ -246,6 +252,8 @@ and C++ applications must be rebuilt after a minor upgrade.
 - The YOLOX training error suggested `pip install 'ivit-sdk[training-yolox]'` (no such extra) and
   `pip install yolox` (does not build); it now says how to use the YOLOX source tree.
 - Project URLs in `pyproject.toml` point to github.com/InnoIPA/ivit-sdk.
+- Callback events `pre_process`, `infer_start`, `infer_end` and `post_process` could be registered
+  but never fired. `predict`/`predict_batch` now fire them in that order.
 - The release notes named the Jetson deb `..._arm64-jetson.deb`; CMake builds `..._arm64-nvidia.deb`.
 - `ivit.zoo.list_models(task=...)` returned `[]` for an unknown task name (for example
   `"classification"`, the `LoadConfig` spelling); it now raises `ValueError` listing `classify`,

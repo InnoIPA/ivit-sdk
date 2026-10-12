@@ -11,7 +11,7 @@ YOLOX 採用 `Exp` 系統管理超參數與資料集設定。本 backend：
 """
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional
 import logging
 
 logger = logging.getLogger(__name__)

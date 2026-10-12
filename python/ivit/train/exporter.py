@@ -234,8 +234,6 @@ class ModelExporter:
         task: str = "classify",
     ) -> str:
         """Export to OpenVINO IR format."""
-        import torch
-
         # First export to ONNX
         onnx_path = str(Path(path).with_suffix(".onnx"))
         self._export_onnx(onnx_path, input_shape, 17, None, None, task)
@@ -313,34 +311,3 @@ class ModelExporter:
         engine_path = str(Path(path).with_suffix(".engine"))
         ivit.convert_model(onnx_path, engine_path, device="cuda:0", precision=precision)
         return engine_path
-
-
-def export_model(
-    model: Any,
-    path: str,
-    format: str = "onnx",
-    input_shape: tuple = (1, 3, 224, 224),
-    **kwargs,
-) -> str:
-    """
-    Convenience function to export a model.
-
-    Args:
-        model: Model to export
-        path: Output path
-        format: Export format
-        input_shape: Input shape
-        **kwargs: Additional arguments
-
-    Returns:
-        Path to exported model
-
-    Examples:
-        >>> from ivit.train import export_model
-        >>> export_model(model, "model.onnx", input_shape=(1, 3, 640, 640))
-    """
-    import torch
-
-    device = next(model.parameters()).device
-    exporter = ModelExporter(model, device)
-    return exporter.export(path, format, input_shape=input_shape, **kwargs)
