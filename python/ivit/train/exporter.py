@@ -29,7 +29,7 @@ class ModelExporter:
     Examples:
         >>> exporter = ModelExporter(model, device)
         >>> exporter.export("model.onnx", format="onnx")
-        >>> exporter.export("model.xml", format="openvino", quantize="int8")
+        >>> exporter.export("model.xml", format="openvino", quantize="int8", calibration_data=images)
     """
 
     def __init__(self, model: Any, device: Any):
@@ -46,7 +46,8 @@ class ModelExporter:
         opset_version: int = 17,
         class_names: Optional[List[str]] = None,
         calibration_data: Optional[List[np.ndarray]] = None,
-        **kwargs
+        task: str = "classify",
+        **kwargs,
     ) -> str:
         """
         Export model to specified format.
@@ -60,31 +61,78 @@ class ModelExporter:
             opset_version: ONNX opset version
             class_names: Class names for metadata
             calibration_data: Data for INT8 calibration
+            task: 任務型態 — "classify" / "detect" / "segment"，
+                  影響 ONNX 輸出 names 與 dynamic_axes
 
         Returns:
             Path to exported model
         """
         format = format.lower()
+        if quantize not in (None, "fp16", "int8"):
+            raise ValueError("quantize must be fp16, int8 or None")
+        if format in ("onnx", "tensorrt", "torchscript") and quantize == "int8":
+            raise ValueError(
+                "ONNX INT8 export requires calibration and is not implemented"
+            )
+        if format == "openvino" and quantize == "int8" and not calibration_data:
+            raise ValueError("OpenVINO INT8 requires nonempty calibration_data")
 
         # Create output directory
         Path(path).parent.mkdir(parents=True, exist_ok=True)
 
         if format == "onnx":
             return self._export_onnx(
-                path, input_shape, opset_version, quantize, class_names
+                path, input_shape, opset_version, quantize, class_names, task
             )
         elif format == "torchscript":
             return self._export_torchscript(path, input_shape)
         elif format == "openvino":
-            return self._export_openvino(
-                path, input_shape, quantize, calibration_data
+            exported = self._export_openvino(
+                path, input_shape, quantize, calibration_data, task
             )
+            if class_names:
+                Path(exported).with_suffix(".labels.txt").write_text(
+                    "\n".join(class_names), encoding="utf-8"
+                )
+            return exported
         elif format == "tensorrt":
-            return self._export_tensorrt(
-                path, input_shape, quantize
-            )
+            exported = self._export_tensorrt(path, input_shape, quantize, task)
+            if class_names:
+                Path(exported).with_suffix(".labels.txt").write_text(
+                    "\n".join(class_names), encoding="utf-8"
+                )
+            return exported
         else:
             raise ValueError(f"Unsupported format: {format}")
+
+    def _onnx_io_spec(
+        self, task: str
+    ) -> Tuple[List[str], List[str], Dict[str, Dict[int, str]]]:
+        """依 task 回傳 (input_names, output_names, dynamic_axes)。"""
+        task = (task or "classify").lower()
+        if task == "detect":
+            # YOLOX raw output：(batch, num_dets, 5+num_classes) 或 backbone-style multi-head；
+            # 這裡先以單張量輸出為準（YOLOX 標準 export 形式），dynamic 包含 batch 與 anchors 數
+            return (
+                ["input"],
+                ["output"],
+                {"input": {0: "batch"}, "output": {0: "batch", 1: "num_dets"}},
+            )
+        if task == "segment":
+            return (
+                ["input"],
+                ["logits"],
+                {
+                    "input": {0: "batch", 2: "height", 3: "width"},
+                    "logits": {0: "batch", 2: "height", 3: "width"},
+                },
+            )
+        # classify
+        return (
+            ["input"],
+            ["output"],
+            {"input": {0: "batch"}, "output": {0: "batch"}},
+        )
 
     def _export_onnx(
         self,
@@ -93,6 +141,7 @@ class ModelExporter:
         opset_version: int,
         quantize: Optional[str],
         class_names: Optional[List[str]],
+        task: str = "classify",
     ) -> str:
         """Export to ONNX format."""
         import torch
@@ -102,18 +151,9 @@ class ModelExporter:
         # Create dummy input
         dummy_input = torch.randn(input_shape).to(self.device)
 
-        # Get input/output names
-        input_names = ["input"]
-        output_names = ["output"]
+        input_names, output_names, dynamic_axes = self._onnx_io_spec(task)
 
-        # Dynamic axes for batch size
-        dynamic_axes = {
-            "input": {0: "batch_size"},
-            "output": {0: "batch_size"},
-        }
-
-        # Export to ONNX
-        logger.info(f"Exporting to ONNX: {path}")
+        logger.info(f"Exporting to ONNX (task={task}): {path}")
         torch.onnx.export(
             self.model,
             dummy_input,
@@ -123,19 +163,22 @@ class ModelExporter:
             dynamic_axes=dynamic_axes,
             opset_version=opset_version,
             do_constant_folding=True,
+            dynamo=False,
         )
 
         # Apply quantization if requested
         if quantize == "fp16":
             path = self._quantize_onnx_fp16(path)
         elif quantize == "int8":
-            logger.warning("INT8 quantization requires calibration data")
+            raise ValueError(
+                "ONNX INT8 export requires calibration and is not implemented; no INT8 model was produced"
+            )
 
         # Save class names
         if class_names:
-            labels_path = Path(path).with_suffix(".txt")
-            with open(labels_path, 'w') as f:
-                f.write('\n'.join(class_names))
+            labels_path = Path(path).with_suffix(".labels.txt")
+            with open(labels_path, "w", encoding="utf-8") as f:
+                f.write("\n".join(class_names))
             logger.info(f"Saved labels to {labels_path}")
 
         logger.info(f"ONNX export complete: {path}")
@@ -150,15 +193,16 @@ class ModelExporter:
             model = onnx.load(path)
             model_fp16 = float16.convert_float_to_float16(model)
 
-            fp16_path = str(Path(path).with_suffix('')) + "_fp16.onnx"
+            fp16_path = str(Path(path).with_suffix("")) + "_fp16.onnx"
             onnx.save(model_fp16, fp16_path)
 
             logger.info(f"FP16 quantization complete: {fp16_path}")
             return fp16_path
 
-        except ImportError:
-            logger.warning("onnxconverter-common not installed, skipping FP16 conversion")
-            return path
+        except ImportError as error:
+            raise ImportError(
+                "FP16 ONNX conversion requires onnxconverter-common"
+            ) from error
 
     def _export_torchscript(
         self,
@@ -187,13 +231,14 @@ class ModelExporter:
         input_shape: tuple,
         quantize: Optional[str],
         calibration_data: Optional[List[np.ndarray]],
+        task: str = "classify",
     ) -> str:
         """Export to OpenVINO IR format."""
         import torch
 
         # First export to ONNX
-        onnx_path = str(Path(path).with_suffix('.onnx'))
-        self._export_onnx(onnx_path, input_shape, 17, None, None)
+        onnx_path = str(Path(path).with_suffix(".onnx"))
+        self._export_onnx(onnx_path, input_shape, 17, None, None, task)
 
         try:
             import openvino as ov
@@ -211,21 +256,20 @@ class ModelExporter:
                 model = self._quantize_openvino_int8(model, calibration_data)
             elif quantize == "fp16":
                 # Compress weights to FP16 during serialization
-                xml_path = str(Path(path).with_suffix('.xml'))
+                xml_path = str(Path(path).with_suffix(".xml"))
                 ov.save_model(model, xml_path, compress_to_fp16=True)
                 logger.info(f"OpenVINO IR export complete (FP16): {xml_path}")
                 return xml_path
 
             # Serialize to IR format
-            xml_path = str(Path(path).with_suffix('.xml'))
+            xml_path = str(Path(path).with_suffix(".xml"))
             serialize(model, xml_path)
 
             logger.info(f"OpenVINO IR export complete: {xml_path}")
             return xml_path
 
-        except ImportError:
-            logger.warning("OpenVINO not installed, returning ONNX path")
-            return onnx_path
+        except ImportError as error:
+            raise ImportError("OpenVINO export requires openvino") from error
 
     def _quantize_openvino_int8(self, model, calibration_data: List[np.ndarray]):
         """Apply INT8 quantization using NNCF."""
@@ -248,70 +292,27 @@ class ModelExporter:
             logger.info("INT8 quantization complete")
             return quantized_model
 
-        except ImportError:
-            logger.warning("NNCF not installed, skipping INT8 quantization")
-            return model
+        except ImportError as error:
+            raise ImportError("OpenVINO INT8 calibration requires nncf") from error
 
     def _export_tensorrt(
         self,
         path: str,
         input_shape: tuple,
         quantize: Optional[str],
+        task: str = "classify",
     ) -> str:
         """Export to TensorRT engine format."""
         # First export to ONNX
-        onnx_path = str(Path(path).with_suffix('.onnx'))
-        self._export_onnx(onnx_path, input_shape, 17, None, None)
+        onnx_path = str(Path(path).with_suffix(".onnx"))
+        self._export_onnx(onnx_path, input_shape, 17, None, None, task)
 
-        try:
-            import tensorrt as trt
+        import ivit
 
-            logger.info(f"Converting to TensorRT: {path}")
-
-            # Create builder and network
-            TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
-            builder = trt.Builder(TRT_LOGGER)
-            network = builder.create_network(
-                1 << int(trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
-            )
-            parser = trt.OnnxParser(network, TRT_LOGGER)
-
-            # Parse ONNX
-            with open(onnx_path, 'rb') as f:
-                if not parser.parse(f.read()):
-                    for error in range(parser.num_errors):
-                        logger.error(parser.get_error(error))
-                    raise RuntimeError("Failed to parse ONNX model")
-
-            # Configure builder
-            config = builder.create_builder_config()
-            config.set_memory_pool_limit(trt.MemoryPoolType.WORKSPACE, 1 << 30)  # 1GB
-
-            if quantize == "fp16":
-                config.set_flag(trt.BuilderFlag.FP16)
-                logger.info("Enabled FP16 precision")
-            elif quantize == "int8":
-                config.set_flag(trt.BuilderFlag.INT8)
-                logger.warning("INT8 requires calibrator, falling back to FP16")
-                config.set_flag(trt.BuilderFlag.FP16)
-
-            # Build engine
-            serialized_engine = builder.build_serialized_network(network, config)
-
-            if serialized_engine is None:
-                raise RuntimeError("Failed to build TensorRT engine")
-
-            # Save engine
-            engine_path = str(Path(path).with_suffix('.engine'))
-            with open(engine_path, 'wb') as f:
-                f.write(serialized_engine)
-
-            logger.info(f"TensorRT export complete: {engine_path}")
-            return engine_path
-
-        except ImportError:
-            logger.warning("TensorRT not installed, returning ONNX path")
-            return onnx_path
+        precision = "fp16" if quantize == "fp16" else "fp32"
+        engine_path = str(Path(path).with_suffix(".engine"))
+        ivit.convert_model(onnx_path, engine_path, device="cuda:0", precision=precision)
+        return engine_path
 
 
 def export_model(
@@ -319,7 +320,7 @@ def export_model(
     path: str,
     format: str = "onnx",
     input_shape: tuple = (1, 3, 224, 224),
-    **kwargs
+    **kwargs,
 ) -> str:
     """
     Convenience function to export a model.
@@ -339,6 +340,7 @@ def export_model(
         >>> export_model(model, "model.onnx", input_shape=(1, 3, 640, 640))
     """
     import torch
+
     device = next(model.parameters()).device
     exporter = ModelExporter(model, device)
     return exporter.export(path, format, input_shape=input_shape, **kwargs)

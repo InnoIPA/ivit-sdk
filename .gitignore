@@ -1,6 +1,4 @@
 # Dependencies
-node_modules/
-vendor/
 .venv/
 venv/
 __pycache__/
@@ -45,12 +43,9 @@ models/
 deps/
 
 # Example outputs
-bus_result.jpg
 *_output.jpg
 *_result.jpg
-test_images/output*.jpg
-test_images/output*.json
-test_images/*_result.mp4
+*_result.mp4
 
 # TensorRT engines (generated)
 *.engine
@@ -68,3 +63,14 @@ model_cache/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# .NET build outputs
+bindings/csharp/**/bin/
+bindings/csharp/**/obj/
+examples/csharp/**/bin/
+examples/csharp/**/obj/
+
+# Source/release cleanup
+build-*/
+examples/data/**/output.*
+kernel.errors.txt

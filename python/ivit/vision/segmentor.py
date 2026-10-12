@@ -24,12 +24,7 @@ class Segmentor:
         >>> mask = results.segmentation_mask
     """
 
-    def __init__(
-        self,
-        model: str,
-        device: str = "auto",
-        **kwargs
-    ):
+    def __init__(self, model: str, device: str = "auto", **kwargs):
         """
         Create segmentor.
 
@@ -41,8 +36,9 @@ class Segmentor:
         config = _CppLoadConfig()
         config.device = device
         for key, value in kwargs.items():
-            if hasattr(config, key):
-                setattr(config, key, value)
+            if not hasattr(config, key):
+                raise TypeError(f"Unknown configuration option: {key}")
+            setattr(config, key, value)
 
         self._cpp_segmentor = _CppSegmentor(model, device, config)
         self._device = device

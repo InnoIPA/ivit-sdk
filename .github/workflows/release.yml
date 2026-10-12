@@ -7,7 +7,10 @@
 # 產出：
 #   - Tarball (3 平台)
 #   - Deb 套件 (3 平台)
-#   - Docker images (3 平台)
+#
+# 發佈前提：
+#   - tag／輸入的版號必須與原始碼中宣告的版號一致 (scripts/ci/check_version.sh)
+#   - CI (ci.yml) 必須先全部通過，才會開始打包
 
 name: Release
 
@@ -18,23 +21,24 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Release version (e.g., 1.0.0)'
+        description: 'Release version (e.g., 1.1.0)'
         required: true
-        default: '1.0.0'
+        default: '1.1.0'
       platforms:
         description: 'Platforms to build (comma-separated or "all")'
         required: true
         default: 'all'
-      skip_docker:
-        description: 'Skip Docker build'
-        type: boolean
-        default: false
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  # ==========================================================================
+  # 品質關卡：CI 全部通過才會打包
+  # ==========================================================================
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
   # ==========================================================================
   # 準備階段：解析版本與平台
   # ==========================================================================
@@ -58,6 +62,11 @@ jobs:
           echo "version=$VERSION" >> $GITHUB_OUTPUT
           echo "Version: $VERSION"
 
+      - name: Check the version matches the source tree
+        env:
+          RELEASE_VERSION: ${{ steps.version.outputs.version }}
+        run: bash scripts/ci/check_version.sh "$RELEASE_VERSION"
+
       - name: Build matrix
         id: matrix
         run: |
@@ -75,8 +84,10 @@ jobs:
   # Tarball 建置
   # ==========================================================================
   build-tarball:
-    needs: prepare
-    runs-on: ${{ matrix.platform == 'aarch64-jetson' && 'self-hosted-arm64' || 'ubuntu-latest' }}
+    needs: [prepare, ci]
+    # x86 platforms are pinned to 24.04 to match the apt sources below (OpenVINO 2025 ubuntu24,
+    # NVIDIA cuda/repos/ubuntu2404). Jetson builds on a self-hosted runner with JetPack installed.
+    runs-on: ${{ matrix.platform == 'aarch64-jetson' && 'self-hosted-arm64' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -90,20 +101,54 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libopencv-dev
 
-      - name: Setup CUDA (NVIDIA platforms)
-        if: contains(matrix.platform, 'nvidia') || contains(matrix.platform, 'jetson')
-        uses: Jimver/cuda-toolkit@v0.2.11
+      - uses: actions/setup-python@v5
         with:
-          cuda: '12.2.0'
-          method: 'network'
+          python-version: '3.12'
+
+      - name: Python build dependencies (bindings and wheel)
+        run: python -m pip install "pybind11>=2.11" "scikit-build-core>=0.8" numpy
+
+      # Versions are pinned: an unpinned `apt install libnvinfer-dev` resolves to the newest
+      # TensorRT major in the repository, which changes the libnvinfer soname the SDK links.
+      - name: Setup CUDA and TensorRT (x86_64 NVIDIA)
+        if: matrix.platform == 'x86_64-nvidia'
+        env:
+          CUDA_VERSION: '12-9'
+          TRT_VERSION: '11.4.0.106-1+cuda12.9'
+        run: |
+          wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          rm cuda-keyring_1.1-1_all.deb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "cuda-nvcc-${CUDA_VERSION}" "cuda-cudart-dev-${CUDA_VERSION}" \
+            "libnvinfer11=${TRT_VERSION}" "libnvinfer-dev=${TRT_VERSION}" \
+            "libnvinfer-headers-dev=${TRT_VERSION}" \
+            "libnvonnxparsers11=${TRT_VERSION}" "libnvonnxparsers-dev=${TRT_VERSION}"
+          CUDA_HOME="/usr/local/cuda-${CUDA_VERSION/-/.}"
+          echo "${CUDA_HOME}/bin" >> "$GITHUB_PATH"
+          echo "CUDAToolkit_ROOT=${CUDA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Check JetPack (Jetson)
+        if: matrix.platform == 'aarch64-jetson'
+        run: |
+          # The self-hosted runner must have JetPack (CUDA + TensorRT) installed.
+          test -x /usr/local/cuda/bin/nvcc || { echo "::error::JetPack CUDA not found on runner"; exit 1; }
+          test -f /usr/include/aarch64-linux-gnu/NvInfer.h || { echo "::error::JetPack TensorRT not found on runner"; exit 1; }
+          echo "/usr/local/cuda/bin" >> "$GITHUB_PATH"
+          echo "CUDAToolkit_ROOT=/usr/local/cuda" >> "$GITHUB_ENV"
 
       - name: Setup OpenVINO (Intel platform)
         if: contains(matrix.platform, 'intel')
         run: |
           wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | sudo gpg --dearmor -o /usr/share/keyrings/intel.gpg
-          echo "deb [signed-by=/usr/share/keyrings/intel.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu22 main" | sudo tee /etc/apt/sources.list.d/intel-openvino.list
+          echo "deb [signed-by=/usr/share/keyrings/intel.gpg] https://apt.repos.intel.com/openvino ubuntu24 main" | sudo tee /etc/apt/sources.list.d/intel-openvino.list
           sudo apt-get update
-          sudo apt-get install -y openvino-2024.0.0
+          OV=2026.4.1   # the unversioned repo has no meta package: name the parts the SDK uses
+          sudo apt-get install -y "libopenvino-dev-$OV" "libopenvino-intel-cpu-plugin-$OV" \
+            "libopenvino-intel-gpu-plugin-$OV" "libopenvino-intel-npu-plugin-$OV" \
+            "libopenvino-auto-plugin-$OV" "libopenvino-hetero-plugin-$OV" \
+            "libopenvino-auto-batch-plugin-$OV"
 
       - name: Build tarball
         run: |
@@ -113,21 +158,23 @@ jobs:
       - name: Verify tarball
         run: |
           chmod +x scripts/verify_package.sh
-          ./scripts/verify_package.sh tarball build-tarball-${{ matrix.platform }}/ivit-sdk-*.tar.gz
+          ./scripts/verify_package.sh tarball build-tarball-${{ matrix.platform }}/ivit-sdk-*.tar.xz
 
       - name: Upload tarball artifact
         uses: actions/upload-artifact@v4
         with:
           name: tarball-${{ matrix.platform }}
-          path: build-tarball-${{ matrix.platform }}/ivit-sdk-*.tar.gz
+          path: build-tarball-${{ matrix.platform }}/ivit-sdk-*.tar.xz
           retention-days: 30
 
   # ==========================================================================
   # Deb 套件建置
   # ==========================================================================
   build-deb:
-    needs: prepare
-    runs-on: ${{ matrix.platform == 'aarch64-jetson' && 'self-hosted-arm64' || 'ubuntu-latest' }}
+    needs: [prepare, ci]
+    # x86 platforms are pinned to 24.04 to match the apt sources below (OpenVINO 2025 ubuntu24,
+    # NVIDIA cuda/repos/ubuntu2404). Jetson builds on a self-hosted runner with JetPack installed.
+    runs-on: ${{ matrix.platform == 'aarch64-jetson' && 'self-hosted-arm64' || 'ubuntu-24.04' }}
     strategy:
       fail-fast: false
       matrix:
@@ -141,20 +188,47 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential cmake libopencv-dev dpkg-dev
 
-      - name: Setup CUDA (NVIDIA platforms)
-        if: contains(matrix.platform, 'nvidia') || contains(matrix.platform, 'jetson')
-        uses: Jimver/cuda-toolkit@v0.2.11
-        with:
-          cuda: '12.2.0'
-          method: 'network'
+      # Versions are pinned: an unpinned `apt install libnvinfer-dev` resolves to the newest
+      # TensorRT major in the repository, which changes the libnvinfer soname the SDK links.
+      - name: Setup CUDA and TensorRT (x86_64 NVIDIA)
+        if: matrix.platform == 'x86_64-nvidia'
+        env:
+          CUDA_VERSION: '12-9'
+          TRT_VERSION: '11.4.0.106-1+cuda12.9'
+        run: |
+          wget -q https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+          sudo dpkg -i cuda-keyring_1.1-1_all.deb
+          rm cuda-keyring_1.1-1_all.deb
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            "cuda-nvcc-${CUDA_VERSION}" "cuda-cudart-dev-${CUDA_VERSION}" \
+            "libnvinfer11=${TRT_VERSION}" "libnvinfer-dev=${TRT_VERSION}" \
+            "libnvinfer-headers-dev=${TRT_VERSION}" \
+            "libnvonnxparsers11=${TRT_VERSION}" "libnvonnxparsers-dev=${TRT_VERSION}"
+          CUDA_HOME="/usr/local/cuda-${CUDA_VERSION/-/.}"
+          echo "${CUDA_HOME}/bin" >> "$GITHUB_PATH"
+          echo "CUDAToolkit_ROOT=${CUDA_HOME}" >> "$GITHUB_ENV"
+
+      - name: Check JetPack (Jetson)
+        if: matrix.platform == 'aarch64-jetson'
+        run: |
+          # The self-hosted runner must have JetPack (CUDA + TensorRT) installed.
+          test -x /usr/local/cuda/bin/nvcc || { echo "::error::JetPack CUDA not found on runner"; exit 1; }
+          test -f /usr/include/aarch64-linux-gnu/NvInfer.h || { echo "::error::JetPack TensorRT not found on runner"; exit 1; }
+          echo "/usr/local/cuda/bin" >> "$GITHUB_PATH"
+          echo "CUDAToolkit_ROOT=/usr/local/cuda" >> "$GITHUB_ENV"
 
       - name: Setup OpenVINO (Intel platform)
         if: contains(matrix.platform, 'intel')
         run: |
           wget -qO- https://apt.repos.intel.com/intel-gpg-keys/GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB | sudo gpg --dearmor -o /usr/share/keyrings/intel.gpg
-          echo "deb [signed-by=/usr/share/keyrings/intel.gpg] https://apt.repos.intel.com/openvino/2024 ubuntu22 main" | sudo tee /etc/apt/sources.list.d/intel-openvino.list
+          echo "deb [signed-by=/usr/share/keyrings/intel.gpg] https://apt.repos.intel.com/openvino ubuntu24 main" | sudo tee /etc/apt/sources.list.d/intel-openvino.list
           sudo apt-get update
-          sudo apt-get install -y openvino-2024.0.0
+          OV=2026.4.1   # the unversioned repo has no meta package: name the parts the SDK uses
+          sudo apt-get install -y "libopenvino-dev-$OV" "libopenvino-intel-cpu-plugin-$OV" \
+            "libopenvino-intel-gpu-plugin-$OV" "libopenvino-intel-npu-plugin-$OV" \
+            "libopenvino-auto-plugin-$OV" "libopenvino-hetero-plugin-$OV" \
+            "libopenvino-auto-batch-plugin-$OV"
 
       - name: Build deb
         run: |
@@ -172,69 +246,6 @@ jobs:
           name: deb-${{ matrix.platform }}
           path: build-deb-${{ matrix.platform }}/ivit-sdk_*.deb
           retention-days: 30
-
-  # ==========================================================================
-  # Docker Image 建置
-  # ==========================================================================
-  build-docker:
-    needs: prepare
-    if: ${{ github.event.inputs.skip_docker != 'true' }}
-    runs-on: ${{ matrix.platform == 'aarch64-jetson' && 'self-hosted-arm64' || 'ubuntu-latest' }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform: ${{ fromJson(needs.prepare.outputs.matrix) }}
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Determine Dockerfile and tags
-        id: docker-meta
-        run: |
-          PLATFORM="${{ matrix.platform }}"
-          VERSION="${{ needs.prepare.outputs.version }}"
-
-          case "$PLATFORM" in
-            x86_64-nvidia)
-              DOCKERFILE="docker/Dockerfile.release-nvidia"
-              SUFFIX="nvidia"
-              ;;
-            x86_64-intel)
-              DOCKERFILE="docker/Dockerfile.release-intel"
-              SUFFIX="intel"
-              ;;
-            aarch64-jetson)
-              DOCKERFILE="docker/Dockerfile.release-jetson"
-              SUFFIX="jetson"
-              ;;
-          esac
-
-          echo "dockerfile=$DOCKERFILE" >> $GITHUB_OUTPUT
-          echo "suffix=$SUFFIX" >> $GITHUB_OUTPUT
-          echo "tags=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${VERSION}-${SUFFIX},${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest-${SUFFIX}" >> $GITHUB_OUTPUT
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: ${{ steps.docker-meta.outputs.dockerfile }}
-          push: true
-          tags: ${{ steps.docker-meta.outputs.tags }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
   # ==========================================================================
   # GitHub Release 發布
@@ -257,7 +268,7 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p release
-          find artifacts -name "*.tar.gz" -exec cp {} release/ \;
+          find artifacts -name "*.tar.xz" -exec cp {} release/ \;
           find artifacts -name "*.deb" -exec cp {} release/ \;
           ls -la release/
 
@@ -272,28 +283,15 @@ jobs:
 
           | 平台 | Tarball | Deb |
           |------|---------|-----|
-          | x86_64 + NVIDIA | \`ivit-sdk-${VERSION}-x86_64-nvidia.tar.gz\` | \`ivit-sdk_${VERSION}_amd64-nvidia.deb\` |
-          | x86_64 + Intel | \`ivit-sdk-${VERSION}-x86_64-intel.tar.gz\` | \`ivit-sdk_${VERSION}_amd64-intel.deb\` |
-          | aarch64 + Jetson | \`ivit-sdk-${VERSION}-aarch64-jetson.tar.gz\` | \`ivit-sdk_${VERSION}_arm64-jetson.deb\` |
-
-          ### Docker Images
-
-          \`\`\`bash
-          # NVIDIA (x86_64)
-          docker pull ghcr.io/${{ github.repository }}:${VERSION}-nvidia
-
-          # Intel (x86_64)
-          docker pull ghcr.io/${{ github.repository }}:${VERSION}-intel
-
-          # Jetson (aarch64)
-          docker pull ghcr.io/${{ github.repository }}:${VERSION}-jetson
-          \`\`\`
+          | x86_64 + NVIDIA | \`ivit-sdk-${VERSION}-x86_64-nvidia.tar.xz\` | \`ivit-sdk_${VERSION}_amd64-nvidia.deb\` |
+          | x86_64 + Intel | \`ivit-sdk-${VERSION}-x86_64-intel.tar.xz\` | \`ivit-sdk_${VERSION}_amd64-intel.deb\` |
+          | aarch64 + Jetson | \`ivit-sdk-${VERSION}-aarch64-jetson.tar.xz\` | \`ivit-sdk_${VERSION}_arm64-nvidia.deb\` |
 
           ### 安裝方式
 
           **Tarball**
           \`\`\`bash
-          tar -xzf ivit-sdk-${VERSION}-<platform>.tar.gz
+          tar -xf ivit-sdk-${VERSION}-<platform>.tar.xz
           cd ivit-sdk-${VERSION}-<platform>
           source bin/setup_env.sh
           \`\`\`
@@ -306,7 +304,7 @@ jobs:
           EOF
 
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           name: iVIT-SDK v${{ needs.prepare.outputs.version }}
           body_path: release-notes.md
@@ -318,18 +316,18 @@ jobs:
   # 通知
   # ==========================================================================
   notify:
-    needs: [prepare, build-tarball, build-deb, build-docker, publish-release]
+    needs: [ci, prepare, build-tarball, build-deb, publish-release]
     runs-on: ubuntu-latest
     if: always()
     steps:
       - name: Notify on success
-        if: ${{ !contains(needs.*.result, 'failure') }}
+        if: ${{ !contains(needs.*.result, 'failure') && !contains(needs.*.result, 'cancelled') }}
         run: |
           echo "✅ Release v${{ needs.prepare.outputs.version }} completed successfully!"
           # 可加入 Slack/Teams webhook 通知
 
       - name: Notify on failure
-        if: ${{ contains(needs.*.result, 'failure') }}
+        if: ${{ contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') }}
         run: |
           echo "❌ Release v${{ needs.prepare.outputs.version }} failed!"
           exit 1

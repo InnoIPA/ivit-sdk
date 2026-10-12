@@ -12,17 +12,12 @@ from .._ivit_core import (
     BBox,
     Detection,
     ClassificationResult,
-    Keypoint,
-    Pose,
     TensorInfo,
     Results,
     Model,
     load_model,
     CallbackEvent,
     CallbackContext,
-    OpenVINOConfig,
-    TensorRTConfig,
-    QNNConfig,
 )
 
 # Device functions
@@ -56,8 +51,6 @@ __all__ = [
     "BBox",
     "Detection",
     "ClassificationResult",
-    "Keypoint",
-    "Pose",
     "TensorInfo",
     "Results",
     # Model
@@ -71,9 +64,6 @@ __all__ = [
     "CallbackEvent",
     "CallbackContext",
     # Runtime configs
-    "OpenVINOConfig",
-    "TensorRTConfig",
-    "QNNConfig",
     # Exceptions
     "IVITError",
     "ModelLoadError",

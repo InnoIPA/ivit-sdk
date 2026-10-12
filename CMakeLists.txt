@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.18)
-project(ivit VERSION 1.0.0 LANGUAGES CXX)
+project(ivit VERSION 1.1.0 LANGUAGES CXX)
 
 # ============================================================================
 # Options
@@ -9,7 +9,6 @@ option(IVIT_BUILD_TESTS "Build tests" ON)
 option(IVIT_BUILD_EXAMPLES "Build examples" ON)
 option(IVIT_USE_OPENVINO "Enable OpenVINO backend" ON)
 option(IVIT_USE_TENSORRT "Enable TensorRT backend" ON)
-option(IVIT_USE_QNN "Enable QNN backend (Qualcomm IQ Series)" OFF)
 
 # 依賴打包選項
 option(IVIT_BUNDLE_DEPS "Bundle dependencies into SDK for redistribution" OFF)
@@ -97,6 +96,14 @@ if(IVIT_USE_OPENVINO)
             get_filename_component(OV_LIB_DIR ${OV_LIB_LOCATION} DIRECTORY)
             file(GLOB OV_LIBS "${OV_LIB_DIR}/*.so*")
             list(APPEND IVIT_BUNDLE_LIBRARIES ${OV_LIBS})
+            # Intel's apt/tgz packages keep the device plugins in openvino-<version>/ next to
+            # libopenvino.so, and OpenVINO looks for them there at run time (the pip package keeps
+            # them beside it, which the glob above already covers). Without this directory the
+            # bundled runtime has no CPU/GPU/NPU device at all.
+            set(IVIT_BUNDLE_OV_PLUGIN_DIR "")
+            if(IS_DIRECTORY "${OV_LIB_DIR}/openvino-${OpenVINO_VERSION}")
+                set(IVIT_BUNDLE_OV_PLUGIN_DIR "${OV_LIB_DIR}/openvino-${OpenVINO_VERSION}")
+            endif()
         endif()
     else()
         message(WARNING "OpenVINO not found, disabling OpenVINO backend")
@@ -126,7 +133,7 @@ if(IVIT_USE_TENSORRT)
             HINTS ${TENSORRT_ROOT} ${CUDAToolkit_LIBRARY_DIR} /usr/local/tensorrt
             PATH_SUFFIXES lib lib64)
 
-        if(TENSORRT_INCLUDE_DIR AND TENSORRT_LIBRARY)
+        if(TENSORRT_INCLUDE_DIR AND TENSORRT_LIBRARY AND NVONNXPARSER_LIBRARY)
             message(STATUS "TensorRT found: ${TENSORRT_LIBRARY}")
             add_compile_definitions(IVIT_HAS_TENSORRT)
 
@@ -156,13 +163,15 @@ endif()
 # ============================================================================
 # Library sources
 # ============================================================================
+
 set(IVIT_SOURCES
     # Core
     src/core/model.cpp
+    src/core/c_api.cpp
+    src/core/log.cpp
     src/core/device_manager.cpp
     src/core/result.cpp
     src/core/callback.cpp
-    src/core/runtime_config.cpp
     src/core/video_source.cpp
 
     # Runtime
@@ -171,11 +180,11 @@ set(IVIT_SOURCES
 
     # Vision
     src/vision/classifier.cpp
+    src/vision/processing.cpp
     src/vision/detector.cpp
     src/vision/segmentor.cpp
 
     # Utils
-    src/utils/profiler.cpp
     src/utils/visualizer.cpp
 )
 
@@ -193,12 +202,22 @@ endif()
 # Create library
 # ============================================================================
 add_library(ivit SHARED ${IVIT_SOURCES})
+add_library(ivit::ivit ALIAS ivit)
+target_compile_features(ivit PUBLIC cxx_std_17)
+target_compile_definitions(ivit PRIVATE IVIT_BUILDING_LIBRARY)
+# The C++ API/ABI may change in a minor release (new config fields), so the SONAME
+# carries MAJOR.MINOR. Only the C ABI (ivit_abi_version) is stable across minors.
+# Wheels install a single plain libivit.so beside _ivit_core, so skip it there.
+if(NOT SKBUILD)
+    set_target_properties(ivit PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR})
+endif()
 
 target_include_directories(ivit
     PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:include>
-        ${OpenCV_INCLUDE_DIRS}
     PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
@@ -243,6 +262,11 @@ if(IVIT_BUILD_PYTHON)
     target_link_libraries(_ivit_core PRIVATE ivit)
 
     if(SKBUILD)
+        # Both native libraries are installed beside each other in ivit/.
+        # OpenVINO's Python wheel keeps its runtime in the sibling package.
+        set_property(TARGET _ivit_core APPEND PROPERTY INSTALL_RPATH "$ORIGIN")
+        set_property(TARGET ivit APPEND PROPERTY INSTALL_RPATH
+            "$ORIGIN" "$ORIGIN/../openvino/libs")
         # scikit-build-core controls the output directory
         install(TARGETS _ivit_core LIBRARY DESTINATION .)
         install(TARGETS ivit LIBRARY DESTINATION .)
@@ -268,6 +292,11 @@ if(IVIT_BUILD_TESTS)
         add_executable(test_inference tests/cpp/test_inference.cpp)
         target_link_libraries(test_inference PRIVATE ivit GTest::gtest_main)
         add_test(NAME test_inference COMMAND test_inference)
+
+        add_executable(test_processing tests/cpp/test_processing.cpp)
+        target_include_directories(test_processing PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+        target_link_libraries(test_processing PRIVATE ivit GTest::gtest_main)
+        add_test(NAME test_processing COMMAND test_processing)
     else()
         message(STATUS "Google Test not found, C++ tests disabled")
     endif()
@@ -289,17 +318,9 @@ if(IVIT_BUILD_EXAMPLES)
     add_executable(video_demo examples/cpp/video_demo.cpp)
     target_link_libraries(video_demo PRIVATE ivit ${OpenCV_LIBRARIES})
 
-    add_executable(si_quickstart examples/cpp/si_quickstart.cpp)
-    target_link_libraries(si_quickstart PRIVATE ivit ${OpenCV_LIBRARIES})
 
-    add_executable(embedded_optimization examples/cpp/embedded_optimization.cpp)
-    target_link_libraries(embedded_optimization PRIVATE ivit ${OpenCV_LIBRARIES})
 
-    add_executable(backend_service examples/cpp/backend_service.cpp)
-    target_link_libraries(backend_service PRIVATE ivit ${OpenCV_LIBRARIES})
 
-    add_executable(data_analysis examples/cpp/data_analysis.cpp)
-    target_link_libraries(data_analysis PRIVATE ivit ${OpenCV_LIBRARIES})
 endif()
 
 # ============================================================================
@@ -324,6 +345,32 @@ install(EXPORT ivitTargets
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ivit
 )
 
+# TensorRT major version (= the libnvinfer soname) the SDK is built against; ivitConfig.cmake and
+# the deb dependencies must name that exact major.
+set(IVIT_TENSORRT_MAJOR "")
+if(IVIT_USE_TENSORRT AND EXISTS "${TENSORRT_INCLUDE_DIR}/NvInferVersion.h")
+    file(STRINGS "${TENSORRT_INCLUDE_DIR}/NvInferVersion.h" _ivit_trt_line
+         REGEX "define (NV_TENSORRT_MAJOR|TRT_MAJOR_ENTERPRISE) [0-9]+")
+    string(REGEX MATCH "[0-9]+" IVIT_TENSORRT_MAJOR "${_ivit_trt_line}")
+endif()
+
+include(CMakePackageConfigHelpers)
+configure_package_config_file(
+    cmake/ivitConfig.cmake.in
+    "${CMAKE_CURRENT_BINARY_DIR}/ivitConfig.cmake"
+    INSTALL_DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/ivit"
+)
+write_basic_package_version_file(
+    "${CMAKE_CURRENT_BINARY_DIR}/ivitConfigVersion.cmake"
+    VERSION ${PROJECT_VERSION}
+    COMPATIBILITY SameMajorVersion
+)
+install(FILES
+    "${CMAKE_CURRENT_BINARY_DIR}/ivitConfig.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/ivitConfigVersion.cmake"
+    DESTINATION "${CMAKE_INSTALL_LIBDIR}/cmake/ivit"
+)
+
 # ============================================================================
 # Install bundled dependencies
 # ============================================================================
@@ -331,19 +378,29 @@ if(IVIT_BUNDLE_DEPS AND IVIT_BUNDLE_LIBRARIES)
     # 建立 deps/lib 目錄並複製依賴庫
     install(DIRECTORY DESTINATION ${CMAKE_INSTALL_PREFIX}/deps/lib)
 
+    # Copy each real library once and recreate its other names (libfoo.so, libfoo.so.N) as
+    # symlinks. Copying every name as a full file tripled the size: TensorRT alone (libnvinfer
+    # 723 MB, three names) grew a tarball by ~1.4 GB.
+    set(_ivit_bundled_real_names "")
     foreach(lib ${IVIT_BUNDLE_LIBRARIES})
         if(EXISTS ${lib} AND NOT IS_DIRECTORY ${lib})
             get_filename_component(lib_name ${lib} NAME)
-            # 解析 symlink
             get_filename_component(lib_real ${lib} REALPATH)
-
-            # 安裝實際檔案
-            install(FILES ${lib_real}
-                DESTINATION ${CMAKE_INSTALL_PREFIX}/deps/lib
-                RENAME ${lib_name}
-            )
+            get_filename_component(real_name ${lib_real} NAME)
+            if(NOT real_name IN_LIST _ivit_bundled_real_names)
+                list(APPEND _ivit_bundled_real_names ${real_name})
+                install(FILES ${lib_real} DESTINATION ${CMAKE_INSTALL_PREFIX}/deps/lib)
+            endif()
+            if(NOT lib_name STREQUAL real_name)
+                install(CODE "file(CREATE_LINK \"${real_name}\"
+                    \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/deps/lib/${lib_name}\" SYMBOLIC)")
+            endif()
         endif()
     endforeach()
+
+    if(IVIT_BUNDLE_OV_PLUGIN_DIR)
+        install(DIRECTORY "${IVIT_BUNDLE_OV_PLUGIN_DIR}" DESTINATION ${CMAKE_INSTALL_PREFIX}/deps/lib)
+    endif()
 
     # 建立環境設定腳本
     file(WRITE "${CMAKE_BINARY_DIR}/setup_env.sh" [[
@@ -365,22 +422,8 @@ echo "iVIT-SDK environment configured."
 endif()
 
 # ============================================================================
-# Package configuration
-# ============================================================================
-if(IVIT_BUNDLE_DEPS)
-    # 建立打包腳本 (使用 configure_file 展開 CMake 變數)
-    configure_file(
-        "${CMAKE_SOURCE_DIR}/packaging/package_sdk.sh.in"
-        "${CMAKE_BINARY_DIR}/package_sdk.sh"
-        @ONLY
-    )
-endif()
-
-# ============================================================================
 # CPack DEB 設定
 # ============================================================================
-include(CPack)
-
 set(CPACK_GENERATOR "DEB")
 set(CPACK_PACKAGE_NAME "ivit-sdk")
 set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
@@ -394,12 +437,36 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "libs")
 set(CPACK_DEBIAN_PACKAGE_PRIORITY "optional")
 
 # 依平台設定系統依賴
+# libivit.so links versioned sonames (libopenvino.so.2641, libnvinfer.so.11, libcudart.so.12), so
+# depend on the runtime packages of the versions it was built against. Open ranges such as
+# "libnvinfer-dev" let apt install another TensorRT major (a new soname) and break the SDK at run time.
+# OpenVINO's core package has no devices or model readers: the CPU/AUTO plugins and the ONNX/IR
+# frontends are separate packages, so depend on them; GPU/NPU plugins are recommended (apt installs
+# recommendations by default) because they are only useful with that hardware.
 set(CPACK_DEBIAN_PACKAGE_DEPENDS "libopencv-dev (>= 4.0)")
 if(IVIT_USE_OPENVINO)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, openvino (>= 2024.0)")
+    if(OpenVINO_VERSION)
+        set(_ivit_ov "${OpenVINO_VERSION}")
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libopenvino-${_ivit_ov}, \
+libopenvino-intel-cpu-plugin-${_ivit_ov}, libopenvino-auto-plugin-${_ivit_ov}, \
+libopenvino-onnx-frontend-${_ivit_ov}, libopenvino-ir-frontend-${_ivit_ov}")
+        set(CPACK_DEBIAN_PACKAGE_RECOMMENDS
+            "libopenvino-intel-gpu-plugin-${_ivit_ov}, libopenvino-intel-npu-plugin-${_ivit_ov}")
+    else()
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, openvino (>= 2024.0)")
+    endif()
 endif()
 if(IVIT_USE_TENSORRT)
-    set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libnvinfer-dev")
+    if(IVIT_TENSORRT_MAJOR)
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS
+            "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libnvinfer${IVIT_TENSORRT_MAJOR}, libnvonnxparsers${IVIT_TENSORRT_MAJOR}")
+    else()
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS "${CPACK_DEBIAN_PACKAGE_DEPENDS}, libnvinfer-dev")
+    endif()
+    if(CUDAToolkit_VERSION_MAJOR AND CUDAToolkit_VERSION_MINOR)
+        set(CPACK_DEBIAN_PACKAGE_DEPENDS
+            "${CPACK_DEBIAN_PACKAGE_DEPENDS}, cuda-cudart-${CUDAToolkit_VERSION_MAJOR}-${CUDAToolkit_VERSION_MINOR}")
+    endif()
 endif()
 
 # 架構與平台後綴
@@ -418,6 +485,10 @@ else()
     set(CPACK_PACKAGE_FILE_NAME "ivit-sdk_${PROJECT_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
 endif()
 
+# include(CPack) writes CPackConfig.cmake from the CPACK_* variables set so far, so it must come
+# after all of them; included earlier, the maintainer, dependencies and file name were all lost.
+include(CPack)
+
 # ============================================================================
 # Summary
 # ============================================================================
@@ -431,7 +502,6 @@ message(STATUS "")
 message(STATUS "Backends:")
 message(STATUS "  OpenVINO:       ${IVIT_USE_OPENVINO}")
 message(STATUS "  TensorRT:       ${IVIT_USE_TENSORRT}")
-message(STATUS "  QNN:            ${IVIT_USE_QNN}")
 message(STATUS "")
 message(STATUS "Components:")
 message(STATUS "  Python:         ${IVIT_BUILD_PYTHON}")

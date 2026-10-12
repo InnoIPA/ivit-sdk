@@ -67,7 +67,7 @@ class ImageFolderDataset(BaseDataset):
         >>> print(f"Classes: {dataset.class_names}")
     """
 
-    SUPPORTED_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.bmp', '.webp', '.tiff'}
+    SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff"}
 
     def __init__(
         self,
@@ -99,10 +99,13 @@ class ImageFolderDataset(BaseDataset):
     def _load_dataset(self):
         """Load dataset from folder structure."""
         # Get class directories
-        class_dirs = sorted([
-            d for d in self.root.iterdir()
-            if d.is_dir() and not d.name.startswith('.')
-        ])
+        class_dirs = sorted(
+            [
+                d
+                for d in self.root.iterdir()
+                if d.is_dir() and not d.name.startswith(".")
+            ]
+        )
 
         if not class_dirs:
             raise ValueError(f"No class directories found in {self.root}")
@@ -220,16 +223,16 @@ class COCODataset(BaseDataset):
             coco = json.load(f)
 
         # Build category mapping
-        self._categories = {cat['id']: cat['name'] for cat in coco['categories']}
+        self._categories = {cat["id"]: cat["name"] for cat in coco["categories"]}
         self._class_names = list(self._categories.values())
 
         # Build image info mapping
-        self._images = {img['id']: img for img in coco['images']}
+        self._images = {img["id"]: img for img in coco["images"]}
 
         # Group annotations by image
         self._annotations: Dict[int, List[Dict]] = {}
-        for ann in coco['annotations']:
-            img_id = ann['image_id']
+        for ann in coco["annotations"]:
+            img_id = ann["image_id"]
             if img_id not in self._annotations:
                 self._annotations[img_id] = []
             self._annotations[img_id].append(ann)
@@ -237,7 +240,9 @@ class COCODataset(BaseDataset):
         # Create sample list
         self._samples = list(self._annotations.keys())
 
-        logger.info(f"Loaded {len(self._samples)} images with {len(coco['annotations'])} annotations")
+        logger.info(
+            f"Loaded {len(self._samples)} images with {len(coco['annotations'])} annotations"
+        )
 
     def __len__(self) -> int:
         return len(self._samples)
@@ -255,7 +260,7 @@ class COCODataset(BaseDataset):
 
         img_id = self._samples[idx]
         img_info = self._images[img_id]
-        img_path = self.root / img_info['file_name']
+        img_path = self.root / img_info["file_name"]
 
         image = cv2.imread(str(img_path))
         if image is None:
@@ -269,16 +274,16 @@ class COCODataset(BaseDataset):
         labels = []
 
         for ann in anns:
-            if 'bbox' in ann:
+            if "bbox" in ann:
                 # COCO bbox format: [x, y, width, height]
-                x, y, w, h = ann['bbox']
+                x, y, w, h = ann["bbox"]
                 boxes.append([x, y, x + w, y + h])
-                labels.append(ann['category_id'])
+                labels.append(ann["category_id"])
 
         target = {
-            'boxes': np.array(boxes, dtype=np.float32),
-            'labels': np.array(labels, dtype=np.int64),
-            'image_id': img_id,
+            "boxes": np.array(boxes, dtype=np.float32),
+            "labels": np.array(labels, dtype=np.int64),
+            "image_id": img_id,
         }
 
         if self.transforms is not None:
@@ -411,8 +416,8 @@ class YOLODataset(BaseDataset):
                     labels.append(class_id)
 
         target = {
-            'boxes': np.array(boxes, dtype=np.float32),
-            'labels': np.array(labels, dtype=np.int64),
+            "boxes": np.array(boxes, dtype=np.float32),
+            "labels": np.array(labels, dtype=np.int64),
         }
 
         if self.transforms is not None:
@@ -439,6 +444,180 @@ class YOLODataset(BaseDataset):
         return self._class_names
 
 
+class SegmentationDataset(BaseDataset):
+    """
+    Semantic segmentation 資料集：image + per-pixel class index mask 配對。
+
+    Mask 規格：
+        - 灰階 PNG（uint8 單通道）；像素值即為類別 index（0..num_classes-1）
+        - 或 PIL palette PNG（讀進來會被 cv2 視為灰階）
+        - 像素值 255 視為 ignore（訓練時 ignore_index=255）
+
+    支援的目錄結構（兩擇一）：
+
+    1. 同名同層配對：
+        root/
+            images/img1.png
+            masks/img1.png
+
+    2. 同檔名不同副檔（圖+遮罩同層）：
+        root/
+            img1.jpg
+            img1_mask.png
+
+    Args:
+        images_dir: 影像資料夾
+        masks_dir: 遮罩資料夾（若 None 則用 mask_suffix 在 images_dir 中找）
+        class_names: 類別名稱列表
+        train_split: 訓練比例
+        split: "train" / "val" / "all"
+        mask_suffix: 當 masks_dir=None 時用此後綴尋找對應 mask（如 "_mask"）
+        seed: 隨機種子
+
+    Examples:
+        >>> dataset = SegmentationDataset(
+        ...     images_dir="./voc/JPEGImages",
+        ...     masks_dir="./voc/SegmentationClass",
+        ...     class_names=["background", "person", "car", ...],
+        ... )
+        >>> image, target = dataset[0]
+        >>> mask = target["mask"]  # uint8 HxW，類別 index
+    """
+
+    SUPPORTED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff"}
+
+    def __init__(
+        self,
+        images_dir: Union[str, Path],
+        masks_dir: Optional[Union[str, Path]] = None,
+        class_names: Optional[List[str]] = None,
+        transforms: Optional[Callable] = None,
+        train_split: float = 0.8,
+        split: str = "train",
+        mask_suffix: str = "_mask",
+        seed: int = 42,
+    ):
+        self.images_dir = Path(images_dir)
+        self.masks_dir = Path(masks_dir) if masks_dir is not None else None
+        self.transforms = transforms
+        self.train_split = train_split
+        self.split = split.lower()
+        self.mask_suffix = mask_suffix
+        self.seed = seed
+        self._class_names = list(class_names) if class_names else []
+
+        if not self.images_dir.exists():
+            raise ValueError(f"Images directory does not exist: {self.images_dir}")
+        if self.masks_dir is not None and not self.masks_dir.exists():
+            raise ValueError(f"Masks directory does not exist: {self.masks_dir}")
+
+        self._samples: List[Tuple[Path, Path]] = []
+        self._load_dataset()
+        self._apply_split()
+
+        logger.info(f"Loaded {len(self)} segmentation samples from {self.images_dir}")
+
+    def _load_dataset(self) -> None:
+        """搜尋圖+mask pair。"""
+        all_pairs: List[Tuple[Path, Path]] = []
+        for img_path in sorted(self.images_dir.iterdir()):
+            if img_path.suffix.lower() not in self.SUPPORTED_EXTENSIONS:
+                continue
+            mask_path = self._find_mask(img_path)
+            if mask_path is not None and mask_path.exists():
+                all_pairs.append((img_path, mask_path))
+
+        if not all_pairs:
+            raise ValueError(
+                f"No valid (image, mask) pairs found under {self.images_dir} "
+                f"(masks_dir={self.masks_dir}, mask_suffix={self.mask_suffix!r})"
+            )
+
+        random.seed(self.seed)
+        random.shuffle(all_pairs)
+        self._all_samples = all_pairs
+
+    def _find_mask(self, img_path: Path) -> Optional[Path]:
+        """依 masks_dir 或 mask_suffix 規則找對應 mask。"""
+        if self.masks_dir is not None:
+            for ext in (".png", ".jpg", ".jpeg", ".bmp", ".tiff"):
+                candidate = self.masks_dir / (img_path.stem + ext)
+                if candidate.exists():
+                    return candidate
+            return None
+        # fall back to suffix-in-place
+        for ext in (".png", ".jpg", ".bmp"):
+            candidate = self.images_dir / (img_path.stem + self.mask_suffix + ext)
+            if candidate.exists():
+                return candidate
+        return None
+
+    def _apply_split(self) -> None:
+        n_total = len(self._all_samples)
+        n_train = int(n_total * self.train_split)
+        if self.split == "train":
+            self._samples = self._all_samples[:n_train]
+        elif self.split == "val":
+            self._samples = self._all_samples[n_train:]
+        else:
+            self._samples = self._all_samples
+
+    def __len__(self) -> int:
+        return len(self._samples)
+
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Dict[str, Any]]:
+        """
+        Returns:
+            (image_uint8_HWC_RGB, {"mask": mask_uint8_HW})
+        """
+        import cv2
+
+        img_path, mask_path = self._samples[idx]
+
+        image = cv2.imread(str(img_path))
+        if image is None:
+            raise ValueError(f"Failed to load image: {img_path}")
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+        mask = cv2.imread(str(mask_path), cv2.IMREAD_UNCHANGED)
+        if mask is None:
+            raise ValueError(f"Failed to load mask: {mask_path}")
+        # palette PNG 讀進來可能是 (H, W, 3) — 取單通道
+        if mask.ndim == 3:
+            mask = mask[:, :, 0]
+        mask = mask.astype(np.uint8)
+
+        target: Dict[str, Any] = {"mask": mask}
+
+        if self.transforms is not None:
+            image, target = self.transforms(image, target)
+
+        return image, target
+
+    @property
+    def num_classes(self) -> int:
+        if self._class_names:
+            return len(self._class_names)
+        # 推斷：掃前 32 張 mask 取 max（不含 ignore=255）
+        max_class = 0
+        for _, mask_path in self._samples[:32]:
+            import cv2
+
+            m = cv2.imread(str(mask_path), cv2.IMREAD_UNCHANGED)
+            if m is None:
+                continue
+            if m.ndim == 3:
+                m = m[:, :, 0]
+            valid = m[m != 255]
+            if valid.size:
+                max_class = max(max_class, int(valid.max()))
+        return max_class + 1
+
+    @property
+    def class_names(self) -> List[str]:
+        return self._class_names
+
+
 def split_dataset(
     dataset: BaseDataset,
     train_ratio: float = 0.8,
@@ -450,9 +629,11 @@ def split_dataset(
 
     Args:
         dataset: Dataset to split
-        train_ratio: Ratio for training set
-        val_ratio: Ratio for validation set
-        seed: Random seed
+        train_ratio: Fraction of samples for training, in (0, 1]
+        val_ratio: Fraction for validation. When ``train_ratio + val_ratio == 1`` (the default)
+            validation gets every remaining sample, so none is lost to rounding; when the sum is
+            smaller, the samples left over are in neither split.
+        seed: Random seed. Uses a private generator, so the global ``random`` state is untouched.
 
     Returns:
         Tuple of (train_indices, val_indices)
@@ -460,14 +641,20 @@ def split_dataset(
     Examples:
         >>> train_idx, val_idx = split_dataset(dataset, train_ratio=0.8)
     """
+    if not 0 < train_ratio <= 1 or val_ratio < 0 or train_ratio + val_ratio > 1 + 1e-9:
+        raise ValueError(
+            f"Invalid split ratios train={train_ratio}, val={val_ratio}: need 0 < train <= 1, "
+            "val >= 0 and train + val <= 1"
+        )
     n = len(dataset)
     indices = list(range(n))
-
-    random.seed(seed)
-    random.shuffle(indices)
+    random.Random(seed).shuffle(indices)  # same permutation as seeding the global generator
 
     n_train = int(n * train_ratio)
     train_indices = indices[:n_train]
-    val_indices = indices[n_train:]
+    if abs(train_ratio + val_ratio - 1) < 1e-9:
+        val_indices = indices[n_train:]
+    else:
+        val_indices = indices[n_train:n_train + int(n * val_ratio)]
 
     return train_indices, val_indices

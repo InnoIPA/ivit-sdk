@@ -23,29 +23,77 @@ struct TensorInfo {
     Layout layout;             ///< Tensor layout
 
     /**
-     * @brief Get total number of elements
+     * @brief Check whether any dimension is dynamic (negative)
+     */
+    bool is_dynamic() const {
+        for (auto d : shape) {
+            if (d < 0) return true;
+        }
+        return false;
+    }
+
+    /**
+     * @brief Get total number of elements (-1 if the shape is dynamic)
      */
     int64_t numel() const {
+        if (is_dynamic()) return -1;
         int64_t n = 1;
         for (auto d : shape) n *= d;
         return n;
     }
 
     /**
-     * @brief Get size in bytes
+     * @brief Get size of one element in bytes
+     */
+    size_t element_size() const {
+        switch (dtype) {
+            case DataType::Float16: return 2;
+            case DataType::Int8:
+            case DataType::UInt8:
+            case DataType::Bool: return 1;
+            case DataType::Int64: return 8;
+            default: return 4;  // Float32, Int32, Unknown
+        }
+    }
+
+    /**
+     * @brief Get size in bytes (0 if the shape is dynamic)
      */
     size_t byte_size() const {
-        size_t elem_size = 4; // default float32
-        switch (dtype) {
-            case DataType::Float16: elem_size = 2; break;
-            case DataType::Int8:
-            case DataType::UInt8: elem_size = 1; break;
-            case DataType::Int64: elem_size = 8; break;
-            default: elem_size = 4; break;
-        }
-        return numel() * elem_size;
+        int64_t n = numel();
+        return n < 0 ? 0 : static_cast<size_t>(n) * element_size();
     }
 };
+
+/**
+ * @brief Replace dynamic dimensions (<= 0) with concrete values
+ *
+ * Models exported with a dynamic batch or spatial size report -1 for those
+ * dimensions, which cannot be allocated. Assumes NCHW: dimension 0 becomes
+ * `batch`, 1 becomes 3 (channels), 2 becomes `height` and 3 and above become
+ * `width`. Dimensions that are already concrete are left untouched.
+ */
+inline Shape resolve_dynamic_shape(
+    const Shape& shape,
+    int64_t batch,
+    int64_t height,
+    int64_t width
+) {
+    Shape resolved = shape;
+    for (size_t i = 0; i < resolved.size(); ++i) {
+        if (resolved[i] > 0) continue;
+        if (i == 0) {
+            resolved[i] = batch;
+        } else if (i == 1) {
+            resolved[i] = 3;
+        } else if (i == 2) {
+            resolved[i] = height;
+        } else {
+            resolved[i] = width;
+        }
+    }
+    return resolved;
+}
 
 /**
  * @brief Lightweight tensor class
@@ -63,6 +111,9 @@ public:
     Tensor(const Shape& shape, DataType dtype = DataType::Float32)
         : info_{.name = "", .shape = shape, .dtype = dtype, .layout = Layout::NCHW}
     {
+        if (info_.is_dynamic()) {
+            throw IVITError("Cannot allocate a Tensor with a dynamic (negative) dimension");
+        }
         data_.resize(info_.byte_size());
     }
 

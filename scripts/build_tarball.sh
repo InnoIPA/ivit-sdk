@@ -4,7 +4,7 @@
 # Usage: ./scripts/build_tarball.sh <platform>
 #   platform: x86_64-nvidia | x86_64-intel | aarch64-jetson
 #
-# Output: build/ivit-sdk-<version>-<platform>.tar.gz
+# Output: build-tarball-<platform>/ivit-sdk-<version>-<platform>.tar.xz
 
 set -euo pipefail
 
@@ -39,6 +39,21 @@ case "$PLATFORM" in
         ;;
 esac
 
+# CMake only warns when it cannot find a requested backend and then builds without it. Refuse to
+# package in that case, rather than shipping e.g. an "nvidia" SDK that has no TensorRT.
+require_backend() {
+    local log="$1" backend
+    case "$PLATFORM" in
+        x86_64-intel) backend="OpenVINO" ;;
+        *) backend="TensorRT" ;;
+    esac
+    if ! grep -qE "^-- +${backend}: +ON" "$log"; then
+        echo "Error: ${backend} was requested for $PLATFORM but CMake disabled it (see $log)." >&2
+        echo "       Install the ${backend} development files, or point CMake at them." >&2
+        exit 1
+    fi
+}
+
 BUILD_DIR="$PROJECT_ROOT/build-tarball-$PLATFORM"
 INSTALL_DIR="$BUILD_DIR/install"
 SDK_NAME="ivit-sdk-${VERSION}-${PLATFORM}"
@@ -57,7 +72,9 @@ cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
     -DIVIT_BUILD_TESTS=OFF \
     -DIVIT_BUILD_EXAMPLES=ON \
     -DIVIT_BUILD_PYTHON=ON \
-    $CMAKE_OPTS
+    $CMAKE_OPTS \
+    2>&1 | tee "$BUILD_DIR/configure.log"
+require_backend "$BUILD_DIR/configure.log"
 
 cmake --build "$BUILD_DIR" -j"$(nproc)"
 cmake --install "$BUILD_DIR"
@@ -88,10 +105,11 @@ if command -v pip3 &>/dev/null; then
     cd -
 fi
 
-# 建立 tarball
+# 建立 tarball。xz rather than gzip: with TensorRT 11 the NVIDIA package is 3.5 GB unpacked and
+# 2.35 GB as .tar.gz, over GitHub's 2 GiB per-asset limit; .tar.xz is 1.41 GB.
 cd "$BUILD_DIR"
-tar -czvf "${SDK_NAME}.tar.gz" "$SDK_NAME"
+XZ_OPT="${XZ_OPT:--T0 -6}" tar -cJf "${SDK_NAME}.tar.xz" "$SDK_NAME"
 
 echo ""
 echo "=== Tarball created ==="
-echo "  $BUILD_DIR/${SDK_NAME}.tar.gz"
+echo "  $BUILD_DIR/${SDK_NAME}.tar.xz"

@@ -35,6 +35,21 @@ case "$PLATFORM" in
         ;;
 esac
 
+# CMake only warns when it cannot find a requested backend and then builds without it. Refuse to
+# package in that case, rather than shipping e.g. an "nvidia" SDK that has no TensorRT.
+require_backend() {
+    local log="$1" backend
+    case "$PLATFORM" in
+        x86_64-intel) backend="OpenVINO" ;;
+        *) backend="TensorRT" ;;
+    esac
+    if ! grep -qE "^-- +${backend}: +ON" "$log"; then
+        echo "Error: ${backend} was requested for $PLATFORM but CMake disabled it (see $log)." >&2
+        echo "       Install the ${backend} development files, or point CMake at them." >&2
+        exit 1
+    fi
+}
+
 BUILD_DIR="$PROJECT_ROOT/build-deb-$PLATFORM"
 
 echo "=== Building .deb for $PLATFORM ==="
@@ -46,7 +61,9 @@ cmake -S "$PROJECT_ROOT" -B "$BUILD_DIR" \
     -DIVIT_BUILD_TESTS=OFF \
     -DIVIT_BUILD_EXAMPLES=OFF \
     -DIVIT_BUILD_PYTHON=OFF \
-    $CMAKE_OPTS
+    $CMAKE_OPTS \
+    2>&1 | tee "$BUILD_DIR/configure.log"
+require_backend "$BUILD_DIR/configure.log"
 
 cmake --build "$BUILD_DIR" -j"$(nproc)"
 

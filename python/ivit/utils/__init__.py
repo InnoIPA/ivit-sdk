@@ -2,7 +2,6 @@
 Utility modules for iVIT-SDK.
 """
 
-from .visualizer import Visualizer
 from .profiler import Profiler, ProfileReport
 from .video import VideoStream, VideoWriter
 from .metrics import (
@@ -16,7 +15,6 @@ from .metrics import (
 )
 
 __all__ = [
-    "Visualizer",
     "Profiler",
     "ProfileReport",
     "VideoStream",

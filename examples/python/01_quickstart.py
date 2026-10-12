@@ -5,7 +5,8 @@ iVIT-SDK Quickstart Example
 最簡單的使用範例，直接執行即可體驗 iVIT-SDK 的物件偵測功能。
 
 Usage:
-    python examples/python/01_quickstart.py
+    python examples/python/01_quickstart.py              # YOLOX-S from the Model Zoo
+    IVIT_MODEL=yolox-nano python examples/python/01_quickstart.py
 """
 
 import sys
@@ -15,11 +16,21 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
 
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'python'))
-
 import ivit
 from ivit.vision import Detector
 import cv2
+
+
+def resolve_model(model):
+    """A Model Zoo name -> (local file, its verified load settings); a file path -> (path, {}).
+
+    Zoo models need the settings their export was made for (task, decoder, color order,
+    normalization, labels); with your own model file, pass the settings that match its export.
+    """
+    if model in ivit.zoo.list_models():
+        return str(ivit.zoo.download(model)), dict(ivit.zoo.get_model_info(model).load_options)
+    return model, {}
+
 
 
 def main():
@@ -29,20 +40,14 @@ def main():
     for d in ivit.list_devices():
         print(f"  - {d.id}: {d.name} [{d.backend}]")
 
-    # Model and image paths
-    # NOTE: Update model_path to point to your own ONNX/OpenVINO/TensorRT model file.
-    # You can download a YOLOv8n ONNX model from https://github.com/ultralytics/ultralytics
-    # or use: python -c "from ultralytics import YOLO; YOLO('yolov8n.pt').export(format='onnx')"
-    model_path = os.environ.get(
-        "IVIT_MODEL_PATH",
-        os.path.join(PROJECT_ROOT, "models", "onnx", "yolov8n.onnx"),
-    )
+    # A Model Zoo name (downloaded and verified on first use) or your own model file.
+    # Behind a firewall, set IVIT_ZOO_MIRROR to a directory or URL holding the zoo files.
+    model_path, options = resolve_model(os.environ.get("IVIT_MODEL", "yolox-s"))
     image_path = os.environ.get(
         "IVIT_IMAGE_PATH",
         os.path.join(PROJECT_ROOT, "examples", "data", "images", "bus.jpg"),
     )
 
-    # Check files exist
     if not os.path.exists(model_path):
         print(f"\nModel not found: {model_path}")
         return 1
@@ -58,7 +63,7 @@ def main():
 
     for device in device_order:
         try:
-            detector = Detector(model_path, device=device)
+            detector = Detector(model_path, device=device, **options)
             used_device = device
             break
         except Exception as e:
@@ -84,7 +89,7 @@ def main():
         print(f"  - {det.label}: {det.confidence:.0%}")
 
     # Save visualization
-    output_path = os.path.join(os.path.dirname(image_path), "quickstart_output.jpg")
+    output_path = "quickstart_output.jpg"
     vis = results.visualize(image)
     cv2.imwrite(output_path, vis)
     print(f"\nSaved: {output_path}")

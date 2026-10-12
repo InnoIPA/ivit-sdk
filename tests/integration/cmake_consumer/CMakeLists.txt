@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.18)
+project(ivit_consumer LANGUAGES C CXX)
+find_package(ivit 1.0 CONFIG REQUIRED)
+add_executable(consumer main.cpp)
+target_link_libraries(consumer PRIVATE ivit::ivit)
+add_executable(c_consumer main.c)
+target_link_libraries(c_consumer PRIVATE ivit::ivit)

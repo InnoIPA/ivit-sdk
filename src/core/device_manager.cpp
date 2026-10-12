@@ -3,17 +3,19 @@
  * @brief Device manager implementation
  */
 
-#include "ivit/ivit.hpp"
 #include "ivit/core/device.hpp"
+#include "core/device_ranking.hpp"
+#include "ivit/ivit.hpp"
 #include "ivit/runtime/runtime.hpp"
 #include <algorithm>
-#include <mutex>
-#include <filesystem>
-#include <cstdlib>
+#include <atomic>
 #include <cstdio>
-#include <iostream>
-#include <unistd.h>
+#include <cstdlib>
 #include <fcntl.h>
+#include <filesystem>
+#include <iostream>
+#include <mutex>
+#include <unistd.h>
 
 #ifdef IVIT_HAS_OPENVINO
 #include <openvino/openvino.hpp>
@@ -29,26 +31,25 @@ namespace ivit {
 // DeviceManager implementation
 // ============================================================================
 
-DeviceManager& DeviceManager::instance() {
+DeviceManager &DeviceManager::instance() {
     static DeviceManager instance;
     return instance;
 }
 
-DeviceManager::DeviceManager() {
-    discover_devices();
-}
+DeviceManager::DeviceManager() { discover_devices(); }
 
 std::vector<DeviceInfo> DeviceManager::list_devices() {
+    std::lock_guard<std::mutex> lock(mutex_);
     if (!initialized_) {
         discover_devices();
     }
     return devices_;
 }
 
-DeviceInfo DeviceManager::get_device(const std::string& device_id) {
+DeviceInfo DeviceManager::get_device(const std::string &device_id) {
     auto devices = list_devices();
 
-    for (const auto& dev : devices) {
+    for (const auto &dev : devices) {
         if (dev.id == device_id) {
             return dev;
         }
@@ -57,44 +58,22 @@ DeviceInfo DeviceManager::get_device(const std::string& device_id) {
     throw DeviceNotFoundError(device_id);
 }
 
-DeviceInfo DeviceManager::get_best_device(
-    const std::string& task,
-    const std::string& priority
-) {
+DeviceInfo DeviceManager::get_best_device(const std::string &priority) {
     auto devices = list_devices();
 
     if (devices.empty()) {
         throw DeviceError("No devices available");
     }
 
-    // Priority order based on selection criteria
-    std::vector<std::string> type_order;
-    if (priority == "performance") {
-        type_order = {"gpu", "npu", "vpu", "cpu"};
-    } else if (priority == "efficiency") {
-        type_order = {"npu", "vpu", "gpu", "cpu"};
-    } else { // memory
-        type_order = {"gpu", "cpu", "npu", "vpu"};
-    }
-
-    // Sort devices by priority
-    std::sort(devices.begin(), devices.end(),
-        [&type_order](const DeviceInfo& a, const DeviceInfo& b) {
-            auto it_a = std::find(type_order.begin(), type_order.end(), a.type);
-            auto it_b = std::find(type_order.begin(), type_order.end(), b.type);
-
-            int idx_a = (it_a != type_order.end()) ?
-                        std::distance(type_order.begin(), it_a) :
-                        type_order.size();
-            int idx_b = (it_b != type_order.end()) ?
-                        std::distance(type_order.begin(), it_b) :
-                        type_order.size();
-
-            return idx_a < idx_b;
-        });
+    // Rank by vendor and discrete/integrated as well as type: ranking by type alone put an Intel
+    // iGPU ahead of an NVIDIA GPU because both are "gpu". stable_sort keeps discovery order on ties.
+    std::stable_sort(devices.begin(), devices.end(),
+                     [&priority](const DeviceInfo &a, const DeviceInfo &b) {
+                         return detail::device_score(a, priority) > detail::device_score(b, priority);
+                     });
 
     // Return first available device
-    for (const auto& dev : devices) {
+    for (const auto &dev : devices) {
         if (dev.is_available) {
             return dev;
         }
@@ -103,7 +82,7 @@ DeviceInfo DeviceManager::get_best_device(
     return devices[0];
 }
 
-DeviceStatus DeviceManager::get_device_status(const std::string& device_id) {
+DeviceStatus DeviceManager::get_device_status(const std::string &device_id) {
     DeviceStatus status;
     status.id = device_id;
 
@@ -111,111 +90,111 @@ DeviceStatus DeviceManager::get_device_status(const std::string& device_id) {
     auto [backend, device_index] = parse_device_string(device_id);
 
     switch (backend) {
-        case BackendType::TensorRT:
+    case BackendType::TensorRT:
 #ifdef IVIT_HAS_TENSORRT
-            {
-                // Get CUDA device index
-                int dev_idx = device_index.empty() ? 0 : std::stoi(device_index);
+    {
+        // Get CUDA device index
+        int dev_idx = device_index.empty() ? 0 : std::stoi(device_index);
 
-                // Set device and query properties
-                cudaError_t err = cudaSetDevice(dev_idx);
-                if (err != cudaSuccess) {
-                    status.is_available = false;
-                    break;
-                }
-
-                // Query device properties for name
-                cudaDeviceProp props;
-                if (cudaGetDeviceProperties(&props, dev_idx) == cudaSuccess) {
-                    status.name = props.name;
-                    status.compute_capability = std::to_string(props.major) + "." +
-                                                std::to_string(props.minor);
-                }
-
-                // Query memory info
-                size_t free_mem = 0, total_mem = 0;
-                if (cudaMemGetInfo(&free_mem, &total_mem) == cudaSuccess) {
-                    status.memory_total = total_mem;
-                    status.memory_used = total_mem - free_mem;
-                    status.memory_free = free_mem;
-                    // Calculate utilization percentage
-                    if (total_mem > 0) {
-                        status.memory_utilization = static_cast<float>(status.memory_used) /
-                                                    static_cast<float>(total_mem) * 100.0f;
-                    }
-                }
-
-                status.is_available = true;
-                status.backend = "tensorrt";
-
-                // Note: GPU utilization, temperature, and power require NVML library
-                // which is not included as a dependency to keep the SDK lightweight.
-                // Users can query these metrics separately using nvidia-smi or NVML.
-            }
-#endif
-            break;
-
-        case BackendType::OpenVINO:
-#ifdef IVIT_HAS_OPENVINO
-            try {
-                ov::Core core;
-
-                // Map device_id to OpenVINO device name
-                std::string ov_device;
-                if (device_id == "cpu") {
-                    ov_device = "CPU";
-                } else if (device_id == "gpu:0" || device_id == "gpu") {
-                    ov_device = "GPU";
-                } else if (device_id == "npu") {
-                    ov_device = "NPU";
-                } else {
-                    ov_device = "CPU";
-                }
-
-                // Query device full name
-                try {
-                    status.name = core.get_property(ov_device, ov::device::full_name);
-                } catch (...) {
-                    status.name = ov_device;
-                }
-
-                // Query available device capabilities
-                try {
-                    auto caps = core.get_property(ov_device, ov::device::capabilities);
-                    for (const auto& cap : caps) {
-                        if (cap == "FP16") status.supports_fp16 = true;
-                        if (cap == "INT8") status.supports_int8 = true;
-                        if (cap == "FP32") status.supports_fp32 = true;
-                    }
-                } catch (...) {
-                    // Capabilities query not supported
-                    status.supports_fp32 = true;  // Default
-                }
-
-                status.is_available = true;
-                status.backend = "openvino";
-
-            } catch (...) {
-                status.is_available = false;
-            }
-#endif
-            break;
-
-        default:
+        // Set device and query properties
+        cudaError_t err = cudaSetDevice(dev_idx);
+        if (err != cudaSuccess) {
             status.is_available = false;
             break;
+        }
+
+        // Query device properties for name
+        cudaDeviceProp props;
+        if (cudaGetDeviceProperties(&props, dev_idx) == cudaSuccess) {
+            status.name = props.name;
+            status.compute_capability =
+                std::to_string(props.major) + "." + std::to_string(props.minor);
+        }
+
+        // Query memory info
+        size_t free_mem = 0, total_mem = 0;
+        if (cudaMemGetInfo(&free_mem, &total_mem) == cudaSuccess) {
+            status.memory_total = total_mem;
+            status.memory_used = total_mem - free_mem;
+            status.memory_free = free_mem;
+            // Calculate utilization percentage
+            if (total_mem > 0) {
+                status.memory_utilization =
+                    static_cast<float>(status.memory_used) / static_cast<float>(total_mem) * 100.0f;
+            }
+        }
+
+        status.is_available = true;
+        status.backend = "tensorrt";
+
+        // Note: GPU utilization, temperature, and power require NVML library
+        // which is not included as a dependency to keep the SDK lightweight.
+        // Users can query these metrics separately using nvidia-smi or NVML.
+    }
+#endif
+    break;
+
+    case BackendType::OpenVINO:
+#ifdef IVIT_HAS_OPENVINO
+        try {
+            ov::Core core;
+
+            // Map device_id to OpenVINO device name
+            std::string ov_device;
+            if (device_id == "cpu") {
+                ov_device = "CPU";
+            } else if (device_id == "gpu:0" || device_id == "gpu") {
+                ov_device = "GPU";
+            } else if (device_id == "npu") {
+                ov_device = "NPU";
+            } else {
+                ov_device = "CPU";
+            }
+
+            // Query device full name
+            try {
+                status.name = core.get_property(ov_device, ov::device::full_name);
+            } catch (...) {
+                status.name = ov_device;
+            }
+
+            // Query available device capabilities
+            try {
+                auto caps = core.get_property(ov_device, ov::device::capabilities);
+                for (const auto &cap : caps) {
+                    if (cap == "FP16")
+                        status.supports_fp16 = true;
+                    if (cap == "INT8")
+                        status.supports_int8 = true;
+                    if (cap == "FP32")
+                        status.supports_fp32 = true;
+                }
+            } catch (...) {
+                // Capabilities query not supported
+                status.supports_fp32 = true; // Default
+            }
+
+            status.is_available = true;
+            status.backend = "openvino";
+
+        } catch (...) {
+            status.is_available = false;
+        }
+#endif
+        break;
+
+    default:
+        status.is_available = false;
+        break;
     }
 
     return status;
 }
 
-bool DeviceManager::supports_precision(
-    const std::string& device_id,
-    Precision precision
-) {
+bool DeviceManager::supports_precision(const std::string &device_id, Precision precision) {
     auto dev = get_device(device_id);
 
-    for (const auto& p : dev.supported_precisions) {
+    for (const auto &p : dev.supported_precisions) {
         if (p == precision) {
             return true;
         }
@@ -224,10 +203,7 @@ bool DeviceManager::supports_precision(
     return false;
 }
 
-bool DeviceManager::supports_format(
-    const std::string& device_id,
-    const std::string& format
-) {
+bool DeviceManager::supports_format(const std::string &device_id, const std::string &format) {
     // Determine backend from device
     auto [backend, _] = parse_device_string(device_id);
 
@@ -241,29 +217,26 @@ bool DeviceManager::supports_format(
     // Define supported formats per backend
     // [Future] Add new backend format support here
     switch (backend) {
-        case BackendType::OpenVINO:
-            // OpenVINO supports IR format (.xml + .bin) and ONNX
-            return (fmt == ".xml" || fmt == ".bin" || fmt == ".onnx" || fmt == ".pdmodel");
+    case BackendType::OpenVINO:
+        // OpenVINO supports IR format (.xml + .bin) and ONNX
+        return (fmt == ".xml" || fmt == ".bin" || fmt == ".onnx" || fmt == ".pdmodel");
 
-        case BackendType::TensorRT:
-            // TensorRT supports compiled engines and ONNX (for runtime compilation)
-            return (fmt == ".engine" || fmt == ".trt" || fmt == ".plan" || fmt == ".onnx");
+    case BackendType::TensorRT:
+        // TensorRT supports compiled engines and ONNX (for runtime compilation)
+        return (fmt == ".engine" || fmt == ".trt" || fmt == ".plan" || fmt == ".onnx");
 
-        case BackendType::QNN:
-            // QNN supports DLC (legacy SNPE), serialized context, and ONNX
-            return (fmt == ".dlc" || fmt == ".serialized" || fmt == ".bin" || fmt == ".onnx");
+    case BackendType::Auto:
+        // Auto backend - accept common formats
+        return (fmt == ".onnx" || fmt == ".xml" || fmt == ".engine" || fmt == ".trt" ||
+                fmt == ".plan");
 
-        case BackendType::Auto:
-            // Auto backend - accept common formats
-            return (fmt == ".onnx" || fmt == ".xml" || fmt == ".engine" ||
-                    fmt == ".trt" || fmt == ".plan" || fmt == ".dlc");
-
-        default:
-            return false;
+    default:
+        return false;
     }
 }
 
 void DeviceManager::refresh() {
+    std::lock_guard<std::mutex> lock(mutex_);
     devices_.clear();
     initialized_ = false;
     discover_devices();
@@ -276,20 +249,17 @@ void DeviceManager::discover_devices() {
     // Device Discovery - Add new hardware platforms here
     // ========================================================================
 
-    // Intel: OpenVINO (CPU, iGPU, NPU, VPU)
+    // Intel: OpenVINO (CPU, iGPU, NPU)
     discover_openvino_devices();
 
     // NVIDIA: TensorRT/CUDA (dGPU, Jetson)
     discover_tensorrt_devices();
 
-    // [Future] Add new hardware platforms here:
-    // discover_xxx_devices();
-
     // ========================================================================
     // CPU Fallback - Available when OpenVINO is installed
     // ========================================================================
     bool has_cpu = false;
-    for (const auto& dev : devices_) {
+    for (const auto &dev : devices_) {
         if (dev.type == "cpu") {
             has_cpu = true;
             break;
@@ -313,22 +283,12 @@ void DeviceManager::discover_devices() {
 void DeviceManager::discover_openvino_devices() {
 #ifdef IVIT_HAS_OPENVINO
     try {
-        // Suppress stderr noise from Intel OpenCL compiler (IGC) during device enumeration
-        fflush(stderr);
-        int saved_stderr = dup(STDERR_FILENO);
-        int devnull = open("/dev/null", O_WRONLY);
-        dup2(devnull, STDERR_FILENO);
-        close(devnull);
-
+        // Do not redirect process-wide stderr: other inference threads may log,
+        // and an exception during enumeration must not suppress diagnostics.
         ov::Core core;
         auto available = core.get_available_devices();
 
-        // Restore stderr
-        fflush(stderr);
-        dup2(saved_stderr, STDERR_FILENO);
-        close(saved_stderr);
-
-        for (const auto& device_name : available) {
+        for (const auto &device_name : available) {
             DeviceInfo info;
 
             // Get full device name
@@ -355,10 +315,6 @@ void DeviceManager::discover_openvino_devices() {
             } else if (device_name.find("NPU") != std::string::npos) {
                 info.id = "npu";
                 info.type = "npu";
-            } else if (device_name.find("MYRIAD") != std::string::npos ||
-                       device_name.find("VPU") != std::string::npos) {
-                info.id = "vpu";
-                info.type = "vpu";
             } else {
                 info.id = device_name;
                 info.type = "unknown";
@@ -366,11 +322,7 @@ void DeviceManager::discover_openvino_devices() {
 
             info.backend = "openvino";
             info.is_available = true;
-            info.supported_precisions = {
-                Precision::FP32,
-                Precision::FP16,
-                Precision::INT8
-            };
+            info.supported_precisions = {Precision::FP32, Precision::FP16, Precision::INT8};
 
             devices_.push_back(info);
         }
@@ -398,11 +350,7 @@ void DeviceManager::discover_tensorrt_devices() {
                 info.type = "gpu";
                 info.memory_total = props.totalGlobalMem;
                 info.is_available = true;
-                info.supported_precisions = {
-                    Precision::FP32,
-                    Precision::FP16,
-                    Precision::INT8
-                };
+                info.supported_precisions = {Precision::FP32, Precision::FP16, Precision::INT8};
 
                 devices_.push_back(info);
             }
@@ -413,34 +361,11 @@ void DeviceManager::discover_tensorrt_devices() {
 #endif
 }
 
-// =============================================================================
-// Template for adding new hardware platforms
-// =============================================================================
-//
-// void DeviceManager::discover_xxx_devices() {
-// #ifdef IVIT_HAS_XXX
-//     try {
-//         // Use XXX SDK to enumerate devices
-//         for (int i = 0; i < xxx_device_count(); i++) {
-//             DeviceInfo info;
-//             info.id = "xxx:" + std::to_string(i);
-//             info.name = xxx_get_device_name(i);
-//             info.backend = "xxx";
-//             info.type = "npu";  // or "gpu", "cpu", etc.
-//             info.is_available = true;
-//             devices_.push_back(info);
-//         }
-//     } catch (...) {
-//         // XXX SDK not available
-//     }
-// #endif
-// }
-
 // ============================================================================
 // Helper functions
 // ============================================================================
 
-std::pair<BackendType, std::string> parse_device_string(const std::string& device) {
+std::pair<BackendType, std::string> parse_device_string(const std::string &device) {
     std::string dev_lower = device;
     std::transform(dev_lower.begin(), dev_lower.end(), dev_lower.begin(), ::tolower);
 
@@ -468,23 +393,11 @@ std::pair<BackendType, std::string> parse_device_string(const std::string& devic
         return {BackendType::OpenVINO, "NPU"};
     }
 
-    if (dev_lower == "vpu" || dev_lower == "myriad") {
-        return {BackendType::OpenVINO, "MYRIAD"};
-    }
-
-    // Qualcomm IQ Series (QCS9075, QCS8550, etc.) via QNN
-    // Support both iQ series names and internal Qualcomm names
-    if (dev_lower == "iq9" || dev_lower == "iq8" || dev_lower == "iq6" ||
-        dev_lower.rfind("iq", 0) == 0 ||  // Any "iq*" pattern
-        dev_lower == "hexagon" || dev_lower == "htp" || dev_lower == "dsp") {
-        return {BackendType::QNN, "HTP"};  // Hexagon Tensor Processor
-    }
-
     // Default to CPU (OpenVINO fallback)
     return {BackendType::OpenVINO, "CPU"};
 }
 
-BackendType get_backend_for_device(const std::string& device) {
+BackendType get_backend_for_device(const std::string &device) {
     return parse_device_string(device).first;
 }
 
@@ -521,81 +434,63 @@ bool openvino_is_available() {
 #endif
 }
 
-// =============================================================================
-// Template for new hardware platform availability check
-// =============================================================================
-//
-// bool xxx_is_available() {
-// #ifdef IVIT_HAS_XXX
-//     try {
-//         // Initialize XXX SDK and check availability
-//         return xxx_init() == XXX_SUCCESS;
-//     } catch (...) {
-//         return false;
-//     }
-// #else
-//     return false;
-// #endif
-// }
-
 // ============================================================================
 // Free functions (declared in ivit.hpp)
 // ============================================================================
 
-std::vector<DeviceInfo> list_devices() {
-    return DeviceManager::instance().list_devices();
-}
+std::vector<DeviceInfo> list_devices() { return DeviceManager::instance().list_devices(); }
 
-DeviceInfo get_best_device(
-    const std::string& task,
-    const std::string& priority
-) {
-    return DeviceManager::instance().get_best_device(task, priority);
+DeviceInfo get_best_device(const std::string &priority) {
+    return DeviceManager::instance().get_best_device(priority);
 }
 
 // Global log level setting
+static std::mutex g_log_level_mutex;
 static std::string g_log_level = "info";
 
-static LogLevel parse_log_level(const std::string& level) {
+static LogLevel parse_log_level(const std::string &level) {
     std::string l = level;
     std::transform(l.begin(), l.end(), l.begin(), ::tolower);
 
-    if (l == "debug" || l == "verbose") return LogLevel::DEBUG;
-    if (l == "info") return LogLevel::INFO;
-    if (l == "warning" || l == "warn") return LogLevel::WARNING;
-    if (l == "error") return LogLevel::ERROR;
-    if (l == "off" || l == "none") return LogLevel::OFF;
+    if (l == "debug" || l == "verbose")
+        return LogLevel::DEBUG;
+    if (l == "info")
+        return LogLevel::INFO;
+    if (l == "warning" || l == "warn")
+        return LogLevel::WARNING;
+    if (l == "error")
+        return LogLevel::ERROR;
+    if (l == "off" || l == "none")
+        return LogLevel::OFF;
 
-    return LogLevel::INFO;  // Default
+    return LogLevel::INFO; // Default
 }
 
 // Global log level for iVIT SDK
-static LogLevel g_parsed_log_level = LogLevel::INFO;
+static std::atomic<LogLevel> g_parsed_log_level{LogLevel::INFO};
 
-LogLevel get_parsed_log_level() {
-    return g_parsed_log_level;
-}
+LogLevel get_parsed_log_level() { return g_parsed_log_level.load(); }
 
 static void configure_openvino_logging([[maybe_unused]] LogLevel level) {
 #ifdef IVIT_HAS_OPENVINO
     // OpenVINO logging can be configured via environment variables
     // Set environment variable to control OpenVINO logging level
     switch (level) {
-        case LogLevel::DEBUG:
-            setenv("OPENVINO_LOG_LEVEL", "0", 1);  // TRACE/DEBUG
-            break;
-        case LogLevel::INFO:
-            setenv("OPENVINO_LOG_LEVEL", "1", 1);  // INFO
-            break;
-        case LogLevel::WARNING:
-            setenv("OPENVINO_LOG_LEVEL", "2", 1);  // WARNING
-            break;
-        case LogLevel::ERROR:
-            setenv("OPENVINO_LOG_LEVEL", "3", 1);  // ERROR
-            break;
-        case LogLevel::OFF:
-            setenv("OPENVINO_LOG_LEVEL", "4", 1);  // NO_LOG
-            break;
+    case LogLevel::DEBUG:
+        setenv("OPENVINO_LOG_LEVEL", "0", 1); // TRACE/DEBUG
+        break;
+    case LogLevel::INFO:
+        setenv("OPENVINO_LOG_LEVEL", "1", 1); // INFO
+        break;
+    case LogLevel::WARNING:
+        setenv("OPENVINO_LOG_LEVEL", "2", 1); // WARNING
+        break;
+    case LogLevel::ERROR:
+        setenv("OPENVINO_LOG_LEVEL", "3", 1); // ERROR
+        break;
+    case LogLevel::OFF:
+        setenv("OPENVINO_LOG_LEVEL", "4", 1); // NO_LOG
+        break;
     }
 #endif
 }
@@ -617,8 +512,11 @@ static void configure_tensorrt_logging([[maybe_unused]] LogLevel level) {
 #endif
 }
 
-void set_log_level(const std::string& level) {
-    g_log_level = level;
+void set_log_level(const std::string &level) {
+    {
+        std::lock_guard<std::mutex> lock(g_log_level_mutex);
+        g_log_level = level;
+    }
     LogLevel parsed = parse_log_level(level);
     g_parsed_log_level = parsed;
 
@@ -628,25 +526,27 @@ void set_log_level(const std::string& level) {
 
     // Log the level change (if not turning off logging)
     if (parsed != LogLevel::OFF && parsed != LogLevel::ERROR) {
-        std::cout << "[iVIT] Log level set to: " << level << std::endl;
+        detail::log(LogLevel::INFO, "Log level set to: " + level);
     }
 }
 
 std::string get_log_level() {
+    std::lock_guard<std::mutex> lock(g_log_level_mutex);
     return g_log_level;
 }
 
 // Global cache directory
 static std::string g_cache_dir = "";
 
-void set_cache_dir(const std::string& path) {
+void set_cache_dir(const std::string &path) {
     g_cache_dir = path;
+    ModelManager::instance().set_cache_dir(path);
 }
 
 std::string get_cache_dir() {
     if (g_cache_dir.empty()) {
         // Default cache directory
-        const char* home = std::getenv("HOME");
+        const char *home = std::getenv("HOME");
         if (home) {
             return std::string(home) + "/.cache/ivit";
         }
@@ -655,12 +555,8 @@ std::string get_cache_dir() {
     return g_cache_dir;
 }
 
-void convert_model(
-    const std::string& src_path,
-    const std::string& dst_path,
-    const std::string& device,
-    const std::string& precision
-) {
+void convert_model(const std::string &src_path, const std::string &dst_path,
+                   const std::string &device, const std::string &precision) {
     namespace fs = std::filesystem;
 
     // Determine target backend from device
@@ -694,7 +590,7 @@ void convert_model(
     }
 
     // Get runtime and convert
-    auto& factory = RuntimeFactory::instance();
+    auto &factory = RuntimeFactory::instance();
     auto runtime = factory.get_runtime(backend);
 
     if (!runtime) {
@@ -704,13 +600,17 @@ void convert_model(
     runtime->convert_model(src_path, dst_path, config);
 }
 
-void clear_cache(const std::string& cache_dir) {
+void clear_cache(const std::string &cache_dir) {
     namespace fs = std::filesystem;
-
-    std::string dir = cache_dir.empty() ? get_cache_dir() : cache_dir;
+    ModelManager::instance().clear_cache();
+    // Memory cleanup must not delete deployment artifacts. Disk cleanup is
+    // explicit so the Python exit hook can safely release native models.
+    if (cache_dir.empty())
+        return;
+    std::string dir = cache_dir;
 
     if (fs::exists(dir)) {
-        for (const auto& entry : fs::directory_iterator(dir)) {
+        for (const auto &entry : fs::directory_iterator(dir)) {
             if (entry.is_regular_file()) {
                 std::string ext = entry.path().extension().string();
                 if (ext == ".engine" || ext == ".trt" || ext == ".blob") {
@@ -721,10 +621,7 @@ void clear_cache(const std::string& cache_dir) {
     }
 }
 
-std::shared_ptr<Model> load_model(
-    const std::string& path,
-    const LoadConfig& config
-) {
+std::shared_ptr<Model> load_model(const std::string &path, const LoadConfig &config) {
     return ModelManager::instance().load(path, config);
 }
 

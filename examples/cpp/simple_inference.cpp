@@ -24,6 +24,9 @@
 using namespace ivit;
 using namespace ivit::vision;
 
+// Set by a command that failed; main() exits with it.
+static int g_exit_code = 0;
+
 // ============================================================================
 // Helper functions
 // ============================================================================
@@ -108,6 +111,7 @@ void run_classification(const std::string& model_path,
 
     } catch (const std::exception& e) {
         std::cerr << "Classification error: " << e.what() << "\n";
+        g_exit_code = 1;
     }
 }
 
@@ -175,6 +179,7 @@ void run_detection(const std::string& model_path,
 
     } catch (const std::exception& e) {
         std::cerr << "Detection error: " << e.what() << "\n";
+        g_exit_code = 1;
     }
 }
 
@@ -234,6 +239,7 @@ void run_segmentation(const std::string& model_path,
 
     } catch (const std::exception& e) {
         std::cerr << "Segmentation error: " << e.what() << "\n";
+        g_exit_code = 1;
     }
 }
 
@@ -249,18 +255,36 @@ void run_benchmark(const std::string& model_path,
     try {
         std::cout << "Model:      " << model_path << "\n";
         std::cout << "Device:     " << device << "\n";
-        std::cout << "Iterations: " << iterations << "\n\n";
+        std::cout << "Iterations: " << iterations << "\n";
 
-        // Create detector for benchmark
-        Detector detector(model_path, device);
+        if (iterations <= 0)
+            throw std::invalid_argument("iterations must be positive");
 
-        // Create dummy image
-        cv::Mat dummy(640, 640, CV_8UC3, cv::Scalar(128, 128, 128));
+        // Load without a task: this times inference only, so any model works.
+        LoadConfig config;
+        config.device = device;
+        auto model = load_model(model_path, config);
+
+        // Dummy image at the model's input size (NCHW, or NHWC when the last dimension is 3).
+        int height = 640, width = 640;
+        const auto inputs = model->input_info();
+        if (!inputs.empty() && inputs[0].shape.size() == 4) {
+            const auto &shape = inputs[0].shape;
+            const bool nhwc = shape[3] == 3 && shape[1] != 3;
+            const int64_t h = nhwc ? shape[1] : shape[2];
+            const int64_t w = nhwc ? shape[2] : shape[3];
+            if (h > 0 && w > 0) {
+                height = static_cast<int>(h);
+                width = static_cast<int>(w);
+            }
+        }
+        std::cout << "Input:      " << width << "x" << height << "\n\n";
+        cv::Mat dummy(height, width, CV_8UC3, cv::Scalar(128, 128, 128));
 
         // Warmup
         std::cout << "Warming up...\n";
         for (int i = 0; i < 10; i++) {
-            detector.predict(dummy);
+            model->predict(dummy);
         }
 
         // Benchmark
@@ -271,7 +295,7 @@ void run_benchmark(const std::string& model_path,
         auto start = std::chrono::high_resolution_clock::now();
 
         for (int i = 0; i < iterations; i++) {
-            auto results = detector.predict(dummy);
+            auto results = model->predict(dummy);
             times.push_back(results.inference_time_ms);
         }
 
@@ -305,6 +329,7 @@ void run_benchmark(const std::string& model_path,
 
     } catch (const std::exception& e) {
         std::cerr << "Benchmark error: " << e.what() << "\n";
+        g_exit_code = 1;
     }
 }
 
@@ -338,6 +363,7 @@ void run_convert(const std::string& src_path,
 
     } catch (const std::exception& e) {
         std::cerr << "Conversion error: " << e.what() << "\n";
+        g_exit_code = 1;
     }
 }
 
@@ -349,15 +375,17 @@ void run_clear_cache(const std::string& cache_dir) {
     print_separator("Clear Cache");
 
     try {
-        std::string dir = cache_dir.empty() ? ivit::get_cache_dir() : cache_dir;
+        // Default: where the TensorRT backend keeps engines unless cache_dir is set.
+        std::string dir = cache_dir.empty() ? ivit::get_cache_dir() + "/engines" : cache_dir;
         std::cout << "Clearing cache directory: " << dir << "\n";
 
-        ivit::clear_cache(cache_dir);
+        ivit::clear_cache(dir);
 
         std::cout << "Cache cleared successfully!\n";
 
     } catch (const std::exception& e) {
         std::cerr << "Clear cache error: " << e.what() << "\n";
+        g_exit_code = 1;
     }
 }
 
@@ -392,10 +420,13 @@ void print_usage(const char* program) {
     std::cout << "\n";
     std::cout << "Examples:\n";
     std::cout << "  " << program << " devices\n";
-    std::cout << "  " << program << " classify resnet50.onnx cat.jpg cpu\n";
-    std::cout << "  " << program << " detect yolov8n.onnx street.jpg cuda:0 output.jpg\n";
-    std::cout << "  " << program << " segment deeplabv3.onnx scene.jpg gpu:0\n";
-    std::cout << "  " << program << " benchmark yolov8n.onnx cuda:0 100\n";
+    std::cout << "  " << program << " classify classifier.onnx image.jpg cpu\n";
+    std::cout << "  " << program << " detect detector.onnx image.jpg cuda:0 output.jpg\n";
+    std::cout << "  " << program << " segment segmentor.onnx image.jpg gpu:0\n";
+    std::cout << "  " << program << " benchmark detector.onnx cuda:0 100\n";
+    std::cout << "\nModels are loaded with the default input contract (RGB, pixel/255, no mean/std).\n"
+                 "Models exported differently need matching LoadConfig settings (SDK manual 4.2);\n"
+                 "for the Model Zoo YOLOX files use: detection_demo <model> <image> cpu 0.5 yolox\n";
     std::cout << "  " << program << " convert model.onnx model.engine cuda:0 fp16\n";
     std::cout << "  " << program << " convert model.onnx model.xml cpu fp32\n";
     std::cout << "  " << program << " clear-cache\n";
@@ -483,5 +514,5 @@ int main(int argc, char* argv[]) {
     // with TensorRT on newer GPUs during cleanup.
     std::cout.flush();
     std::cerr.flush();
-    _exit(0);
+    _exit(g_exit_code);
 }

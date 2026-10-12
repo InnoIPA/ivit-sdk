@@ -1,0 +1,102 @@
+# iVIT-SDK continuous integration
+#
+# Runs on every push and pull request. Each native job calls scripts/ci/build_and_test.sh,
+# the same script used locally, so a CI failure can be reproduced with one command.
+#
+#   fast-checks      no native build: release metadata, zoo integrity, source packaging
+#   build-openvino   full build + C++ and Python suites on the OpenVINO backend
+#   build-tensorrt   same, with the TensorRT backend compiled and linked. GitHub-hosted
+#                    runners have no GPU, so TensorRT tests skip; this job proves the code
+#                    still builds against TensorRT 11.4.
+#   gpu              optional: runs the TensorRT tests for real on a self-hosted GPU runner.
+#                    Enable by setting the repository variable IVIT_GPU_RUNNER to any value
+#                    (and registering a runner labelled "gpu").
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:   # lets other workflows (e.g. Release) require a green CI first
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  APT_DEPS: build-essential cmake pkg-config python3-dev python3-venv libopencv-dev libgtest-dev
+
+jobs:
+  fast-checks:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install test dependencies
+        run: python -m pip install --quiet pytest numpy onnx requests tqdm flake8
+
+      - name: Python syntax errors
+        run: flake8 python scripts tests --select=E9,F63,F7 --count --show-source
+
+      - name: Shell scripts parse
+        run: for f in scripts/*.sh scripts/ci/*.sh; do bash -n "$f"; done
+
+      - name: Release metadata, zoo integrity, source packaging
+        run: |
+          PYTHONPATH=python python -m pytest -q -p no:cacheprovider \
+            tests/python/test_release_contract.py \
+            tests/python/test_zoo_checksum.py \
+            tests/python/test_zoo_download.py \
+            tests/python/test_source_package.py
+
+  build-openvino:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install -y $APT_DEPS
+
+      - name: Build and test (OpenVINO)
+        run: bash scripts/ci/build_and_test.sh --work "$RUNNER_TEMP/ci"
+
+  build-tensorrt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install -y $APT_DEPS
+
+      - name: Build and test (OpenVINO + TensorRT, no GPU)
+        run: bash scripts/ci/build_and_test.sh --tensorrt --work "$RUNNER_TEMP/ci"
+
+  gpu:
+    if: ${{ vars.IVIT_GPU_RUNNER != '' }}
+    runs-on: [self-hosted, gpu]
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show the GPU
+        run: nvidia-smi --query-gpu=name,driver_version --format=csv
+
+      - name: Build and test (OpenVINO + TensorRT on a real GPU)
+        run: bash scripts/ci/build_and_test.sh --tensorrt --work "$RUNNER_TEMP/ci"
+
+      - name: TensorRT tests must have actually run
+        run: |
+          # build_and_test.sh prints skip reasons (-rs); a GPU job where TensorRT tests skip is a failure
+          ! grep -q "TensorRT GPU required" "$RUNNER_TEMP/ci/pytest.log"

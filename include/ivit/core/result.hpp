@@ -136,33 +136,6 @@ struct ClassificationResult {
 };
 
 // ============================================================================
-// Keypoint
-// ============================================================================
-
-/**
- * @brief Keypoint for pose estimation
- */
-struct Keypoint {
-    float x = 0;                        ///< X coordinate
-    float y = 0;                        ///< Y coordinate
-    float confidence = 0;               ///< Confidence score
-    std::string name;                   ///< Keypoint name
-
-    Keypoint() = default;
-    Keypoint(float x, float y, float conf, const std::string& name = "")
-        : x(x), y(y), confidence(conf), name(name) {}
-};
-
-/**
- * @brief Pose estimation result (single person)
- */
-struct Pose {
-    std::vector<Keypoint> keypoints;    ///< Keypoints
-    std::optional<BBox> bbox;           ///< Bounding box (optional)
-    float confidence = 0;               ///< Overall confidence
-};
-
-// ============================================================================
 // Results Container
 // ============================================================================
 
@@ -241,12 +214,6 @@ public:
     cv::Mat overlay_mask(const cv::Mat& image, float alpha = 0.5) const;
 
     // ========================================================================
-    // Pose Estimation
-    // ========================================================================
-
-    std::vector<Pose> poses;
-
-    // ========================================================================
     // Raw Outputs
     // ========================================================================
 
@@ -304,11 +271,7 @@ public:
      * @brief Get total number of results
      */
     size_t size() const {
-        return std::max({
-            classifications.size(),
-            detections.size(),
-            poses.size()
-        });
+        return std::max(classifications.size(), detections.size());
     }
 
     bool empty() const { return size() == 0; }

@@ -183,16 +183,20 @@ class MetricsCollector:
         Args:
             callback: Function called for each inference event
         """
-        self._listeners.append(callback)
+        with self._lock:
+            self._listeners.append(callback)
 
     def remove_listener(self, callback: Callable[[Dict], None]) -> None:
         """Remove event listener."""
-        if callback in self._listeners:
-            self._listeners.remove(callback)
+        with self._lock:
+            if callback in self._listeners:
+                self._listeners.remove(callback)
 
     def _notify_listeners(self, event: Dict) -> None:
         """Notify all listeners of an event."""
-        for listener in self._listeners:
+        with self._lock:
+            listeners = list(self._listeners)  # a listener may add or remove listeners
+        for listener in listeners:
             try:
                 listener(event)
             except Exception as e:

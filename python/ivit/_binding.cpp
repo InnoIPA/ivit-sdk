@@ -13,7 +13,6 @@
 // Include iVIT headers
 #include "ivit/ivit.hpp"
 #include "ivit/core/callback.hpp"
-#include "ivit/core/runtime_config.hpp"
 #include "ivit/core/video_source.hpp"
 #include "ivit/vision/classifier.hpp"
 #include "ivit/vision/detector.hpp"
@@ -83,7 +82,16 @@ py::array mat_to_numpy(const cv::Mat& mat) {
  * @brief Convert numpy array to cv::Mat
  */
 cv::Mat numpy_to_mat(py::array array) {
-    py::buffer_info buf = array.request();
+    // cv::Mat below is built from a raw pointer with default (packed) strides,
+    // so views such as img[:, :, ::-1] or img[::2] would be read as garbage.
+    // ensure() returns the array itself when it is already C-contiguous and a
+    // contiguous copy otherwise.
+    py::array contiguous = py::array::ensure(array, py::array::c_style);
+    if (!contiguous) {
+        throw std::runtime_error("Cannot convert input to a C-contiguous array");
+    }
+
+    py::buffer_info buf = contiguous.request();
 
     // Determine OpenCV type
     int cv_type;
@@ -120,9 +128,38 @@ cv::Mat numpy_to_mat(py::array array) {
     return mat.clone();
 }
 
+/**
+ * @brief Python callable that can be copied and destroyed on any thread
+ *
+ * A bare py::function captured in a C++ lambda is decref'd wherever that lambda
+ * dies. A model may now be released by a background inference thread (it keeps
+ * the model alive until its work is done), and that thread does not hold the
+ * GIL, so the reference is dropped under the GIL via the shared_ptr deleter.
+ */
+struct GilSafeCallable {
+    std::shared_ptr<py::function> fn;
+
+    explicit GilSafeCallable(py::function f)
+        : fn(new py::function(std::move(f)), [](py::function* p) {
+              py::gil_scoped_acquire gil;
+              delete p;
+          }) {}
+};
+
 // ============================================================================
 // Python Module Definition
 // ============================================================================
+
+namespace {
+// Py_IsFinalizing() is public from 3.13; earlier versions only expose the underscore name.
+inline bool ivit_py_finalizing() {
+#if PY_VERSION_HEX >= 0x030D0000
+    return Py_IsFinalizing();
+#else
+    return _Py_IsFinalizing();
+#endif
+}
+} // namespace
 
 PYBIND11_MODULE(_ivit_core, m) {
     m.doc() = "iVIT-SDK C++ bindings - Unified Computer Vision SDK";
@@ -162,6 +199,21 @@ PYBIND11_MODULE(_ivit_core, m) {
         .value("Unknown", ivit::Layout::Unknown)
         .export_values();
 
+    // Model.task and Model.backend return these; without a registration pybind11
+    // cannot convert them and raises TypeError on access. No export_values():
+    // their "Unknown"/"Auto" members would shadow the enums above.
+    py::enum_<ivit::TaskType>(m, "TaskType", "Model task type")
+        .value("Classification", ivit::TaskType::Classification)
+        .value("Detection", ivit::TaskType::Detection)
+        .value("Segmentation", ivit::TaskType::Segmentation)
+        .value("Unknown", ivit::TaskType::Unknown);
+
+    py::enum_<ivit::BackendType>(m, "BackendType", "Inference backend")
+        .value("OpenVINO", ivit::BackendType::OpenVINO)
+        .value("TensorRT", ivit::BackendType::TensorRT)
+        .value("Auto", ivit::BackendType::Auto)
+        .value("Unknown", ivit::BackendType::Unknown);
+
     // ========================================================================
     // Configuration Classes
     // ========================================================================
@@ -169,10 +221,31 @@ PYBIND11_MODULE(_ivit_core, m) {
     py::class_<ivit::LoadConfig>(m, "LoadConfig", "Model loading configuration")
         .def(py::init<>())
         .def_readwrite("device", &ivit::LoadConfig::device, "Target device (e.g., 'cpu', 'cuda:0')")
+        .def_readwrite("backend", &ivit::LoadConfig::backend,
+                       "Backend: 'auto', 'openvino' or 'tensorrt'")
+        .def_readwrite("task", &ivit::LoadConfig::task,
+                       "Task hint: 'classification', 'detection' or 'segmentation'")
         .def_readwrite("precision", &ivit::LoadConfig::precision, "Model precision")
         .def_readwrite("batch_size", &ivit::LoadConfig::batch_size, "Batch size")
+        .def_readwrite("max_batch_size", &ivit::LoadConfig::max_batch_size)
+        .def_readwrite("num_threads", &ivit::LoadConfig::num_threads)
+        .def_readwrite("num_instances", &ivit::LoadConfig::num_instances,
+                       "TensorRT: execution contexts for concurrent callers (1-16)")
+        .def_readwrite("enable_profiling", &ivit::LoadConfig::enable_profiling)
+        .def_readwrite("performance_mode", &ivit::LoadConfig::performance_mode)
+        .def_readwrite("workspace_size", &ivit::LoadConfig::workspace_size)
         .def_readwrite("cache_dir", &ivit::LoadConfig::cache_dir, "Cache directory")
         .def_readwrite("use_cache", &ivit::LoadConfig::use_cache, "Use cached engine")
+        .def_readwrite("decoder", &ivit::LoadConfig::decoder)
+        .def_readwrite("input_color", &ivit::LoadConfig::input_color)
+        .def_readwrite("input_layout", &ivit::LoadConfig::input_layout)
+        .def_readwrite("resize_mode", &ivit::LoadConfig::resize_mode)
+        .def_readwrite("input_scale", &ivit::LoadConfig::input_scale)
+        .def_readwrite("mean", &ivit::LoadConfig::mean)
+        .def_readwrite("std", &ivit::LoadConfig::std)
+        .def_readwrite("labels", &ivit::LoadConfig::labels)
+        .def_readwrite("labels_path", &ivit::LoadConfig::labels_path)
+        .def_readwrite("output_name", &ivit::LoadConfig::output_name)
         .def("__repr__", [](const ivit::LoadConfig& c) {
             return "<LoadConfig device='" + c.device + "'>";
         });
@@ -183,6 +256,8 @@ PYBIND11_MODULE(_ivit_core, m) {
         .def_readwrite("iou_threshold", &ivit::InferConfig::iou_threshold, "NMS IoU threshold")
         .def_readwrite("max_detections", &ivit::InferConfig::max_detections, "Maximum detections")
         .def_readwrite("classes", &ivit::InferConfig::classes, "Filter classes")
+        .def_readwrite("agnostic_nms", &ivit::InferConfig::agnostic_nms,
+                       "Suppress overlapping boxes across classes (default: per class)")
         .def("__repr__", [](const ivit::InferConfig& c) {
             return "<InferConfig conf=" + std::to_string(c.conf_threshold) +
                    " iou=" + std::to_string(c.iou_threshold) + ">";
@@ -281,22 +356,6 @@ PYBIND11_MODULE(_ivit_core, m) {
         });
 
     // ========================================================================
-    // Keypoint & Pose
-    // ========================================================================
-
-    py::class_<ivit::Keypoint>(m, "Keypoint", "Keypoint for pose estimation")
-        .def(py::init<>())
-        .def_readwrite("x", &ivit::Keypoint::x)
-        .def_readwrite("y", &ivit::Keypoint::y)
-        .def_readwrite("confidence", &ivit::Keypoint::confidence)
-        .def_readwrite("name", &ivit::Keypoint::name);
-
-    py::class_<ivit::Pose>(m, "Pose", "Pose estimation result")
-        .def(py::init<>())
-        .def_readwrite("keypoints", &ivit::Pose::keypoints)
-        .def_readwrite("confidence", &ivit::Pose::confidence);
-
-    // ========================================================================
     // Results
     // ========================================================================
 
@@ -328,9 +387,6 @@ PYBIND11_MODULE(_ivit_core, m) {
             cv::Mat mat = numpy_to_mat(image);
             return mat_to_numpy(r.overlay_mask(mat, alpha));
         }, py::arg("image"), py::arg("alpha") = 0.5f, "Overlay mask on image")
-
-        // Pose
-        .def_readwrite("poses", &ivit::Results::poses)
 
         // Metadata
         .def_readwrite("inference_time_ms", &ivit::Results::inference_time_ms)
@@ -373,9 +429,6 @@ PYBIND11_MODULE(_ivit_core, m) {
             }
             if (!r.segmentation_mask.empty()) {
                 s += "segmentation ";
-            }
-            if (!r.poses.empty()) {
-                s += "poses=" + std::to_string(r.poses.size()) + " ";
             }
             s += "time=" + std::to_string(r.inference_time_ms) + "ms>";
             return s;
@@ -565,41 +618,6 @@ PYBIND11_MODULE(_ivit_core, m) {
         });
 
     // ========================================================================
-    // Runtime Configuration
-    // ========================================================================
-
-    py::class_<ivit::OpenVINOConfig>(m, "OpenVINOConfig", "OpenVINO runtime configuration")
-        .def(py::init<>())
-        .def_readwrite("performance_mode", &ivit::OpenVINOConfig::performance_mode)
-        .def_readwrite("num_streams", &ivit::OpenVINOConfig::num_streams)
-        .def_readwrite("inference_precision", &ivit::OpenVINOConfig::inference_precision)
-        .def_readwrite("enable_cpu_pinning", &ivit::OpenVINOConfig::enable_cpu_pinning)
-        .def_readwrite("num_threads", &ivit::OpenVINOConfig::num_threads)
-        .def_readwrite("npu_compilation_mode", &ivit::OpenVINOConfig::npu_compilation_mode)
-        .def_readwrite("cache_dir", &ivit::OpenVINOConfig::cache_dir)
-        .def_readwrite("device_properties", &ivit::OpenVINOConfig::device_properties);
-
-    py::class_<ivit::TensorRTConfig>(m, "TensorRTConfig", "TensorRT runtime configuration")
-        .def(py::init<>())
-        .def_readwrite("enable_fp16", &ivit::TensorRTConfig::enable_fp16)
-        .def_readwrite("enable_int8", &ivit::TensorRTConfig::enable_int8)
-        .def_readwrite("workspace_size", &ivit::TensorRTConfig::workspace_size)
-        .def_readwrite("enable_dla", &ivit::TensorRTConfig::enable_dla)
-        .def_readwrite("dla_core", &ivit::TensorRTConfig::dla_core)
-        .def_readwrite("max_batch_size", &ivit::TensorRTConfig::max_batch_size)
-        .def_readwrite("enable_sparsity", &ivit::TensorRTConfig::enable_sparsity)
-        .def_readwrite("strict_types", &ivit::TensorRTConfig::strict_types)
-        .def_readwrite("calibration_cache", &ivit::TensorRTConfig::calibration_cache)
-        .def_readwrite("timing_cache", &ivit::TensorRTConfig::timing_cache);
-
-    py::class_<ivit::QNNConfig>(m, "QNNConfig", "Qualcomm QNN configuration")
-        .def(py::init<>())
-        .def_readwrite("backend", &ivit::QNNConfig::backend)
-        .def_readwrite("performance_mode", &ivit::QNNConfig::performance_mode)
-        .def_readwrite("precision", &ivit::QNNConfig::precision)
-        .def_readwrite("enable_htp_fp16", &ivit::QNNConfig::enable_htp_fp16);
-
-    // ========================================================================
     // Model (C++ core model with full API)
     // ========================================================================
 
@@ -609,6 +627,7 @@ PYBIND11_MODULE(_ivit_core, m) {
         .def_property_readonly("task", &ivit::Model::task)
         .def_property_readonly("device", &ivit::Model::device)
         .def_property_readonly("backend", &ivit::Model::backend)
+        .def_property_readonly("load_config", &ivit::Model::load_config)
         .def_property_readonly("input_info", &ivit::Model::input_info)
         .def_property_readonly("output_info", &ivit::Model::output_info)
         .def_property_readonly("memory_usage", &ivit::Model::memory_usage)
@@ -617,6 +636,8 @@ PYBIND11_MODULE(_ivit_core, m) {
         // Predict with numpy
         .def("predict", [](ivit::Model& model, py::array image, const ivit::InferConfig& config) {
             cv::Mat mat = numpy_to_mat(image);
+            // The GIL is not needed once the data is copied into a cv::Mat
+            py::gil_scoped_release release;
             return model.predict(mat, config);
         }, py::arg("image"), py::arg("config") = ivit::InferConfig{},
            "Run inference on image")
@@ -624,7 +645,22 @@ PYBIND11_MODULE(_ivit_core, m) {
         // Predict with file path
         .def("predict", py::overload_cast<const std::string&, const ivit::InferConfig&>(
             &ivit::Model::predict),
-             py::arg("image_path"), py::arg("config") = ivit::InferConfig{})
+             py::arg("image_path"), py::arg("config") = ivit::InferConfig{},
+             py::call_guard<py::gil_scoped_release>())
+
+        // model(image) is shorthand for model.predict(image)
+        .def("__call__", [](ivit::Model& model, py::array image, const ivit::InferConfig& config) {
+            cv::Mat mat = numpy_to_mat(image);
+            py::gil_scoped_release release;
+            return model.predict(mat, config);
+        }, py::arg("image"), py::arg("config") = ivit::InferConfig{},
+           "Run inference on image (same as predict)")
+
+        .def("__call__", [](ivit::Model& model, const std::string& image_path,
+                             const ivit::InferConfig& config) {
+            py::gil_scoped_release release;
+            return model.predict(image_path, config);
+        }, py::arg("image_path"), py::arg("config") = ivit::InferConfig{})
 
         // Batch predict
         .def("predict_batch", [](ivit::Model& model, std::vector<py::array>& images,
@@ -634,18 +670,21 @@ PYBIND11_MODULE(_ivit_core, m) {
             for (auto& img : images) {
                 mats.push_back(numpy_to_mat(img));
             }
+            py::gil_scoped_release release;
             return model.predict_batch(mats, config);
         }, py::arg("images"), py::arg("config") = ivit::InferConfig{})
 
         // Async predict
-        .def("predict_async", [](ivit::Model& model, py::array image,
+        .def("predict_async", [](py::object model, py::array image,
                                   const ivit::InferConfig& config) {
-            cv::Mat mat = numpy_to_mat(image);
-            auto future = model.predict_async(mat, config);
-            py::gil_scoped_release release;
-            return future.get();
+            return py::module_::import("ivit._async").attr("submit")(model, image, config);
         }, py::arg("image"), py::arg("config") = ivit::InferConfig{},
-           "Run async inference (blocks until complete)")
+           "Return a concurrent.futures.Future; queued work is cancellable")
+        .def("predict_batch_async", [](py::object model, py::list images,
+                                       const ivit::InferConfig& config) {
+            return py::module_::import("ivit._async").attr("submit")(model, images, config, true);
+        }, py::arg("images"), py::arg("config") = ivit::InferConfig{},
+           "Return a Future for batch inference")
 
         // Concurrent predict
         .def("predict_concurrent", [](ivit::Model& model, std::vector<py::array>& images,
@@ -664,14 +703,13 @@ PYBIND11_MODULE(_ivit_core, m) {
         .def("submit_inference", [](ivit::Model& model, py::array image,
                                      py::function callback, const ivit::InferConfig& config) {
             cv::Mat mat = numpy_to_mat(image);
-            model.submit_inference(mat, [callback](ivit::Results results) {
+            GilSafeCallable cb(std::move(callback));
+            model.submit_inference(mat, [cb](ivit::Results results) {
                 py::gil_scoped_acquire acquire;
-                callback(results);
+                (*cb.fn)(results);
             }, config);
         }, py::arg("image"), py::arg("callback"),
            py::arg("config") = ivit::InferConfig{})
-
-        .def("shutdown_async", &ivit::Model::shutdown_async)
 
         // Warmup
         .def("warmup", &ivit::Model::warmup, py::arg("iterations") = 3)
@@ -679,9 +717,10 @@ PYBIND11_MODULE(_ivit_core, m) {
         // Callbacks
         .def("on", [](ivit::Model& model, const std::string& event,
                        py::function callback, int priority) {
-            return model.on(event, [callback](const ivit::CallbackContext& ctx) {
+            GilSafeCallable cb(std::move(callback));
+            return model.on(event, [cb](const ivit::CallbackContext& ctx) {
                 py::gil_scoped_acquire acquire;
-                callback(ctx);
+                (*cb.fn)(ctx);
             }, priority);
         }, py::arg("event"), py::arg("callback"), py::arg("priority") = 0,
            "Register event callback")
@@ -690,11 +729,6 @@ PYBIND11_MODULE(_ivit_core, m) {
              py::arg("event"), py::arg("callback_id"))
         .def("remove_all_callbacks", &ivit::Model::remove_all_callbacks,
              py::arg("event"))
-
-        // Hardware config
-        .def("configure_openvino", &ivit::Model::configure_openvino, py::arg("config"))
-        .def("configure_tensorrt", &ivit::Model::configure_tensorrt, py::arg("config"))
-        .def("configure_qnn", &ivit::Model::configure_qnn, py::arg("config"))
 
         // TTA
         .def("predict_tta", [](ivit::Model& model, py::array image,
@@ -759,11 +793,40 @@ PYBIND11_MODULE(_ivit_core, m) {
     m.def("list_devices", &ivit::list_devices, "List available inference devices");
 
     m.def("get_best_device", &ivit::get_best_device,
-          py::arg("task") = "", py::arg("priority") = "performance",
-          "Get the best device for a task");
+          py::arg("priority") = "performance",
+          "Get the best available device");
 
     m.def("set_log_level", &ivit::set_log_level,
           py::arg("level"), "Set log level ('debug', 'info', 'warning', 'error')");
+
+    m.def(
+        "set_log_callback",
+        [](py::object callback) {
+            if (callback.is_none()) {
+                ivit::set_log_callback(nullptr);
+                return;
+            }
+            if (!PyCallable_Check(callback.ptr()))
+                throw py::type_error("callback must be callable or None");
+            // Leaked on purpose: the SDK can log during interpreter shutdown,
+            // when destroying a Python object here would be unsafe.
+            auto *held = new py::object(std::move(callback));
+            ivit::set_log_callback([held](ivit::LogLevel level, const std::string &message) {
+                if (!Py_IsInitialized() || ivit_py_finalizing())
+                    return;
+                py::gil_scoped_acquire gil;
+                try {
+                    (*held)(static_cast<int>(level), message);
+                } catch (py::error_already_set &) {
+                    // Python errors in a log sink must not break inference.
+                }
+            });
+        },
+        py::arg("callback"),
+        R"doc(Route SDK log messages to callback(level, message); None restores stderr.
+
+level is 0=debug, 1=info, 2=warning, 3=error. The callback may be called from any
+SDK thread. Clear it (None) before interpreter exit; ivit does this automatically.)doc");
 
     m.def("set_cache_dir", &ivit::set_cache_dir,
           py::arg("path"), "Set cache directory for converted models");
@@ -790,15 +853,20 @@ Examples:
 
     m.def("clear_cache", &ivit::clear_cache,
           py::arg("cache_dir") = "",
-          "Clear model cache directory");
+          "Release memory cache; an explicit directory also removes engine/blob files");
 
     // ========================================================================
     // Exception Translation
     // ========================================================================
 
-    py::register_exception<ivit::IVITError>(m, "IVITError");
-    py::register_exception<ivit::ModelLoadError>(m, "ModelLoadError");
-    py::register_exception<ivit::InferenceError>(m, "InferenceError");
-    py::register_exception<ivit::DeviceNotFoundError>(m, "DeviceNotFoundError");
-    py::register_exception<ivit::UnsupportedFormatError>(m, "UnsupportedFormatError");
+    // Mirror the C++ hierarchy so `except ivit.IVITError` catches every SDK error.
+    // A base must be registered before its subclasses: pybind11 tries the most
+    // recently registered translator first, so the most derived type wins.
+    auto ivit_error = py::register_exception<ivit::IVITError>(m, "IVITError", PyExc_RuntimeError);
+    auto model_error = py::register_exception<ivit::ModelError>(m, "ModelError", ivit_error);
+    py::register_exception<ivit::ModelLoadError>(m, "ModelLoadError", model_error);
+    py::register_exception<ivit::UnsupportedFormatError>(m, "UnsupportedFormatError", model_error);
+    auto device_error = py::register_exception<ivit::DeviceError>(m, "DeviceError", ivit_error);
+    py::register_exception<ivit::DeviceNotFoundError>(m, "DeviceNotFoundError", device_error);
+    py::register_exception<ivit::InferenceError>(m, "InferenceError", ivit_error);
 }

@@ -9,8 +9,8 @@
 #include "ivit/core/common.hpp"
 #include "ivit/core/model.hpp"
 #include "ivit/core/result.hpp"
-#include <opencv2/core.hpp>
 #include <memory>
+#include <opencv2/core.hpp>
 #include <string>
 #include <vector>
 
@@ -34,7 +34,7 @@ namespace vision {
  * @endcode
  */
 class Classifier {
-public:
+  public:
     /**
      * @brief Construct classifier
      *
@@ -42,11 +42,8 @@ public:
      * @param device Target device ("auto", "cpu", "cuda:0", etc.)
      * @param config Additional configuration
      */
-    explicit Classifier(
-        const std::string& model,
-        const std::string& device = "auto",
-        const LoadConfig& config = LoadConfig{}
-    );
+    explicit Classifier(const std::string &model, const std::string &device = "auto",
+                        const LoadConfig &config = LoadConfig{});
 
     /**
      * @brief Construct from existing model
@@ -66,7 +63,7 @@ public:
      * @param top_k Return top K results
      * @return Classification results
      */
-    Results predict(const cv::Mat& image, int top_k = 5);
+    Results predict(const cv::Mat &image, int top_k = 5);
 
     /**
      * @brief Classify image from file
@@ -75,7 +72,7 @@ public:
      * @param top_k Return top K results
      * @return Classification results
      */
-    Results predict(const std::string& image_path, int top_k = 5);
+    Results predict(const std::string &image_path, int top_k = 5);
 
     /**
      * @brief Batch classification
@@ -84,10 +81,7 @@ public:
      * @param top_k Return top K results
      * @return Vector of classification results
      */
-    std::vector<Results> predict_batch(
-        const std::vector<cv::Mat>& images,
-        int top_k = 5
-    );
+    std::vector<Results> predict_batch(const std::vector<cv::Mat> &images, int top_k = 5);
 
     // ========================================================================
     // Properties
@@ -96,7 +90,7 @@ public:
     /**
      * @brief Get class labels
      */
-    const std::vector<std::string>& classes() const { return labels_; }
+    const std::vector<std::string> &classes() const { return labels_; }
 
     /**
      * @brief Get number of classes
@@ -113,15 +107,10 @@ public:
      */
     std::shared_ptr<Model> model() const { return model_; }
 
-private:
+  private:
     std::shared_ptr<Model> model_;
     std::vector<std::string> labels_;
     cv::Size input_size_;
-    std::vector<float> mean_;
-    std::vector<float> std_;
-
-    cv::Mat preprocess(const cv::Mat& image);
-    Results postprocess(const std::map<std::string, Tensor>& outputs, int top_k);
 };
 
 } // namespace vision

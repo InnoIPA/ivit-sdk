@@ -4,31 +4,22 @@ iVIT Model Zoo - Pre-optimized models for edge deployment.
 All models use commercial-friendly licenses (Apache-2.0, BSD-3-Clause).
 No AGPL/GPL dependencies - safe for commercial use.
 
-Available model families:
-- YOLOX (Megvii, Apache-2.0): yolox-nano, yolox-tiny, yolox-s, yolox-m, yolox-l
-- RT-DETR (PaddleDetection, Apache-2.0): rtdetr-l, rtdetr-x
-- ResNet/MobileNet/EfficientNet (torchvision, BSD-3): Classification models
-- DeepLabV3 (torchvision, BSD-3): Semantic segmentation
-- RTMPose (MMPose, Apache-2.0): Human pose estimation
+Model families. "ready" models decode out of the box: zoo.load() applies the verified task,
+decoder, color order, normalization and labels. "raw" models can be downloaded, but the SDK has
+no decoder for their outputs.
+
+- YOLOX (Megvii, Apache-2.0), ready: yolox-nano, yolox-tiny, yolox-s, yolox-m, yolox-l
+- ResNet/MobileNet/EfficientNet (torchvision, BSD-3), ready: classification
+- DeepLabV3 (torchvision, BSD-3), ready: semantic segmentation
+- Faster R-CNN/RetinaNet/SSDLite/FCOS (torchvision), raw: boxes/scores/labels outputs
 
 Examples:
-    >>> import ivit
-    >>>
-    >>> # List available models
+    >>> import cv2, ivit
     >>> ivit.zoo.list_models()
-    >>> ivit.zoo.search("yolox")
-    >>>
-    >>> # Load detection model
-    >>> model = ivit.zoo.load("yolox-s")
-    >>> results = model("image.jpg")
-    >>>
-    >>> # Load classification model
-    >>> model = ivit.zoo.load("resnet50")
-    >>> results = model("image.jpg")
-    >>>
-    >>> # Load pose estimation model
-    >>> model = ivit.zoo.load("rtmpose-s", device="npu")
-    >>> results = model("image.jpg")
+    >>> model = ivit.zoo.load("yolox-s")              # detection, COCO labels
+    >>> results = model.predict(cv2.imread("image.jpg"))
+    >>> model = ivit.zoo.load("resnet18", device="gpu:0")
+    >>> path = ivit.zoo.download("fasterrcnn-resnet50")  # raw: run it in your own runtime
 """
 
 from .registry import (

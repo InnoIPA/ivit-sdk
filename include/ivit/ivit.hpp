@@ -3,7 +3,7 @@
  * @brief iVIT-SDK Main Header
  *
  * iVIT-SDK: Innodisk Vision Intelligence Toolkit
- * Unified Computer Vision SDK for Intel/NVIDIA/Qualcomm platforms
+ * Unified Computer Vision SDK for Intel/NVIDIA platforms
  *
  * @copyright Copyright (c) 2024 Innodisk Corporation
  * @license Apache-2.0
@@ -14,16 +14,20 @@
 
 // Version
 #define IVIT_VERSION_MAJOR 1
-#define IVIT_VERSION_MINOR 0
+#define IVIT_VERSION_MINOR 1
 #define IVIT_VERSION_PATCH 0
-#define IVIT_VERSION_STRING "1.0.0"
+#define IVIT_VERSION_STRING "1.1.0"
+/// Comparable form: MAJOR * 10000 + MINOR * 100 + PATCH (1.1.0 -> 10100).
+#define IVIT_VERSION_NUMBER \
+    (IVIT_VERSION_MAJOR * 10000 + IVIT_VERSION_MINOR * 100 + IVIT_VERSION_PATCH)
 
 // Core headers
 #include "ivit/core/common.hpp"
-#include "ivit/core/tensor.hpp"
+#include "ivit/core/device.hpp"
+#include "ivit/core/log.hpp"
 #include "ivit/core/model.hpp"
 #include "ivit/core/result.hpp"
-#include "ivit/core/device.hpp"
+#include "ivit/core/tensor.hpp"
 
 // Vision headers
 #include "ivit/vision/classifier.hpp"
@@ -32,7 +36,6 @@
 
 // Utils headers
 #include "ivit/utils/visualizer.hpp"
-#include "ivit/utils/profiler.hpp"
 
 // Runtime headers
 #include "ivit/runtime/runtime.hpp"
@@ -41,11 +44,9 @@ namespace ivit {
 
 /**
  * @brief Get iVIT-SDK version string
- * @return Version string (e.g., "1.0.0")
+ * @return Version string (e.g., "1.1.0")
  */
-inline const char* version() {
-    return IVIT_VERSION_STRING;
-}
+inline const char *version() { return IVIT_VERSION_STRING; }
 
 /**
  * @brief Load a model from file or Model Zoo
@@ -69,10 +70,7 @@ inline const char* version() {
  * auto model = ivit::load_model("yolov8n", {.task = "detection"});
  * @endcode
  */
-std::shared_ptr<Model> load_model(
-    const std::string& path,
-    const LoadConfig& config = LoadConfig{}
-);
+std::shared_ptr<Model> load_model(const std::string &path, const LoadConfig &config = LoadConfig{});
 
 /**
  * @brief List all available inference devices
@@ -81,32 +79,17 @@ std::shared_ptr<Model> load_model(
 std::vector<DeviceInfo> list_devices();
 
 /**
- * @brief Get the best device for a specific task
- * @param task Task type (optional)
+ * @brief Get the best available device
  * @param priority Selection priority
  * @return Recommended device information
  */
-DeviceInfo get_best_device(
-    const std::string& task = "",
-    const std::string& priority = "performance"
-);
-
-/**
- * @brief Log level enumeration
- */
-enum class LogLevel {
-    DEBUG,      ///< Verbose debug messages
-    INFO,       ///< Informational messages
-    WARNING,    ///< Warning messages
-    ERROR,      ///< Error messages
-    OFF         ///< No logging
-};
+DeviceInfo get_best_device(const std::string &priority = "performance");
 
 /**
  * @brief Set global log level
  * @param level Log level: "debug", "info", "warning", "error", "off"
  */
-void set_log_level(const std::string& level);
+void set_log_level(const std::string &level);
 
 /**
  * @brief Get current log level string
@@ -124,7 +107,7 @@ LogLevel get_parsed_log_level();
  * @brief Set global cache directory
  * @param path Cache directory path
  */
-void set_cache_dir(const std::string& path);
+void set_cache_dir(const std::string &path);
 
 /**
  * @brief Get global cache directory
@@ -149,18 +132,15 @@ std::string get_cache_dir();
  * ivit::convert_model("yolov8n.onnx", "yolov8n.xml", "cpu", "fp16");
  * @endcode
  */
-void convert_model(
-    const std::string& src_path,
-    const std::string& dst_path,
-    const std::string& device = "auto",
-    const std::string& precision = "fp16"
-);
+void convert_model(const std::string &src_path, const std::string &dst_path,
+                   const std::string &device = "auto", const std::string &precision = "fp16");
 
 /**
  * @brief Clear model cache
- * @param cache_dir Cache directory (empty for default)
+ * @param cache_dir Empty releases memory models only; an explicit directory
+ * also removes engine/trt/blob files. Active callers retain their models.
  */
-void clear_cache(const std::string& cache_dir = "");
+void clear_cache(const std::string &cache_dir = "");
 
 } // namespace ivit
 

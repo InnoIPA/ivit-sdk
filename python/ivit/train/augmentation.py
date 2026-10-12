@@ -47,7 +47,7 @@ class Compose:
         return image
 
     def __repr__(self) -> str:
-        transforms_str = ', '.join([str(t) for t in self.transforms])
+        transforms_str = ", ".join([str(t) for t in self.transforms])
         return f"Compose([{transforms_str}])"
 
 
@@ -95,24 +95,41 @@ class Resize:
 
             resized = cv2.resize(image, (new_w, new_h))
             output = np.full((h, w, 3), self.pad_value, dtype=np.uint8)
-            output[pad_h:pad_h + new_h, pad_w:pad_w + new_w] = resized
+            output[pad_h : pad_h + new_h, pad_w : pad_w + new_w] = resized
 
             # Update target boxes if present
-            if target is not None and 'boxes' in target:
-                boxes = target['boxes'].copy()
+            if target is not None and "boxes" in target:
+                boxes = target["boxes"].copy()
                 boxes[:, [0, 2]] = boxes[:, [0, 2]] * scale + pad_w
                 boxes[:, [1, 3]] = boxes[:, [1, 3]] * scale + pad_h
-                target = {**target, 'boxes': boxes}
+                target = {**target, "boxes": boxes}
+            # Update segmentation mask if present
+            if target is not None and "mask" in target:
+                mask = target["mask"]
+                resized_mask = cv2.resize(
+                    mask, (new_w, new_h), interpolation=cv2.INTER_NEAREST
+                )
+                # 255 = ignore，當作 padding 值
+                out_mask = np.full((h, w), 255, dtype=mask.dtype)
+                out_mask[pad_h : pad_h + new_h, pad_w : pad_w + new_w] = resized_mask
+                target = {**target, "mask": out_mask}
         else:
             output = cv2.resize(image, (w, h))
 
             # Scale target boxes
-            if target is not None and 'boxes' in target:
+            if target is not None and "boxes" in target:
                 orig_h, orig_w = image.shape[:2]
-                boxes = target['boxes'].copy()
+                boxes = target["boxes"].copy()
                 boxes[:, [0, 2]] = boxes[:, [0, 2]] * w / orig_w
                 boxes[:, [1, 3]] = boxes[:, [1, 3]] * h / orig_h
-                target = {**target, 'boxes': boxes}
+                target = {**target, "boxes": boxes}
+            # Resize segmentation mask with nearest-neighbor to preserve class indices
+            if target is not None and "mask" in target:
+                mask = target["mask"]
+                target = {
+                    **target,
+                    "mask": cv2.resize(mask, (w, h), interpolation=cv2.INTER_NEAREST),
+                }
 
         if target is not None:
             return output, target
@@ -143,11 +160,16 @@ class RandomHorizontalFlip:
         if np.random.random() < self.p:
             image = cv2.flip(image, 1)  # Horizontal flip
 
-            if target is not None and 'boxes' in target:
+            if target is not None and "boxes" in target:
                 w = image.shape[1]
-                boxes = target['boxes'].copy()
+                boxes = target["boxes"].copy()
                 boxes[:, [0, 2]] = w - boxes[:, [2, 0]]
-                target = {**target, 'boxes': boxes}
+                target = {**target, "boxes": boxes}
+            if target is not None and "mask" in target:
+                target = {
+                    **target,
+                    "mask": np.ascontiguousarray(target["mask"][:, ::-1]),
+                }
 
         if target is not None:
             return image, target
@@ -174,11 +196,16 @@ class RandomVerticalFlip:
         if np.random.random() < self.p:
             image = cv2.flip(image, 0)  # Vertical flip
 
-            if target is not None and 'boxes' in target:
+            if target is not None and "boxes" in target:
                 h = image.shape[0]
-                boxes = target['boxes'].copy()
+                boxes = target["boxes"].copy()
                 boxes[:, [1, 3]] = h - boxes[:, [3, 1]]
-                target = {**target, 'boxes': boxes}
+                target = {**target, "boxes": boxes}
+            if target is not None and "mask" in target:
+                target = {
+                    **target,
+                    "mask": np.ascontiguousarray(target["mask"][::-1, :]),
+                }
 
         if target is not None:
             return image, target
@@ -288,6 +315,7 @@ class ColorJitter:
 
     def _adjust_saturation(self, image: np.ndarray, factor: float) -> np.ndarray:
         import cv2
+
         adjustment = np.random.uniform(1 - factor, 1 + factor)
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV).astype(np.float32)
         hsv[:, :, 1] = hsv[:, :, 1] * adjustment
@@ -296,14 +324,17 @@ class ColorJitter:
 
     def _adjust_hue(self, image: np.ndarray, factor: float) -> np.ndarray:
         import cv2
+
         adjustment = np.random.uniform(-factor, factor) * 180
         hsv = cv2.cvtColor(image, cv2.COLOR_RGB2HSV).astype(np.float32)
         hsv[:, :, 0] = (hsv[:, :, 0] + adjustment) % 180
         return cv2.cvtColor(hsv.astype(np.uint8), cv2.COLOR_HSV2RGB)
 
     def __repr__(self) -> str:
-        return (f"ColorJitter(brightness={self.brightness}, contrast={self.contrast}, "
-                f"saturation={self.saturation}, hue={self.hue})")
+        return (
+            f"ColorJitter(brightness={self.brightness}, contrast={self.contrast}, "
+            f"saturation={self.saturation}, hue={self.hue})"
+        )
 
 
 class Normalize:
@@ -361,6 +392,9 @@ class ToTensor:
         image = np.expand_dims(image, 0)
 
         if target is not None:
+            # Mark mask for downstream wrappers to cast to torch.long.
+            # 我們不在這裡 import torch（augmentation 應與 torch 解耦），
+            # 由各 task 的 DataLoader wrapper 處理 dtype 轉換。
             return image, target
         return image
 
@@ -378,11 +412,13 @@ def get_default_augmentation(size: int = 224) -> Compose:
     Returns:
         Compose transform
     """
-    return Compose([
-        Resize(size),
-        Normalize(),
-        ToTensor(),
-    ])
+    return Compose(
+        [
+            Resize(size),
+            Normalize(),
+            ToTensor(),
+        ]
+    )
 
 
 def get_train_augmentation(
@@ -407,17 +443,21 @@ def get_train_augmentation(
         transforms.append(RandomHorizontalFlip(p=flip_p))
 
     if color_jitter:
-        transforms.append(ColorJitter(
-            brightness=0.2,
-            contrast=0.2,
-            saturation=0.2,
-            hue=0.1,
-        ))
+        transforms.append(
+            ColorJitter(
+                brightness=0.2,
+                contrast=0.2,
+                saturation=0.2,
+                hue=0.1,
+            )
+        )
 
-    transforms.extend([
-        Normalize(),
-        ToTensor(),
-    ])
+    transforms.extend(
+        [
+            Normalize(),
+            ToTensor(),
+        ]
+    )
 
     return Compose(transforms)
 
@@ -432,8 +472,10 @@ def get_val_augmentation(size: int = 224) -> Compose:
     Returns:
         Compose transform
     """
-    return Compose([
-        Resize(size),
-        Normalize(),
-        ToTensor(),
-    ])
+    return Compose(
+        [
+            Resize(size),
+            Normalize(),
+            ToTensor(),
+        ]
+    )

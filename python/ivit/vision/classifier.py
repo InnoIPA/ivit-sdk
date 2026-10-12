@@ -24,12 +24,7 @@ class Classifier:
         >>> print(f"Top-1: {results.top1.label} ({results.top1.score:.2%})")
     """
 
-    def __init__(
-        self,
-        model: str,
-        device: str = "auto",
-        **kwargs
-    ):
+    def __init__(self, model: str, device: str = "auto", **kwargs):
         """
         Create classifier.
 
@@ -41,17 +36,14 @@ class Classifier:
         config = _CppLoadConfig()
         config.device = device
         for key, value in kwargs.items():
-            if hasattr(config, key):
-                setattr(config, key, value)
+            if not hasattr(config, key):
+                raise TypeError(f"Unknown configuration option: {key}")
+            setattr(config, key, value)
 
         self._cpp_classifier = _CppClassifier(model, device, config)
         self._device = device
 
-    def predict(
-        self,
-        image: Union[str, np.ndarray],
-        top_k: int = 5
-    ) -> Results:
+    def predict(self, image: Union[str, np.ndarray], top_k: int = 5) -> Results:
         """
         Classify image.
 
@@ -66,18 +58,12 @@ class Classifier:
             return self._cpp_classifier.predict(image, top_k)
         return self._cpp_classifier.predict(image, top_k)
 
-    def __call__(
-        self,
-        image: Union[str, np.ndarray],
-        top_k: int = 5
-    ) -> Results:
+    def __call__(self, image: Union[str, np.ndarray], top_k: int = 5) -> Results:
         """Shorthand for predict()."""
         return self.predict(image, top_k=top_k)
 
     def predict_batch(
-        self,
-        images: List[Union[str, np.ndarray]],
-        top_k: int = 5
+        self, images: List[Union[str, np.ndarray]], top_k: int = 5
     ) -> List[Results]:
         """
         Batch classification.
@@ -90,6 +76,7 @@ class Classifier:
             List of Results objects
         """
         import cv2
+
         np_images = []
         for img in images:
             if isinstance(img, str):

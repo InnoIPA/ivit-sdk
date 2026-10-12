@@ -68,22 +68,6 @@ public:
     );
 
     /**
-     * @brief Draw pose keypoints and skeleton
-     *
-     * @param image Input image
-     * @param poses Pose results
-     * @param skeleton Skeleton connections
-     * @param config Visualization config
-     * @return Image with drawn poses
-     */
-    static cv::Mat draw_poses(
-        const cv::Mat& image,
-        const std::vector<Pose>& poses,
-        const std::vector<std::pair<int, int>>& skeleton = {},
-        const VisConfig& config = VisConfig{}
-    );
-
-    /**
      * @brief Draw classification results as text
      *
      * @param image Input image

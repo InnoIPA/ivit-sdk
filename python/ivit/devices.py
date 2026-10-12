@@ -41,7 +41,6 @@ class DeviceType(Enum):
     CUDA = "cuda"      # NVIDIA GPU
     GPU = "gpu"        # Intel GPU (OpenVINO)
     NPU = "npu"        # Intel NPU
-    VPU = "vpu"        # Intel VPU (Myriad)
     AUTO = "auto"
 
 
@@ -78,6 +77,27 @@ class Device:
         status = "available" if self.available else "unavailable"
         gpu_type = " (dGPU)" if self.is_discrete else ""
         return f"Device({self.id}, {self.vendor}{gpu_type}, {status})"
+
+
+# The C++ DeviceInfo does not report a vendor or whether a GPU is discrete, but
+# best() needs both to rank devices (e.g. NVIDIA dGPU above an Intel iGPU).
+_VENDOR_BY_BACKEND = {"tensorrt": "nvidia", "openvino": "intel"}
+_INTEL_DISCRETE_HINTS = ("arc", "a770", "a750", "a380")
+
+
+def _vendor_and_discrete(dev_type: str, backend: str, name: str):
+    """Infer (vendor, is_discrete) for a device reported by the C++ bindings."""
+    if dev_type == "cpu":
+        return "unknown", False  # CPU vendor is not implied by the backend
+    vendor = _VENDOR_BY_BACKEND.get(backend, "unknown")
+    if vendor == "nvidia":
+        return vendor, True  # NVIDIA GPUs are discrete
+    is_discrete = (
+        vendor == "intel"
+        and dev_type == "gpu"
+        and any(hint in name.lower() for hint in _INTEL_DISCRETE_HINTS)
+    )
+    return vendor, is_discrete
 
 
 class DeviceManager:
@@ -125,13 +145,16 @@ class DeviceManager:
             raw_devices = core.list_devices()
 
             for dev in raw_devices:
+                vendor, is_discrete = _vendor_and_discrete(dev.type, dev.backend, dev.name)
                 self._cache.append(Device(
                     id=dev.id,
                     name=dev.name,
                     type=dev.type,
                     backend=dev.backend,
+                    vendor=vendor,
                     available=dev.is_available,
                     memory_total=getattr(dev, 'memory_total', 0),
+                    is_discrete=is_discrete,
                 ))
         except ImportError:
             # Fallback to Python-based discovery
@@ -315,19 +338,7 @@ class DeviceManager:
                 return dev
         return None
 
-    def vpu(self) -> Optional[Device]:
-        """
-        Get VPU (Intel Movidius) device.
-
-        Returns:
-            VPU Device object, or None if not available
-        """
-        for dev in self():
-            if dev.type == "vpu":
-                return dev
-        return None
-
-    def best(self, strategy: str = "latency", task: str = None) -> Device:
+    def best(self, strategy: str = "latency") -> Device:
         """
         Auto-select the best available device using intelligent scoring.
 
@@ -342,7 +353,6 @@ class DeviceManager:
                 - "throughput": Highest batch processing capacity
                 - "efficiency": Best performance per watt (NPU preferred)
                 - "balanced": Balance between latency and efficiency
-            task: Task hint (e.g., "detection", "classification")
 
         Returns:
             Best Device object based on strategy
@@ -351,26 +361,9 @@ class DeviceManager:
             >>> model = ivit.load("model.onnx", device=ivit.devices.best())
             >>> model = ivit.load("model.onnx", device=ivit.devices.best("efficiency"))
         """
-        # Use core device selection
-        try:
-            from .core.device import get_best_device
-            result = get_best_device(task=task, strategy=strategy)
-
-            # Convert DeviceInfo to Device
-            return Device(
-                id=result.id,
-                name=result.name,
-                type=result.type,
-                backend=result.backend,
-                vendor=result.vendor,
-                available=result.is_available,
-                memory_total=result.memory_total,
-                is_discrete=result.is_discrete,
-            )
-        except Exception:
-            # Fallback to simple selection
-            pass
-
+        # Same ranking as the C++ get_best_device (src/core/device_ranking.hpp) for
+        # "latency"/"throughput" (= C++ "performance") and "efficiency"; keep them in
+        # step. "balanced" exists only here.
         available = [d for d in self() if d.available]
 
         if not available:
@@ -388,8 +381,6 @@ class DeviceManager:
                     base = 60
                 elif d.type == "npu":
                     base = 40
-                elif d.type == "vpu":
-                    base = 30
                 else:
                     base = 10
                 return base
@@ -397,19 +388,16 @@ class DeviceManager:
             available.sort(key=score, reverse=True)
 
         elif strategy == "efficiency":
-            # Order: NPU > VPU > iGPU > CPU > dGPU
+            # Order: NPU > iGPU > CPU > dGPU
             def score(d):
                 if d.type == "npu":
                     return 100
-                elif d.type == "vpu":
-                    return 80
                 elif d.type == "gpu" and not d.is_discrete:
                     return 60
                 elif d.type == "cpu":
                     return 40
                 else:
                     return 20
-                return base
 
             available.sort(key=score, reverse=True)
 
@@ -521,4 +509,3 @@ class D:
     GPU = "gpu:0"      # Intel iGPU/dGPU
     GPU_0 = "gpu:0"
     NPU = "npu"        # Intel NPU
-    VPU = "vpu"        # Intel VPU (Myriad)

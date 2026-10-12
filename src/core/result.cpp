@@ -4,11 +4,12 @@
  */
 
 #include "ivit/core/result.hpp"
-#include <opencv2/imgproc.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <sstream>
+#include "utils/json.hpp"
 #include <fstream>
 #include <iomanip>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/imgproc.hpp>
+#include <sstream>
 
 namespace ivit {
 
@@ -16,12 +17,10 @@ namespace ivit {
 // Results implementation
 // ============================================================================
 
-std::vector<Detection> Results::filter_by_class(
-    const std::vector<int>& class_ids
-) const {
+std::vector<Detection> Results::filter_by_class(const std::vector<int> &class_ids) const {
     std::vector<Detection> filtered;
 
-    for (const auto& det : detections) {
+    for (const auto &det : detections) {
         for (int id : class_ids) {
             if (det.class_id == id) {
                 filtered.push_back(det);
@@ -36,7 +35,7 @@ std::vector<Detection> Results::filter_by_class(
 std::vector<Detection> Results::filter_by_confidence(float min_conf) const {
     std::vector<Detection> filtered;
 
-    for (const auto& det : detections) {
+    for (const auto &det : detections) {
         if (det.confidence >= min_conf) {
             filtered.push_back(det);
         }
@@ -45,7 +44,7 @@ std::vector<Detection> Results::filter_by_confidence(float min_conf) const {
     return filtered;
 }
 
-cv::Mat Results::colorize_mask(const std::map<int, cv::Vec3b>& colormap) const {
+cv::Mat Results::colorize_mask(const std::map<int, cv::Vec3b> &colormap) const {
     if (segmentation_mask.empty()) {
         throw IVITError("No segmentation mask available");
     }
@@ -65,7 +64,7 @@ cv::Mat Results::colorize_mask(const std::map<int, cv::Vec3b>& colormap) const {
             cv::cvtColor(hsv, rgb, cv::COLOR_HSV2BGR);
             cmap[i] = rgb.at<cv::Vec3b>(0, 0);
         }
-        cmap[0] = cv::Vec3b(0, 0, 0);  // Background
+        cmap[0] = cv::Vec3b(0, 0, 0); // Background
     }
 
     // Apply colormap
@@ -81,7 +80,7 @@ cv::Mat Results::colorize_mask(const std::map<int, cv::Vec3b>& colormap) const {
     return colored;
 }
 
-cv::Mat Results::overlay_mask(const cv::Mat& image, float alpha) const {
+cv::Mat Results::overlay_mask(const cv::Mat &image, float alpha) const {
     cv::Mat colored = colorize_mask();
     cv::Mat overlay;
 
@@ -94,20 +93,14 @@ cv::Mat Results::overlay_mask(const cv::Mat& image, float alpha) const {
     return overlay;
 }
 
-cv::Mat Results::visualize(
-    const cv::Mat& image,
-    bool show_labels,
-    bool show_confidence,
-    bool show_boxes,
-    bool show_masks
-) const {
+cv::Mat Results::visualize(const cv::Mat &image, bool show_labels, bool show_confidence,
+                           bool show_boxes, bool show_masks) const {
     cv::Mat vis = image.clone();
 
     // Color palette
     const std::vector<cv::Scalar> colors = {
-        {255, 0, 0}, {0, 255, 0}, {0, 0, 255},
-        {255, 255, 0}, {255, 0, 255}, {0, 255, 255},
-        {128, 0, 0}, {0, 128, 0}, {0, 0, 128},
+        {255, 0, 0},   {0, 255, 0}, {0, 0, 255}, {255, 255, 0}, {255, 0, 255},
+        {0, 255, 255}, {128, 0, 0}, {0, 128, 0}, {0, 0, 128},
     };
 
     // Draw segmentation mask
@@ -117,14 +110,13 @@ cv::Mat Results::visualize(
 
     // Draw detections
     if (show_boxes) {
-        for (const auto& det : detections) {
+        for (const auto &det : detections) {
             cv::Scalar color = colors[det.class_id % colors.size()];
 
             // Draw box
-            cv::rectangle(vis,
-                cv::Point(static_cast<int>(det.bbox.x1), static_cast<int>(det.bbox.y1)),
-                cv::Point(static_cast<int>(det.bbox.x2), static_cast<int>(det.bbox.y2)),
-                color, 2);
+            cv::rectangle(
+                vis, cv::Point(static_cast<int>(det.bbox.x1), static_cast<int>(det.bbox.y1)),
+                cv::Point(static_cast<int>(det.bbox.x2), static_cast<int>(det.bbox.y2)), color, 2);
 
             // Draw label
             if (show_labels || show_confidence) {
@@ -133,27 +125,27 @@ cv::Mat Results::visualize(
                     label_stream << det.label;
                 }
                 if (show_confidence) {
-                    if (show_labels) label_stream << " ";
+                    if (show_labels)
+                        label_stream << " ";
                     label_stream << std::fixed << std::setprecision(2) << det.confidence;
                 }
                 std::string label = label_stream.str();
 
                 int baseline;
-                cv::Size text_size = cv::getTextSize(label,
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
+                cv::Size text_size =
+                    cv::getTextSize(label, cv::FONT_HERSHEY_SIMPLEX, 0.5, 1, &baseline);
 
                 cv::rectangle(vis,
-                    cv::Point(static_cast<int>(det.bbox.x1),
-                              static_cast<int>(det.bbox.y1) - text_size.height - 4),
-                    cv::Point(static_cast<int>(det.bbox.x1) + text_size.width,
-                              static_cast<int>(det.bbox.y1)),
-                    color, -1);
+                              cv::Point(static_cast<int>(det.bbox.x1),
+                                        static_cast<int>(det.bbox.y1) - text_size.height - 4),
+                              cv::Point(static_cast<int>(det.bbox.x1) + text_size.width,
+                                        static_cast<int>(det.bbox.y1)),
+                              color, -1);
 
-                cv::putText(vis, label,
-                    cv::Point(static_cast<int>(det.bbox.x1),
-                              static_cast<int>(det.bbox.y1) - 2),
-                    cv::FONT_HERSHEY_SIMPLEX, 0.5,
-                    cv::Scalar(255, 255, 255), 1);
+                cv::putText(
+                    vis, label,
+                    cv::Point(static_cast<int>(det.bbox.x1), static_cast<int>(det.bbox.y1) - 2),
+                    cv::FONT_HERSHEY_SIMPLEX, 0.5, cv::Scalar(255, 255, 255), 1);
             }
 
             // Draw instance mask if available
@@ -167,89 +159,40 @@ cv::Mat Results::visualize(
         }
     }
 
-    // Draw poses
-    for (const auto& pose : poses) {
-        // Draw keypoints
-        for (size_t i = 0; i < pose.keypoints.size(); i++) {
-            const auto& kp = pose.keypoints[i];
-            if (kp.confidence > 0.5) {
-                cv::circle(vis,
-                    cv::Point(static_cast<int>(kp.x), static_cast<int>(kp.y)),
-                    3, colors[i % colors.size()], -1);
-            }
-        }
-
-        // Draw skeleton (COCO format)
-        static const std::vector<std::pair<int, int>> skeleton = {
-            {0, 1}, {0, 2}, {1, 3}, {2, 4},  // Head
-            {5, 6}, {5, 7}, {7, 9}, {6, 8}, {8, 10},  // Arms
-            {5, 11}, {6, 12}, {11, 12},  // Torso
-            {11, 13}, {13, 15}, {12, 14}, {14, 16},  // Legs
-        };
-
-        for (const auto& [i, j] : skeleton) {
-            if (i < pose.keypoints.size() && j < pose.keypoints.size()) {
-                const auto& kp1 = pose.keypoints[i];
-                const auto& kp2 = pose.keypoints[j];
-                if (kp1.confidence > 0.5 && kp2.confidence > 0.5) {
-                    cv::line(vis,
-                        cv::Point(static_cast<int>(kp1.x), static_cast<int>(kp1.y)),
-                        cv::Point(static_cast<int>(kp2.x), static_cast<int>(kp2.y)),
-                        colors[i % colors.size()], 2);
-                }
-            }
-        }
-    }
-
     return vis;
 }
 
 std::string Results::to_json() const {
+    using detail::json_number;
+    using detail::json_string;
     std::ostringstream json;
-    json << "{\n";
-
-    // Metadata
-    json << "  \"inference_time_ms\": " << inference_time_ms << ",\n";
-    json << "  \"device_used\": \"" << device_used << "\",\n";
-    json << "  \"image_size\": [" << image_size.height << ", " << image_size.width << "],\n";
-
-    // Classifications
-    if (!classifications.empty()) {
-        json << "  \"classifications\": [\n";
-        for (size_t i = 0; i < classifications.size(); i++) {
-            const auto& c = classifications[i];
-            json << "    {\"class_id\": " << c.class_id
-                 << ", \"label\": \"" << c.label
-                 << "\", \"score\": " << c.score << "}";
-            if (i < classifications.size() - 1) json << ",";
-            json << "\n";
-        }
-        json << "  ],\n";
+    json.imbue(std::locale::classic());
+    json << "{\"inference_time_ms\":" << json_number(inference_time_ms)
+         << ",\"device_used\":" << json_string(device_used) << ",\"image_size\":["
+         << image_size.height << ',' << image_size.width << "],\"classifications\":[";
+    for (size_t i = 0; i < classifications.size(); ++i) {
+        if (i)
+            json << ',';
+        const auto &c = classifications[i];
+        json << "{\"class_id\":" << c.class_id << ",\"label\":" << json_string(c.label)
+             << ",\"score\":" << json_number(c.score) << '}';
     }
-
-    // Detections
-    if (!detections.empty()) {
-        json << "  \"detections\": [\n";
-        for (size_t i = 0; i < detections.size(); i++) {
-            const auto& d = detections[i];
-            json << "    {\"class_id\": " << d.class_id
-                 << ", \"label\": \"" << d.label
-                 << "\", \"confidence\": " << d.confidence
-                 << ", \"bbox\": {\"x1\": " << d.bbox.x1
-                 << ", \"y1\": " << d.bbox.y1
-                 << ", \"x2\": " << d.bbox.x2
-                 << ", \"y2\": " << d.bbox.y2 << "}}";
-            if (i < detections.size() - 1) json << ",";
-            json << "\n";
-        }
-        json << "  ]\n";
+    json << "],\"detections\":[";
+    for (size_t i = 0; i < detections.size(); ++i) {
+        if (i)
+            json << ',';
+        const auto &d = detections[i];
+        json << "{\"class_id\":" << d.class_id << ",\"label\":" << json_string(d.label)
+             << ",\"confidence\":" << json_number(d.confidence)
+             << ",\"bbox\":{\"x1\":" << json_number(d.bbox.x1)
+             << ",\"y1\":" << json_number(d.bbox.y1) << ",\"x2\":" << json_number(d.bbox.x2)
+             << ",\"y2\":" << json_number(d.bbox.y2) << "}}";
     }
-
-    json << "}\n";
+    json << "]}";
     return json.str();
 }
 
-void Results::save(const std::string& path, const std::string& format) const {
+void Results::save(const std::string &path, const std::string &format) const {
     std::string fmt = format;
     if (fmt == "json" || path.substr(path.length() - 5) == ".json") {
         std::ofstream file(path);
@@ -257,7 +200,7 @@ void Results::save(const std::string& path, const std::string& format) const {
     } else if (fmt == "txt" || path.substr(path.length() - 4) == ".txt") {
         // YOLO format
         std::ofstream file(path);
-        for (const auto& det : detections) {
+        for (const auto &det : detections) {
             auto [cx, cy, w, h] = det.bbox.to_cxcywh();
             // Normalize by image size
             cx /= image_size.width;

@@ -8,10 +8,10 @@
 #ifdef IVIT_HAS_OPENVINO
 
 #include <algorithm>
-#include <filesystem>
 #include <cstdio>
-#include <unistd.h>
 #include <fcntl.h>
+#include <filesystem>
+#include <unistd.h>
 
 namespace ivit {
 
@@ -19,14 +19,13 @@ namespace ivit {
 // OpenVINORuntime implementation
 // ============================================================================
 
-OpenVINORuntime::OpenVINORuntime() {
-    initialize();
-}
+OpenVINORuntime::OpenVINORuntime() { initialize(); }
 
 OpenVINORuntime::~OpenVINORuntime() = default;
 
 void OpenVINORuntime::initialize() {
-    if (initialized_) return;
+    if (initialized_)
+        return;
 
     // Note: Do NOT set ov::log::level globally — GPU plugin does not support
     // LOG_LEVEL and will fail to load. Stderr noise from OpenCL compiler is
@@ -72,7 +71,7 @@ std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
         dup2(saved_stderr, STDERR_FILENO);
         close(saved_stderr);
 
-        for (const auto& device_name : available) {
+        for (const auto &device_name : available) {
             DeviceInfo info;
 
             // Get full device name
@@ -99,10 +98,6 @@ std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
             } else if (device_name.find("NPU") != std::string::npos) {
                 info.id = "npu";
                 info.type = "npu";
-            } else if (device_name.find("MYRIAD") != std::string::npos ||
-                       device_name.find("VPU") != std::string::npos) {
-                info.id = "vpu";
-                info.type = "vpu";
             } else {
                 info.id = device_name;
                 info.type = "unknown";
@@ -131,14 +126,12 @@ std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
     return devices;
 }
 
-void* OpenVINORuntime::load_model(
-    const std::string& path,
-    const RuntimeConfig& config
-) {
+void *OpenVINORuntime::load_model(const std::string &path, const RuntimeConfig &config) {
     std::lock_guard<std::mutex> lock(mutex_);
     namespace fs = std::filesystem;
 
-    auto wrapper = new OpenVINOModel();
+    // Owned until load succeeds so every failure path releases it
+    auto wrapper = std::make_unique<OpenVINOModel>();
 
     // Map device name
     std::string device = map_device_name(config.device);
@@ -150,13 +143,19 @@ void* OpenVINORuntime::load_model(
     // Set precision hints
     if (config.precision == Precision::FP16) {
         properties[ov::hint::inference_precision.name()] = ov::element::f16;
-    } else if (config.precision == Precision::INT8) {
-        properties[ov::hint::inference_precision.name()] = ov::element::i8;
+    } else if (config.precision == Precision::FP32 &&
+               (device == "CPU" || device.rfind("GPU", 0) == 0)) {
+        // Without this OpenVINO runs Intel GPUs in FP16 (and CPUs with AMX in BF16),
+        // so an explicit fp32 request would silently lose precision. YOLOX decoded
+        // boxes were off by up to ~30 px on UHD 770 before this. NPU is excluded
+        // because it only executes FP16 and rejects other hints.
+        properties[ov::hint::inference_precision.name()] = ov::element::f32;
     }
 
     // Set performance hint
-    properties[ov::hint::performance_mode.name()] =
-        ov::hint::PerformanceMode::LATENCY;
+    properties[ov::hint::performance_mode.name()] = config.performance_mode == "THROUGHPUT"
+                                                        ? ov::hint::PerformanceMode::THROUGHPUT
+                                                        : ov::hint::PerformanceMode::LATENCY;
 
     // Set number of inference threads for CPU
     if (device == "CPU" && config.num_threads > 0) {
@@ -188,6 +187,37 @@ void* OpenVINORuntime::load_model(
             throw UnsupportedFormatError(ext);
         }
 
+        if (config.precision == Precision::INT8) {
+            bool quantized = false;
+            for (const auto &op : model->get_ops()) {
+                const std::string type = op->get_type_name();
+                quantized |= type == "FakeQuantize";
+            }
+            if (!quantized)
+                throw ModelLoadError("INT8 requires a quantized model; precision='int8' does not "
+                                     "perform calibration");
+        }
+
+        // NPU compilers may abort instead of throwing on unbounded shapes.
+        // Reject those inputs before entering the plugin; bounded shapes still
+        // depend on the NPU platform, driver and compiler capabilities.
+        if (device == "NPU") {
+            for (const auto &input : model->inputs()) {
+                const auto shape = input.get_partial_shape();
+                if (shape.rank().is_dynamic()) {
+                    throw ModelLoadError("OpenVINO NPU requires bounded input shapes; "
+                                         "use a static shape or specify dimension upper bounds");
+                }
+                for (const auto &dimension : shape) {
+                    if (dimension.get_max_length() < 0) {
+                        throw ModelLoadError(
+                            "OpenVINO NPU requires bounded input shapes; "
+                            "use a static shape or specify dimension upper bounds");
+                    }
+                }
+            }
+        }
+
         // Compile model
         wrapper->compiled_model = core_.compile_model(model, device, properties);
 
@@ -195,82 +225,81 @@ void* OpenVINORuntime::load_model(
         wrapper->infer_request = wrapper->compiled_model.create_infer_request();
 
         // Extract input info
-        for (const auto& input : model->inputs()) {
+        for (const auto &input : model->inputs()) {
             auto info = extract_tensor_info(input);
             wrapper->input_infos.push_back(info);
         }
 
         // Extract output info
-        for (const auto& output : model->outputs()) {
+        for (const auto &output : model->outputs()) {
             auto info = extract_tensor_info(output);
             wrapper->output_infos.push_back(info);
         }
 
-    } catch (const ov::Exception& e) {
-        delete wrapper;
+    } catch (const ov::Exception &e) {
         throw ModelLoadError(e.what());
     }
 
-    return wrapper;
+    return wrapper.release();
 }
 
-void OpenVINORuntime::unload_model(void* handle) {
+void OpenVINORuntime::unload_model(void *handle) {
     std::lock_guard<std::mutex> lock(mutex_);
 
-    OpenVINOModel* model = static_cast<OpenVINOModel*>(handle);
+    OpenVINOModel *model = static_cast<OpenVINOModel *>(handle);
     delete model;
 }
 
-std::vector<TensorInfo> OpenVINORuntime::get_input_info(void* handle) const {
-    OpenVINOModel* model = static_cast<OpenVINOModel*>(handle);
+std::vector<TensorInfo> OpenVINORuntime::get_input_info(void *handle) const {
+    OpenVINOModel *model = static_cast<OpenVINOModel *>(handle);
     return model->input_infos;
 }
 
-std::vector<TensorInfo> OpenVINORuntime::get_output_info(void* handle) const {
-    OpenVINOModel* model = static_cast<OpenVINOModel*>(handle);
+std::vector<TensorInfo> OpenVINORuntime::get_output_info(void *handle) const {
+    OpenVINOModel *model = static_cast<OpenVINOModel *>(handle);
     return model->output_infos;
 }
 
-std::map<std::string, Tensor> OpenVINORuntime::infer(
-    void* handle,
-    const std::map<std::string, Tensor>& inputs
-) {
-    OpenVINOModel* model = static_cast<OpenVINOModel*>(handle);
+std::map<std::string, Tensor> OpenVINORuntime::infer(void *handle,
+                                                     const std::map<std::string, Tensor> &inputs) {
+    OpenVINOModel *model = static_cast<OpenVINOModel *>(handle);
+
+    // One infer_request per model: hold the lock until outputs are copied out,
+    // since inputs are wrapped zero-copy and outputs alias the request's buffers.
+    std::lock_guard<std::mutex> infer_lock(model->infer_mutex);
 
     // Set input tensors
-    for (const auto& info : model->input_infos) {
+    for (const auto &info : model->input_infos) {
         auto it = inputs.find(info.name);
         if (it == inputs.end()) {
             throw InferenceError("Missing input: " + info.name);
         }
 
-        const Tensor& input = it->second;
+        const Tensor &input = it->second;
 
         // Create OpenVINO tensor from input data
         ov::Shape ov_shape(input.shape().begin(), input.shape().end());
         ov::element::Type ov_type = dtype_to_ov(input.dtype());
 
-        ov::Tensor ov_tensor(ov_type, ov_shape, const_cast<void*>(input.data()));
+        ov::Tensor ov_tensor(ov_type, ov_shape, const_cast<void *>(input.data()));
 
         model->infer_request.set_tensor(info.name, ov_tensor);
     }
 
     // Run inference
-    if (use_async_) {
-        model->infer_request.start_async();
-        model->infer_request.wait();
-    } else {
-        model->infer_request.infer();
-    }
+    model->infer_request.infer();
 
     // Get output tensors
     std::map<std::string, Tensor> outputs;
 
-    for (const auto& info : model->output_infos) {
+    for (const auto &info : model->output_infos) {
         ov::Tensor ov_tensor = model->infer_request.get_tensor(info.name);
 
         // Convert to iVIT tensor
-        Shape shape(ov_tensor.get_shape().begin(), ov_tensor.get_shape().end());
+        // Dynamic tensors may refresh their cached shape on each query.
+        // Read it once: iterators from two queries need not share storage.
+        const auto output_shape = ov_tensor.get_shape();
+        Shape shape(output_shape.begin(), output_shape.end());
         DataType dtype = ov_to_dtype(ov_tensor.get_element_type());
         Tensor output(shape, dtype);
         output.set_name(info.name);
@@ -284,11 +313,8 @@ std::map<std::string, Tensor> OpenVINORuntime::infer(
     return outputs;
 }
 
-void OpenVINORuntime::convert_model(
-    const std::string& src_path,
-    const std::string& dst_path,
-    const RuntimeConfig& config
-) {
+void OpenVINORuntime::convert_model(const std::string &src_path, const std::string &dst_path,
+                                    const RuntimeConfig &config) {
     namespace fs = std::filesystem;
 
     // Read source model
@@ -296,10 +322,9 @@ void OpenVINORuntime::convert_model(
 
     // Apply precision conversion
     if (config.precision == Precision::INT8) {
-        throw IVITError(
-            "INT8 quantization requires calibration data and is not supported "
-            "by simple model conversion. Please use NNCF toolkit: "
-            "https://github.com/openvinotoolkit/nncf");
+        throw IVITError("INT8 quantization requires calibration data and is not supported "
+                        "by simple model conversion. Please use NNCF toolkit: "
+                        "https://github.com/openvinotoolkit/nncf");
     }
 
     // Serialize to OpenVINO IR format
@@ -309,7 +334,7 @@ void OpenVINORuntime::convert_model(
     ov::save_model(model, dst_path, compress_fp16);
 }
 
-std::string OpenVINORuntime::map_device_name(const std::string& device) const {
+std::string OpenVINORuntime::map_device_name(const std::string &device) const {
     std::string dev_lower = device;
     std::transform(dev_lower.begin(), dev_lower.end(), dev_lower.begin(), ::tolower);
 
@@ -333,26 +358,20 @@ std::string OpenVINORuntime::map_device_name(const std::string& device) const {
         return "NPU";
     }
 
-    if (dev_lower == "vpu" || dev_lower == "myriad") {
-        return "MYRIAD";
-    }
-
     // Return as-is for unknown devices
     return device;
 }
 
-std::string OpenVINORuntime::get_version() const {
-    return ov::get_openvino_version().buildNumber;
-}
+std::string OpenVINORuntime::get_version() const { return ov::get_openvino_version().buildNumber; }
 
-void OpenVINORuntime::set_cache_dir(const std::string& path) {
+void OpenVINORuntime::set_cache_dir(const std::string &path) {
     cache_dir_ = path;
     if (!path.empty()) {
         core_.set_property(ov::cache_dir(path));
     }
 }
 
-TensorInfo OpenVINORuntime::extract_tensor_info(const ov::Output<ov::Node>& port) {
+TensorInfo OpenVINORuntime::extract_tensor_info(const ov::Output<ov::Node> &port) {
     TensorInfo info;
 
     // Get name
@@ -371,7 +390,7 @@ TensorInfo OpenVINORuntime::extract_tensor_info(const ov::Output<ov::Node>& port
             if (dim.is_static()) {
                 info.shape.push_back(static_cast<int64_t>(dim.get_length()));
             } else {
-                info.shape.push_back(-1);  // Dynamic dimension
+                info.shape.push_back(-1); // Dynamic dimension
             }
         }
     }
@@ -392,30 +411,45 @@ TensorInfo OpenVINORuntime::extract_tensor_info(const ov::Output<ov::Node>& port
 }
 
 DataType OpenVINORuntime::ov_to_dtype(ov::element::Type ov_type) const {
-    if (ov_type == ov::element::f32) return DataType::Float32;
-    if (ov_type == ov::element::f16) return DataType::Float16;
-    if (ov_type == ov::element::i8) return DataType::Int8;
-    if (ov_type == ov::element::u8) return DataType::UInt8;
-    if (ov_type == ov::element::i32) return DataType::Int32;
-    if (ov_type == ov::element::i64) return DataType::Int64;
-    if (ov_type == ov::element::boolean) return DataType::Bool;
+    if (ov_type == ov::element::f32)
+        return DataType::Float32;
+    if (ov_type == ov::element::f16)
+        return DataType::Float16;
+    if (ov_type == ov::element::i8)
+        return DataType::Int8;
+    if (ov_type == ov::element::u8)
+        return DataType::UInt8;
+    if (ov_type == ov::element::i32)
+        return DataType::Int32;
+    if (ov_type == ov::element::i64)
+        return DataType::Int64;
+    if (ov_type == ov::element::boolean)
+        return DataType::Bool;
     return DataType::Unknown;
 }
 
 ov::element::Type OpenVINORuntime::dtype_to_ov(DataType dtype) const {
     switch (dtype) {
-        case DataType::Float32: return ov::element::f32;
-        case DataType::Float16: return ov::element::f16;
-        case DataType::Int8: return ov::element::i8;
-        case DataType::UInt8: return ov::element::u8;
-        case DataType::Int32: return ov::element::i32;
-        case DataType::Int64: return ov::element::i64;
-        case DataType::Bool: return ov::element::boolean;
-        default: return ov::element::f32;
+    case DataType::Float32:
+        return ov::element::f32;
+    case DataType::Float16:
+        return ov::element::f16;
+    case DataType::Int8:
+        return ov::element::i8;
+    case DataType::UInt8:
+        return ov::element::u8;
+    case DataType::Int32:
+        return ov::element::i32;
+    case DataType::Int64:
+        return ov::element::i64;
+    case DataType::Bool:
+        return ov::element::boolean;
+    default:
+        return ov::element::f32;
     }
 }
 
-OpenVINORuntime& get_openvino_runtime() {
+OpenVINORuntime &get_openvino_runtime() {
     static OpenVINORuntime instance;
     return instance;
 }

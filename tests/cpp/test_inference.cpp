@@ -51,7 +51,8 @@ TEST_F(InferenceTest, DeviceManagerListDevices) {
 
 TEST_F(InferenceTest, InferConfigDefaults) {
     InferConfig config;
-    EXPECT_FLOAT_EQ(config.conf_threshold, 0.5f);
+    // -1 = "task default": 0.5 for detection, 0 for classification (see effective_confidence).
+    EXPECT_FLOAT_EQ(config.conf_threshold, -1.0f);
     EXPECT_FLOAT_EQ(config.iou_threshold, 0.45f);
     EXPECT_EQ(config.max_detections, 100);
     EXPECT_TRUE(config.classes.empty());

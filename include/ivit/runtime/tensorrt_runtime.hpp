@@ -15,6 +15,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <condition_variable>
 #include <mutex>
 
 namespace ivit {
@@ -34,18 +35,34 @@ private:
 /**
  * @brief TensorRT engine wrapper
  */
+/**
+ * @brief One independent way to run the engine: its own execution context, CUDA stream and
+ * device buffers. A call owns a slot for its whole duration, so slots never share state.
+ */
+struct TensorRTSlot {
+    std::shared_ptr<nvinfer1::IExecutionContext> context;
+    cudaStream_t stream = nullptr;
+    std::vector<void*> device_buffers;
+    std::vector<size_t> buffer_bytes;  ///< Allocated size of each device buffer
+};
+
 struct TensorRTEngine {
     // Keep a reference to IRuntime so it outlives engine destruction
     // (prevents static destruction order crash)
     std::shared_ptr<nvinfer1::IRuntime> runtime;
     std::shared_ptr<nvinfer1::ICudaEngine> engine;
-    std::shared_ptr<nvinfer1::IExecutionContext> context;
     std::vector<TensorInfo> input_infos;
     std::vector<TensorInfo> output_infos;
-    std::vector<void*> bindings;
-    std::vector<void*> device_buffers;
-    cudaStream_t stream = nullptr;
     int device_id = 0;
+
+    /// num_instances slots; callers block (FIFO is not guaranteed) while all are in use.
+    std::vector<std::unique_ptr<TensorRTSlot>> slots;
+    std::mutex slot_mutex;
+    std::condition_variable slot_available;
+    std::vector<TensorRTSlot*> free_slots;
+
+    TensorRTSlot* acquire_slot();
+    void release_slot(TensorRTSlot* slot);
 
     ~TensorRTEngine();
 };
@@ -125,7 +142,8 @@ private:
     void initialize();
     TensorRTEngine* create_engine_wrapper(
         std::shared_ptr<nvinfer1::ICudaEngine> engine,
-        int device_id
+        int device_id,
+        int num_instances
     );
 
     /**

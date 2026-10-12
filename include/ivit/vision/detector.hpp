@@ -9,11 +9,11 @@
 #include "ivit/core/common.hpp"
 #include "ivit/core/model.hpp"
 #include "ivit/core/result.hpp"
-#include <opencv2/core.hpp>
+#include <functional>
 #include <memory>
+#include <opencv2/core.hpp>
 #include <string>
 #include <vector>
-#include <functional>
 
 namespace ivit {
 namespace vision {
@@ -38,7 +38,7 @@ namespace vision {
  * @endcode
  */
 class Detector {
-public:
+  public:
     /**
      * @brief Construct detector
      *
@@ -46,11 +46,8 @@ public:
      * @param device Target device
      * @param config Additional configuration
      */
-    explicit Detector(
-        const std::string& model,
-        const std::string& device = "auto",
-        const LoadConfig& config = LoadConfig{}
-    );
+    explicit Detector(const std::string &model, const std::string &device = "auto",
+                      const LoadConfig &config = LoadConfig{});
 
     /**
      * @brief Construct from existing model
@@ -71,36 +68,24 @@ public:
      * @param iou_threshold NMS IoU threshold
      * @return Detection results
      */
-    Results predict(
-        const cv::Mat& image,
-        float conf_threshold = 0.5f,
-        float iou_threshold = 0.45f
-    );
+    Results predict(const cv::Mat &image, float conf_threshold = 0.5f, float iou_threshold = 0.45f);
 
     /**
      * @brief Detect objects from file
      */
-    Results predict(
-        const std::string& image_path,
-        float conf_threshold = 0.5f,
-        float iou_threshold = 0.45f
-    );
+    Results predict(const std::string &image_path, float conf_threshold = 0.5f,
+                    float iou_threshold = 0.45f);
 
     /**
      * @brief Detect with configuration
      */
-    Results predict(
-        const cv::Mat& image,
-        const InferConfig& config
-    );
+    Results predict(const cv::Mat &image, const InferConfig &config);
 
     /**
      * @brief Batch detection
      */
-    std::vector<Results> predict_batch(
-        const std::vector<cv::Mat>& images,
-        const InferConfig& config = InferConfig{}
-    );
+    std::vector<Results> predict_batch(const std::vector<cv::Mat> &images,
+                                       const InferConfig &config = InferConfig{});
 
     /**
      * @brief Video/stream detection
@@ -109,11 +94,9 @@ public:
      * @param callback Callback for each frame
      * @param config Inference configuration
      */
-    void predict_video(
-        const std::string& source,
-        std::function<void(const Results&, const cv::Mat&)> callback,
-        const InferConfig& config = InferConfig{}
-    );
+    void predict_video(const std::string &source,
+                       std::function<void(const Results &, const cv::Mat &)> callback,
+                       const InferConfig &config = InferConfig{});
 
     // ========================================================================
     // Properties
@@ -122,7 +105,7 @@ public:
     /**
      * @brief Get class labels
      */
-    const std::vector<std::string>& classes() const { return labels_; }
+    const std::vector<std::string> &classes() const { return labels_; }
 
     /**
      * @brief Get number of classes
@@ -139,37 +122,10 @@ public:
      */
     std::shared_ptr<Model> model() const { return model_; }
 
-private:
+  private:
     std::shared_ptr<Model> model_;
     std::vector<std::string> labels_;
     cv::Size input_size_;
-    std::string model_type_;  // "yolov8", "yolov5", "ssd", etc.
-
-    cv::Mat preprocess(const cv::Mat& image, float& scale, int& pad_w, int& pad_h);
-    Results postprocess(
-        const std::map<std::string, Tensor>& outputs,
-        const cv::Size& orig_size,
-        float scale,
-        int pad_w,
-        int pad_h,
-        const InferConfig& config
-    );
-
-    // YOLO-specific postprocessing
-    Results postprocess_yolo(
-        const Tensor& output,
-        const cv::Size& orig_size,
-        float scale,
-        int pad_w,
-        int pad_h,
-        const InferConfig& config
-    );
-
-    // NMS
-    std::vector<Detection> nms(
-        std::vector<Detection>& detections,
-        float iou_threshold
-    );
 };
 
 } // namespace vision

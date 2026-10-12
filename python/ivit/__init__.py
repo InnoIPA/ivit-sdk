@@ -19,7 +19,7 @@ Example:
     >>> results = detector.predict("image.jpg")
 """
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Innodisk AI Team"
 
 # Pre-load libivit.so if it exists in the package directory
@@ -45,53 +45,42 @@ try:
         DataType,
         Precision,
         Layout,
-
+        TaskType,
+        BackendType,
         # Configuration
         LoadConfig,
         InferConfig,
-
         # Data structures
         TensorInfo,
         DeviceInfo,
         BBox,
         Detection,
         ClassificationResult,
-        Keypoint,
-        Pose,
-
         # Results
         Results,
-
         # Vision models
         Classifier,
         Detector,
         Segmentor,
-
         # Model
         Model,
         load_model,
-
+        clear_cache,
         # Callback system
         CallbackEvent,
         CallbackContext,
-
         # Runtime config
-        OpenVINOConfig,
-        TensorRTConfig,
-
-        QNNConfig,
-
         # Stream
         StreamResult,
         StreamIterator,
-
         # Functions
         version,
         list_devices,
         get_best_device,
         set_log_level,
+        set_log_callback,
         set_cache_dir,
-
+        convert_model,
         # Exceptions
         IVITError,
         ModelLoadError,
@@ -99,7 +88,17 @@ try:
         DeviceNotFoundError,
         UnsupportedFormatError,
     )
+
     _CPP_AVAILABLE = True
+    # Release cached native engines before Python unloads optional runtime
+    # modules. Waiting for C++ static destruction can be too late for CUDA/OV.
+    import atexit as _atexit
+
+    # atexit runs last-registered first: clear_cache may still log through a
+    # Python callback, which is dropped only afterwards so native code that logs
+    # during final teardown falls back to stderr instead of calling into Python.
+    _atexit.register(set_log_callback, None)
+    _atexit.register(clear_cache)
 except ImportError as e:
     _CPP_ERROR = str(e)
     # Don't raise - allow package to load for zoo/CLI functionality
@@ -165,19 +164,22 @@ except ImportError:
     train = None
 
 
-def load(
-    source: str,
-    device: str = "auto",
-    task: str = None,
-    **kwargs
-):
+# Task names used by the C++ core, keyed by the short aliases load() accepts
+_TASK_ALIASES = {
+    "detect": "detection",
+    "classify": "classification",
+    "segment": "segmentation",
+}
+
+
+def load(source: str, device: str = "auto", task: str = None, **kwargs):
     """
     Load a model for inference.
 
     Args:
         source: Model path (.onnx, .xml, .engine) or Model Zoo name
         device: Target device ("auto", "cpu", "cuda:0", "npu")
-        task: Task type hint ("detect", "classify", "segment", "pose")
+        task: Image decoder task ("detect", "classify", "segment"); omit and predict() returns no decoded results (raw outputs are C++ only, via Model::infer_raw)
 
     Returns:
         Model: Loaded model ready for inference
@@ -188,19 +190,18 @@ def load(
     """
     _require_cpp()
 
-    if hasattr(device, 'id'):
+    if hasattr(device, "id"):
         device = device.id
-    elif device == "auto":
-        best = devices.best()
-        device = best.id
 
     config = LoadConfig()
     config.device = device
     if task:
-        config.task = task
+        # Accept the short names from the docstring as well as the C++ ones
+        config.task = _TASK_ALIASES.get(task, task)
     for key, value in kwargs.items():
-        if hasattr(config, key):
-            setattr(config, key, value)
+        if not hasattr(config, key):
+            raise TypeError(f"load() got an unexpected keyword argument '{key}'")
+        setattr(config, key, value)
 
     return load_model(source, config)
 
@@ -208,67 +209,52 @@ def load(
 __all__ = [
     # Version
     "__version__",
-
     # Main API
     "load",
     "load_model",
+    "clear_cache",
+    "convert_model",
     "devices",
     "Device",
     "D",
-
     # Training module
     "train",
-
     # Enums
     "DataType",
     "Precision",
     "Layout",
-
     # Configuration
     "LoadConfig",
     "InferConfig",
-    "OpenVINOConfig",
-    "TensorRTConfig",
-
-    "QNNConfig",
-
     # Data structures
     "TensorInfo",
     "DeviceInfo",
     "BBox",
     "Detection",
     "ClassificationResult",
-    "Keypoint",
-    "Pose",
-
     # Results
     "Results",
-
     # Model
     "Model",
-
     # Vision models
     "Classifier",
     "Detector",
     "Segmentor",
-
     # Callback
     "CallbackEvent",
     "CallbackContext",
-
     # Stream
     "StreamResult",
     "StreamIterator",
-
     # Functions
     "version",
     "list_devices",
     "get_best_device",
     "set_log_level",
+    "set_log_callback",
     "set_cache_dir",
     "is_cpp_available",
     "get_runtime_info",
-
     # Exceptions
     "IVITError",
     "ModelLoadError",

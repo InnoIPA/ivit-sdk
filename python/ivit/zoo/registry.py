@@ -8,8 +8,12 @@ from dataclasses import dataclass, field
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 import logging
+import hashlib
 import json
 import os
+import re
+import shutil
+from urllib.parse import parse_qs, urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -18,18 +22,44 @@ logger = logging.getLogger(__name__)
 class ModelInfo:
     """Model information in the zoo."""
     name: str
-    task: str  # detect, classify, segment, pose
+    task: str  # detect, classify, segment
     description: str
     input_size: tuple  # (H, W)
     num_classes: int
-    formats: List[str]  # Available formats: onnx, openvino, tensorrt
     url: Optional[str] = None        # 原始框架權重 (.pth, .pdparams)
     onnx_url: Optional[str] = None   # 預轉換 ONNX 下載 URL
-    source: str = "torchvision"  # torchvision, megvii, paddlepaddle, mmpose, custom
+    sha256: Optional[str] = None     # onnx_url 檔案的 SHA256；未設定時查 checksums.json
+    source: str = "torchvision"  # torchvision, megvii, custom
     license: str = "Apache-2.0"
     metrics: Dict[str, float] = field(default_factory=dict)
     tags: List[str] = field(default_factory=list)
+    # ivit.load() settings that decode this model's ONNX correctly (applied by zoo.load()). Empty
+    # means the SDK has no decoder for the model's outputs: download() works, zoo.load() refuses.
+    load_options: Dict[str, Any] = field(default_factory=dict)
 
+    @property
+    def ready(self) -> bool:
+        """True when zoo.load() can return a model that produces decoded results."""
+        return bool(self.load_options)
+
+
+
+# COCO-80 class names in the order YOLOX predicts them.
+COCO_LABELS = [name.replace("-", " ") for name in """person bicycle car motorcycle airplane bus train truck boat traffic-light fire-hydrant stop-sign parking-meter bench bird cat dog horse sheep cow elephant bear zebra giraffe backpack umbrella handbag tie suitcase frisbee skis snowboard sports-ball kite baseball-bat baseball-glove skateboard surfboard tennis-racket bottle wine-glass cup fork knife spoon bowl banana apple sandwich orange broccoli carrot hot-dog pizza donut cake chair couch potted-plant bed dining-table toilet tv laptop mouse remote keyboard cell-phone microwave oven toaster sink refrigerator book clock vase scissors teddy-bear hair-drier toothbrush""".split()]
+assert len(COCO_LABELS) == 80
+
+# How each exported ONNX must be fed and decoded. Verified end to end against the original
+# framework on examples/data/images/bus.jpg (YOLOX on OpenVINO CPU/iGPU and TensorRT; torchvision
+# classification and segmentation on OpenVINO CPU).
+_YOLOX_LOAD = {
+    "task": "detection", "decoder": "yolox_decoded", "input_color": "bgr", "input_scale": 1.0,
+    "resize_mode": "letterbox_top_left", "labels": COCO_LABELS,
+}
+_IMAGENET = {"input_color": "rgb", "input_scale": 1.0 / 255.0,
+             "mean": [0.485, 0.456, 0.406], "std": [0.229, 0.224, 0.225]}
+# Class names come from the .labels.txt sidecar written at export time (torchvision weights meta).
+_TORCHVISION_CLASSIFY_LOAD = {"task": "classification", "decoder": "logits", **_IMAGENET}
+_TORCHVISION_SEGMENT_LOAD = {"task": "segmentation", "decoder": "logits", **_IMAGENET}
 
 # Model Zoo Registry
 # All models use commercial-friendly licenses (Apache-2.0, BSD-3-Clause, MIT)
@@ -43,13 +73,13 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="YOLOX Nano - Ultra-lightweight model for edge devices",
         input_size=(416, 416),
         num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
         url="https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_nano.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/yolox-nano.onnx",
+        onnx_url="https://drive.google.com/file/d/1q4v6wUYRTQI6u7bwX7naRdGfC2HSKHLp/view",
         source="megvii",
         license="Apache-2.0",
         metrics={"mAP50-95": 25.8, "params_m": 0.91, "flops_g": 1.08},
         tags=["yolox", "detection", "fast", "edge", "commercial-friendly"],
+        load_options=_YOLOX_LOAD,
     ),
     "yolox-tiny": ModelInfo(
         name="yolox-tiny",
@@ -57,13 +87,13 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="YOLOX Tiny - Lightweight model for edge devices",
         input_size=(416, 416),
         num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
         url="https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_tiny.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/yolox-tiny.onnx",
+        onnx_url="https://drive.google.com/file/d/1qWtUuSGoGyRVmvR40wu5atzrVs2SB6yG/view",
         source="megvii",
         license="Apache-2.0",
         metrics={"mAP50-95": 32.8, "params_m": 5.06, "flops_g": 6.45},
         tags=["yolox", "detection", "fast", "edge", "commercial-friendly"],
+        load_options=_YOLOX_LOAD,
     ),
     "yolox-s": ModelInfo(
         name="yolox-s",
@@ -71,13 +101,13 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="YOLOX Small - Balance of speed and accuracy",
         input_size=(640, 640),
         num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
         url="https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/yolox-s.onnx",
+        onnx_url="https://drive.google.com/file/d/14tYG_2l_Wjp_z2aniRXuMxWhXTW-VXCm/view",
         source="megvii",
         license="Apache-2.0",
         metrics={"mAP50-95": 40.5, "params_m": 9.0, "flops_g": 26.8},
         tags=["yolox", "detection", "balanced", "commercial-friendly"],
+        load_options=_YOLOX_LOAD,
     ),
     "yolox-m": ModelInfo(
         name="yolox-m",
@@ -85,13 +115,13 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="YOLOX Medium - Higher accuracy",
         input_size=(640, 640),
         num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
         url="https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_m.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/yolox-m.onnx",
+        onnx_url="https://drive.google.com/file/d/1Ykp-gsYbynDmOAEn1dWdyX4vAn4o-X07/view",
         source="megvii",
         license="Apache-2.0",
         metrics={"mAP50-95": 46.9, "params_m": 25.3, "flops_g": 73.8},
         tags=["yolox", "detection", "accurate", "commercial-friendly"],
+        load_options=_YOLOX_LOAD,
     ),
     "yolox-l": ModelInfo(
         name="yolox-l",
@@ -99,49 +129,19 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="YOLOX Large - High accuracy for server deployment",
         input_size=(640, 640),
         num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
         url="https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_l.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/yolox-l.onnx",
+        onnx_url="https://drive.google.com/file/d/1nyI9G0D281vFJk0imLqm6N1m8zMDgNj3/view",
         source="megvii",
         license="Apache-2.0",
         metrics={"mAP50-95": 49.7, "params_m": 54.2, "flops_g": 155.6},
         tags=["yolox", "detection", "accurate", "server", "commercial-friendly"],
+        load_options=_YOLOX_LOAD,
     ),
 
     # =========================================================================
-    # RT-DETR Detection Models (PaddleDetection, Apache-2.0)
-    # =========================================================================
-    "rtdetr-l": ModelInfo(
-        name="rtdetr-l",
-        task="detect",
-        description="RT-DETR Large - Real-time DETR, no NMS needed",
-        input_size=(640, 640),
-        num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
-        url="https://bj.bcebos.com/v1/paddledet/models/rtdetr_r50vd_6x_coco.pdparams",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/rtdetr-l.onnx",
-        source="paddlepaddle",
-        license="Apache-2.0",
-        metrics={"mAP50-95": 53.0, "params_m": 32.0},
-        tags=["rtdetr", "detr", "detection", "transformer", "accurate", "commercial-friendly"],
-    ),
-    "rtdetr-x": ModelInfo(
-        name="rtdetr-x",
-        task="detect",
-        description="RT-DETR Extra Large - Maximum accuracy DETR",
-        input_size=(640, 640),
-        num_classes=80,
-        formats=["onnx", "openvino", "tensorrt"],
-        url="https://bj.bcebos.com/v1/paddledet/models/rtdetr_r101vd_6x_coco.pdparams",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/rtdetr-x.onnx",
-        source="paddlepaddle",
-        license="Apache-2.0",
-        metrics={"mAP50-95": 54.8, "params_m": 67.0},
-        tags=["rtdetr", "detr", "detection", "transformer", "accurate", "server", "commercial-friendly"],
-    ),
-
-    # =========================================================================
-    # Detection Models (torchvision, BSD-3-Clause) - Ready to use!
+    # Detection Models (torchvision, BSD-3-Clause) - raw: the SDK has no decoder for their
+    # boxes/scores/labels outputs. Their output shapes depend on the data (NonZero inside If), so
+    # TensorRT cannot build them; on OpenVINO they run through C++ Model::infer_raw.
     # =========================================================================
     "fasterrcnn-mobilenet": ModelInfo(
         name="fasterrcnn-mobilenet",
@@ -149,7 +149,6 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="Faster R-CNN MobileNetV3 - Fast detection for edge",
         input_size=(640, 640),
         num_classes=91,  # COCO classes
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mAP50-95": 32.8, "params_m": 19.4},
@@ -161,7 +160,6 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="Faster R-CNN ResNet-50 FPN v2 - Accurate detection",
         input_size=(800, 800),
         num_classes=91,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mAP50-95": 46.7, "params_m": 43.7},
@@ -173,7 +171,6 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="RetinaNet ResNet-50 FPN v2 - One-stage detector",
         input_size=(800, 800),
         num_classes=91,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mAP50-95": 41.5, "params_m": 38.2},
@@ -185,7 +182,6 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="SSDLite MobileNetV3 - Ultra-fast edge detection",
         input_size=(320, 320),
         num_classes=91,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mAP50-95": 21.3, "params_m": 3.4},
@@ -197,7 +193,6 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="FCOS ResNet-50 FPN - Anchor-free detector",
         input_size=(800, 800),
         num_classes=91,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mAP50-95": 39.2, "params_m": 32.3},
@@ -213,11 +208,11 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="ResNet-18 ImageNet Classification - Lightweight",
         input_size=(224, 224),
         num_classes=1000,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"top1": 69.8, "top5": 89.1, "params_m": 11.7},
         tags=["classification", "imagenet", "classic", "fast", "commercial-friendly", "ready-to-use"],
+        load_options=_TORCHVISION_CLASSIFY_LOAD,
     ),
     "resnet50": ModelInfo(
         name="resnet50",
@@ -225,11 +220,11 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="ResNet-50 ImageNet Classification",
         input_size=(224, 224),
         num_classes=1000,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"top1": 76.1, "top5": 92.9, "params_m": 25.6},
         tags=["classification", "imagenet", "classic", "commercial-friendly", "ready-to-use"],
+        load_options=_TORCHVISION_CLASSIFY_LOAD,
     ),
     "mobilenetv3": ModelInfo(
         name="mobilenetv3",
@@ -237,11 +232,11 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="MobileNetV3 Large - Efficient mobile classification",
         input_size=(224, 224),
         num_classes=1000,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"top1": 74.0, "top5": 91.3, "params_m": 5.5},
         tags=["classification", "mobile", "efficient", "edge", "commercial-friendly", "ready-to-use"],
+        load_options=_TORCHVISION_CLASSIFY_LOAD,
     ),
     "efficientnet-b0": ModelInfo(
         name="efficientnet-b0",
@@ -249,11 +244,11 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="EfficientNet-B0 - Efficient scaling",
         input_size=(224, 224),
         num_classes=1000,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="Apache-2.0",
         metrics={"top1": 77.1, "top5": 93.3, "params_m": 5.3},
         tags=["classification", "efficient", "commercial-friendly", "ready-to-use"],
+        load_options=_TORCHVISION_CLASSIFY_LOAD,
     ),
 
     # =========================================================================
@@ -265,11 +260,11 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="DeepLabV3 ResNet-50 - Semantic segmentation",
         input_size=(520, 520),
         num_classes=21,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mIoU": 66.4},
         tags=["segmentation", "semantic", "voc", "classic", "commercial-friendly", "ready-to-use"],
+        load_options=_TORCHVISION_SEGMENT_LOAD,
     ),
     "deeplabv3-mobilenetv3": ModelInfo(
         name="deeplabv3-mobilenetv3",
@@ -277,43 +272,11 @@ MODEL_REGISTRY: Dict[str, ModelInfo] = {
         description="DeepLabV3 MobileNetV3 - Lightweight semantic segmentation",
         input_size=(520, 520),
         num_classes=21,
-        formats=["onnx", "openvino"],
         source="torchvision",
         license="BSD-3-Clause",
         metrics={"mIoU": 60.3},
         tags=["segmentation", "semantic", "voc", "mobile", "efficient", "commercial-friendly", "ready-to-use"],
-    ),
-
-    # =========================================================================
-    # Pose Estimation Models (MMPose, Apache-2.0)
-    # =========================================================================
-    "rtmpose-s": ModelInfo(
-        name="rtmpose-s",
-        task="pose",
-        description="RTMPose Small - Fast human pose estimation",
-        input_size=(256, 192),
-        num_classes=17,  # COCO keypoints
-        formats=["onnx", "openvino", "tensorrt"],
-        url="https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-s_simcc-aic-coco_pt-aic-coco_420e-256x192-8edcf0d7_20230127.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/rtmpose-s.onnx",
-        source="mmpose",
-        license="Apache-2.0",
-        metrics={"AP": 72.2, "params_m": 5.5},
-        tags=["pose", "keypoint", "human", "fast", "commercial-friendly"],
-    ),
-    "rtmpose-m": ModelInfo(
-        name="rtmpose-m",
-        task="pose",
-        description="RTMPose Medium - Balanced pose estimation",
-        input_size=(256, 192),
-        num_classes=17,  # COCO keypoints
-        formats=["onnx", "openvino", "tensorrt"],
-        url="https://download.openmmlab.com/mmpose/v1/projects/rtmposev1/rtmpose-m_simcc-aic-coco_pt-aic-coco_420e-256x192-63eb25f7_20230126.pth",
-        onnx_url="https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0/rtmpose-m.onnx",
-        source="mmpose",
-        license="Apache-2.0",
-        metrics={"AP": 75.3, "params_m": 13.6},
-        tags=["pose", "keypoint", "human", "balanced", "commercial-friendly"],
+        load_options=_TORCHVISION_SEGMENT_LOAD,
     ),
 }
 
@@ -333,17 +296,23 @@ def list_models(task: Optional[str] = None) -> List[str]:
     List available models in the zoo.
 
     Args:
-        task: Filter by task type (detect, classify, segment, pose)
+        task: Filter by task type: "detect", "classify" or "segment"
 
     Returns:
         List of model names
 
+    Raises:
+        ValueError: task is not one of the zoo's task names
+
     Examples:
         >>> ivit.zoo.list_models()
-        ['yolov8n', 'yolov8s', 'yolov8m', ...]
+        ['deeplabv3-mobilenetv3', 'deeplabv3-resnet50', 'efficientnet-b0', ...]
         >>> ivit.zoo.list_models(task="detect")
-        ['yolov8n', 'yolov8s', ...]
+        ['fasterrcnn-mobilenet', 'fasterrcnn-resnet50', ...]
     """
+    tasks = sorted({info.task for info in MODEL_REGISTRY.values()})
+    if task is not None and task not in tasks:
+        raise ValueError(f"Unknown zoo task {task!r}; use one of {', '.join(tasks)}")
     models = []
     for name, info in MODEL_REGISTRY.items():
         if task is None or info.task == task:
@@ -412,19 +381,22 @@ def get_model_info(name: str) -> ModelInfo:
 
 def download(
     name: str,
-    format: str = "onnx",
     force: bool = False,
     from_source: bool = False,
+    sha256: Optional[str] = None,
 ) -> Path:
     """
-    Download model from zoo.
+    Download a zoo model as ONNX. ivit.load() converts it for the target
+    backend (and caches the result) when it is loaded.
 
     Args:
         name: Model name
-        format: Model format (onnx, openvino, tensorrt)
         force: Force re-download
         from_source: If True, download original weights and convert locally
             instead of using pre-converted ONNX files
+        sha256: Expected SHA256 of a pre-converted ONNX download. Defaults to the
+            value in ivit/zoo/checksums.json. Set IVIT_ZOO_REQUIRE_CHECKSUM=1 to
+            refuse downloads that have no known checksum.
 
     Returns:
         Path to downloaded model
@@ -436,47 +408,33 @@ def download(
     """
     info = get_model_info(name)
 
-    if format not in info.formats:
-        raise ValueError(f"Format '{format}' not available for {name}. Available: {info.formats}")
-
     cache_dir = _get_cache_dir()
     cache_dir.mkdir(parents=True, exist_ok=True)
+    model_path = cache_dir / f"{name}.onnx"
 
-    # Determine file path
-    if format == "onnx":
-        model_path = cache_dir / f"{name}.onnx"
-    elif format == "openvino":
-        model_path = cache_dir / f"{name}_openvino" / f"{name}.xml"
-    elif format == "tensorrt":
-        model_path = cache_dir / f"{name}.engine"
-    else:
-        model_path = cache_dir / f"{name}.{format}"
+    # Direct ONNX download when the model has an onnx_url and from_source is not set.
+    # It handles its own cache check so cached files are integrity-verified too.
+    if info.onnx_url and not from_source:
+        path = _download_onnx_direct(name, info.onnx_url, model_path, force, sha256=sha256)
+        _write_labels_sidecar(path, info)
+        return path
+
+    if sha256 is not None:
+        raise ValueError(
+            "sha256 only applies to pre-converted ONNX downloads "
+            "(from_source=False, model with an onnx_url)"
+        )
 
     # Check if already exists
     if model_path.exists() and not force:
         logger.info(f"Model already cached: {model_path}")
         return model_path
 
-    # Direct ONNX download: if format is onnx, onnx_url exists, and not from_source
-    if format == "onnx" and info.onnx_url and not from_source:
-        return _download_onnx_direct(name, info.onnx_url, model_path, force)
-
     # Route to appropriate exporter based on source
     if info.source == "megvii":
-        # YOLOX models
-        if format == "onnx":
-            model_path = _export_yolox_onnx(name, model_path, info, force)
-    elif info.source == "paddlepaddle":
-        # RT-DETR models
-        if format == "onnx":
-            model_path = _export_rtdetr_onnx(name, model_path, info, force)
-    elif info.source == "mmpose":
-        # RTMPose models
-        if format == "onnx":
-            model_path = _export_mmpose_onnx(name, model_path, info, force)
+        model_path = _export_yolox_onnx(name, model_path, info, force)
     elif info.source == "torchvision":
-        if format == "onnx":
-            model_path = _export_torchvision_onnx(name, model_path, info)
+        model_path = _export_torchvision_onnx(name, model_path, info)
 
     return model_path
 
@@ -646,8 +604,83 @@ def _export_torchvision_onnx(name: str, onnx_path: Path, info: ModelInfo) -> Pat
             output_names=output_names,
         )
 
+    _inline_external_data(onnx_path)
+    categories = getattr(weights_enum, "meta", {}).get("categories")
+    if categories and info.task in ("classify", "segment"):
+        # ivit.load() picks up <model>.labels.txt automatically.
+        onnx_path.with_suffix(".labels.txt").write_text(
+            "\n".join(c.replace("\n", " ") for c in categories) + "\n", encoding="utf-8")
     logger.info(f"Exported: {onnx_path}")
     return onnx_path
+
+
+def _write_labels_sidecar(onnx_path: Path, info: ModelInfo) -> None:
+    """Write <model>.labels.txt from the registry so C/C++ users of the bare file see class names.
+
+    The SDK reads the sidecar automatically. An existing sidecar is left alone.
+    """
+    labels = info.load_options.get("labels")
+    sidecar = onnx_path.with_suffix(".labels.txt")
+    if labels and not sidecar.exists():
+        sidecar.write_text("\n".join(labels) + "\n", encoding="utf-8")
+
+
+def _inline_external_data(onnx_path: Path) -> Path:
+    """Fold weights stored in a ``<name>.onnx.data`` sidecar back into the .onnx file.
+
+    Recent torch versions export large initializers to a separate file. The zoo caches,
+    checksums and hands out a single path, so a sidecar would leave a graph that cannot
+    load by itself and weights that no checksum covers.
+    """
+    sidecar = onnx_path.with_name(onnx_path.name + ".data")
+    if not sidecar.exists():
+        return onnx_path
+    import onnx
+
+    model = onnx.load(str(onnx_path), load_external_data=True)
+    if model.ByteSize() >= 2 * 1024**3:
+        raise RuntimeError(
+            f"{onnx_path.name} is larger than the 2 GB ONNX single-file limit; "
+            "cannot embed its weights"
+        )
+    merged = onnx_path.with_name(onnx_path.name + ".merged")
+    try:
+        onnx.save_model(model, str(merged), save_as_external_data=False)
+        os.replace(merged, onnx_path)
+    finally:
+        merged.unlink(missing_ok=True)
+    sidecar.unlink()
+    return onnx_path
+
+
+_GOOGLE_DRIVE_HOSTS = ("drive.google.com", "docs.google.com", "drive.usercontent.google.com")
+_GOOGLE_DRIVE_ID_RE = re.compile(r"^[A-Za-z0-9_-]{10,}$")
+
+
+def _google_drive_file_id(url: str) -> Optional[str]:
+    """File ID of a Google Drive share or download link, or None for any other URL."""
+    parsed = urlparse(url)
+    if parsed.scheme != "https" or parsed.hostname not in _GOOGLE_DRIVE_HOSTS:
+        return None
+    parts = parsed.path.split("/")
+    if "d" in parts and parts.index("d") + 1 < len(parts):  # /file/d/<id>/view
+        candidate = parts[parts.index("d") + 1]
+    else:  # /open?id=<id>, /uc?id=<id>, /download?id=<id>
+        candidate = parse_qs(parsed.query).get("id", [""])[0]
+    return candidate if _GOOGLE_DRIVE_ID_RE.match(candidate) else None
+
+
+def _direct_download_url(url: str) -> str:
+    """Turn a Google Drive share link into its direct download URL; other URLs are unchanged.
+
+    ``confirm=t`` skips the "can't scan this file for viruses" page Drive shows for files over
+    about 100 MB. Google may change this behaviour; the HTML check in _download_file() and the
+    SHA256 check catch it if they do.
+    """
+    file_id = _google_drive_file_id(url)
+    if file_id is None:
+        return url
+    return f"https://drive.usercontent.google.com/download?id={file_id}&export=download&confirm=t"
 
 
 def _download_file(url: str, dest_path: Path, desc: str = None) -> Path:
@@ -658,9 +691,25 @@ def _download_file(url: str, dest_path: Path, desc: str = None) -> Path:
     if desc is None:
         desc = dest_path.name
 
+    url = _direct_download_url(url)
     logger.info(f"Downloading from {url}...")
-    response = requests.get(url, stream=True)
-    response.raise_for_status()
+    # (connect, read) timeouts: a stalled server must not hang the application.
+    response = requests.get(url, stream=True, timeout=(10, 60))
+    drive_hint = (
+        " Check that the Google Drive file is shared as 'Anyone with the link' and the link is "
+        "right; a popular file can also hit Drive's download quota (try again later or set "
+        "IVIT_ZOO_MIRROR)."
+        if _google_drive_file_id(url) else ""
+    )
+    try:
+        response.raise_for_status()
+    except requests.HTTPError as error:
+        if not drive_hint:
+            raise
+        raise RuntimeError(f"{error}.{drive_hint}") from error
+    if response.headers.get("content-type", "").lower().startswith("text/html"):
+        response.close()
+        raise RuntimeError(f"Expected a file but got a web page from {url}.{drive_hint}")
 
     total_size = int(response.headers.get('content-length', 0))
 
@@ -677,52 +726,164 @@ def _download_file(url: str, dest_path: Path, desc: str = None) -> Path:
 # Minimum expected ONNX file size (1 KB) to catch corrupted/empty downloads
 _MIN_ONNX_SIZE = 1024
 
+_SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+_CHECKSUMS_PATH = Path(__file__).with_name("checksums.json")
 
-def _download_onnx_direct(name: str, onnx_url: str, onnx_path: Path, force: bool = False) -> Path:
+
+def _normalize_sha256(value: str, source: str) -> str:
+    digest = str(value).strip().lower()
+    if not _SHA256_RE.match(digest):
+        raise ValueError(f"Invalid SHA256 from {source}: expected 64 hex characters")
+    return digest
+
+
+def _load_checksums() -> Dict[str, str]:
+    """Load name -> SHA256 for pre-converted ONNX files (empty if absent)."""
+    try:
+        data = json.loads(_CHECKSUMS_PATH.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return {}
+    entries = data.get("sha256", {}) if isinstance(data, dict) else {}
+    return {
+        name: _normalize_sha256(value, f"{_CHECKSUMS_PATH.name}:{name}")
+        for name, value in entries.items()
+    }
+
+
+def _expected_sha256(name: str, explicit: Optional[str] = None) -> Optional[str]:
+    """Resolve the expected digest: explicit argument > ModelInfo > checksums.json."""
+    if explicit:
+        return _normalize_sha256(explicit, "sha256 argument")
+    info = MODEL_REGISTRY.get(name)
+    if info is not None and info.sha256:
+        return _normalize_sha256(info.sha256, f"registry:{name}")
+    return _load_checksums().get(name)
+
+
+def _require_checksum() -> bool:
+    return os.environ.get("IVIT_ZOO_REQUIRE_CHECKSUM", "").strip().lower() in ("1", "true", "yes")
+
+
+def _sha256_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _mirror_source(filename: str) -> Optional[str]:
+    """Mirror location of ``filename`` (e.g. "yolox-s.onnx") from IVIT_ZOO_MIRROR, or None.
+
+    IVIT_ZOO_MIRROR is an http(s) base URL or a local directory (``file://`` or a plain
+    path, for air-gapped sites). Files are named after the model, not taken from ``onnx_url``,
+    because share links such as Google Drive's carry no file name.
+    """
+    base = os.environ.get("IVIT_ZOO_MIRROR", "").strip()
+    if not base or not filename:
+        return None
+    if base.startswith("file://"):
+        base = base[len("file://"):]
+    return base.rstrip("/") + "/" + filename
+
+
+def _fetch_into(source: str, partial: Path, desc: str) -> None:
+    if source.startswith(("http://", "https://")):
+        _download_file(source, partial, desc=desc)
+    else:
+        shutil.copyfile(source, partial)
+
+
+def _download_onnx_direct(
+    name: str,
+    onnx_url: str,
+    onnx_path: Path,
+    force: bool = False,
+    sha256: Optional[str] = None,
+) -> Path:
     """Download a pre-converted ONNX file directly from a URL.
+
+    The file is written to a temporary name, checked, and only then moved into
+    place, so a failed or tampered download never leaves a usable-looking file.
+
+    If IVIT_ZOO_MIRROR is set, the mirror is tried first and ``onnx_url`` is the fallback
+    when the mirror is unreachable or serves an unusable file. A checksum mismatch is
+    never retried elsewhere: it means the copy was corrupted or tampered with.
 
     Args:
         name: Model name (for display purposes)
         onnx_url: URL to the pre-converted ONNX file
         onnx_path: Local path to save the ONNX file
         force: Force re-download even if cached
+        sha256: Expected SHA256 (overrides the registry / checksums.json value)
 
     Returns:
         Path to the downloaded ONNX file
 
     Raises:
-        RuntimeError: If the download fails or the file is too small
+        RuntimeError: If the download fails, is too small, or fails verification
+            (or no checksum is known while IVIT_ZOO_REQUIRE_CHECKSUM is set)
     """
+    expected = _expected_sha256(name, sha256)
+    if expected is None and _require_checksum():
+        raise RuntimeError(
+            f"No SHA256 is registered for '{name}' and IVIT_ZOO_REQUIRE_CHECKSUM is set; "
+            "pass sha256=... or add it to ivit/zoo/checksums.json"
+        )
+
     if onnx_path.exists() and not force:
-        logger.info(f"Model already cached: {onnx_path}")
-        return onnx_path
+        if expected is None:
+            logger.warning(f"Using cached model without integrity check: {onnx_path}")
+            return onnx_path
+        if _sha256_file(onnx_path) == expected:
+            logger.info(f"Model already cached and verified: {onnx_path}")
+            return onnx_path
+        logger.warning(f"Cached model does not match the expected SHA256, re-downloading: {onnx_path}")
+        onnx_path.unlink()
 
     onnx_path.parent.mkdir(parents=True, exist_ok=True)
+    partial = onnx_path.with_name(onnx_path.name + ".part")
 
+    sources = [src for src in (_mirror_source(f"{name}.onnx"), onnx_url) if src]
+    used = onnx_url
     logger.info(f"Downloading pre-converted ONNX for {name}...")
-    _download_file(onnx_url, onnx_path, desc=f"{name}.onnx")
+    try:
+        for index, source in enumerate(sources):
+            try:
+                _fetch_into(source, partial, f"{name}.onnx")
+                # Basic validation: check file size (catches HTML error pages)
+                file_size = partial.stat().st_size
+                if file_size < _MIN_ONNX_SIZE:
+                    raise RuntimeError(
+                        f"Downloaded ONNX file is too small ({file_size} bytes), "
+                        f"possibly corrupted or unavailable. URL: {source}"
+                    )
+                used = source
+                break
+            except Exception as error:
+                partial.unlink(missing_ok=True)
+                if index == len(sources) - 1:
+                    raise
+                logger.warning(f"Mirror unavailable ({error}); falling back to {onnx_url}")
 
-    # Basic validation: check file size
-    file_size = onnx_path.stat().st_size
-    if file_size < _MIN_ONNX_SIZE:
-        onnx_path.unlink()
-        raise RuntimeError(
-            f"Downloaded ONNX file is too small ({file_size} bytes), "
-            f"possibly corrupted or unavailable. URL: {onnx_url}"
-        )
+        if expected is not None:
+            actual = _sha256_file(partial)
+            if actual != expected:
+                raise RuntimeError(
+                    f"SHA256 mismatch for '{name}': expected {expected}, got {actual}. "
+                    f"The file was discarded. Source: {used}"
+                )
+        else:
+            logger.warning(
+                f"No SHA256 registered for '{name}'; downloaded file is NOT integrity-checked"
+            )
+        os.replace(partial, onnx_path)
+    except BaseException:
+        partial.unlink(missing_ok=True)
+        raise
 
     logger.info(f"Downloaded pre-converted ONNX: {onnx_path} ({file_size / 1024 / 1024:.1f} MB)")
     return onnx_path
-
-
-# YOLOX model name to config mapping
-_YOLOX_MODEL_MAP = {
-    "yolox-nano": ("yolox_nano", 0.33, 0.25),  # depth, width
-    "yolox-tiny": ("yolox_tiny", 0.33, 0.375),
-    "yolox-s": ("yolox_s", 0.33, 0.50),
-    "yolox-m": ("yolox_m", 0.67, 0.75),
-    "yolox-l": ("yolox_l", 1.0, 1.0),
-}
 
 
 def _export_yolox_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool = False) -> Path:
@@ -748,7 +909,6 @@ def _export_yolox_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool 
         # Try importing yolox
         try:
             from yolox.exp import get_exp
-            from yolox.models import YOLOX, YOLOPAFPN, YOLOXHead
 
             # Get model config
             exp_name = name.replace("-", "_")
@@ -763,22 +923,11 @@ def _export_yolox_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool 
             model.load_state_dict(ckpt["model"])
 
         except ImportError:
-            # Fallback: Build model manually without yolox package
-            logger.warning("yolox package not found, using manual model construction")
-
-            if name not in _YOLOX_MODEL_MAP:
-                raise ValueError(f"Unknown YOLOX model: {name}")
-
-            _, depth, width = _YOLOX_MODEL_MAP[name]
-
-            # Import PyTorch and build a simple wrapper
-            # This requires the user to have exported the model already
-            # or we provide pre-converted ONNX files
             raise ImportError(
-                f"YOLOX package required for first-time model export. "
-                f"Install with: pip install yolox\n"
-                f"Or download pre-converted ONNX from: "
-                f"https://github.com/Megvii-BaseDetection/YOLOX/tree/main/demo/ONNXRuntime"
+                "Exporting YOLOX from its weights needs the yolox package. Its PyPI release "
+                "(0.3.0) does not build with current setuptools; put the YOLOX source tree on "
+                "PYTHONPATH instead (e.g. unpack `pip download --no-deps --no-binary :all: yolox`). "
+                "Simpler: download the verified pre-converted ONNX (from_source=False)."
             )
 
         # Export to ONNX
@@ -798,6 +947,7 @@ def _export_yolox_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool 
             },
         )
 
+        _inline_external_data(onnx_path)
         logger.info(f"Exported: {onnx_path}")
         return onnx_path
 
@@ -805,145 +955,53 @@ def _export_yolox_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool 
         raise ImportError(str(e))
 
 
-# RT-DETR model configurations
-_RTDETR_MODEL_MAP = {
-    "rtdetr-l": "rtdetr_r50vd_6x_coco",
-    "rtdetr-x": "rtdetr_r101vd_6x_coco",
-}
-
-
-def _export_rtdetr_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool = False) -> Path:
-    """Export RT-DETR model to ONNX format."""
-    cache_dir = _get_cache_dir()
-
-    # Check if ONNX already exists
-    if onnx_path.exists() and not force:
-        logger.info(f"Model already cached: {onnx_path}")
-        return onnx_path
-
-    logger.info(f"Exporting RT-DETR to ONNX: {onnx_path}")
-
-    try:
-        import torch
-
-        # Try to use paddle2onnx or provide pre-converted URL
-        try:
-            import paddle
-            from ppdet.core.workspace import load_config, create
-
-            # This requires paddlepaddle and ppdet
-            config_name = _RTDETR_MODEL_MAP.get(name)
-            if not config_name:
-                raise ValueError(f"Unknown RT-DETR model: {name}")
-
-            # Download and convert
-            logger.info("RT-DETR conversion requires PaddlePaddle and PaddleDetection")
-            raise ImportError(
-                f"PaddlePaddle required for RT-DETR model export. "
-                f"Install with: pip install paddlepaddle paddle2onnx\n"
-                f"Or download pre-converted ONNX from PaddleDetection model zoo."
-            )
-
-        except ImportError:
-            # RT-DETR requires PaddlePaddle for conversion
-            # Provide clear instructions
-            raise ImportError(
-                f"RT-DETR model '{name}' requires PaddlePaddle for conversion.\n\n"
-                f"Option 1: Install PaddlePaddle and convert:\n"
-                f"  pip install paddlepaddle paddledet paddle2onnx\n"
-                f"  paddle2onnx --model_dir ... --save_file {onnx_path}\n\n"
-                f"Option 2: Download pre-converted ONNX from PaddleDetection:\n"
-                f"  https://github.com/PaddlePaddle/PaddleDetection/tree/release/2.7/configs/rtdetr\n\n"
-                f"Option 3: Use PyTorch RT-DETR from torchvision (v0.16+):\n"
-                f"  import torchvision.models.detection as det\n"
-                f"  model = det.rtdetr_resnet50(weights='DEFAULT')"
-            )
-
-    except ImportError as e:
-        raise ImportError(str(e))
-
-
-# RTMPose model configurations
-_RTMPOSE_MODEL_MAP = {
-    "rtmpose-s": {
-        "config": "rtmpose-s_8xb256-420e_coco-256x192",
-    },
-    "rtmpose-m": {
-        "config": "rtmpose-m_8xb256-420e_coco-256x192",
-    },
-}
-
-
-def _export_mmpose_onnx(name: str, onnx_path: Path, info: ModelInfo, force: bool = False) -> Path:
-    """Export MMPose model (RTMPose) to ONNX format."""
-    cache_dir = _get_cache_dir()
-
-    # Check if ONNX already exists
-    if onnx_path.exists() and not force:
-        logger.info(f"Model already cached: {onnx_path}")
-        return onnx_path
-
-    logger.info(f"Exporting RTMPose to ONNX: {onnx_path}")
-
-    if name not in _RTMPOSE_MODEL_MAP:
-        raise ValueError(f"Unknown RTMPose model: {name}")
-
-    model_config = _RTMPOSE_MODEL_MAP[name]
-
-    # RTMPose requires mmpose/mmdeploy for conversion
-    # Provide clear instructions
-    raise ImportError(
-        f"RTMPose model '{name}' requires conversion from PyTorch.\n\n"
-        f"Option 1: Use mmdeploy to convert:\n"
-        f"  pip install mmdeploy mmpose\n"
-        f"  python -m mmdeploy.backend.onnxruntime ...\n\n"
-        f"Option 2: Download pre-converted ONNX from:\n"
-        f"  https://github.com/open-mmlab/mmdeploy/tree/main/configs/mmpose\n\n"
-        f"Option 3: Use the PyTorch weights directly with mmpose:\n"
-        f"  pip install mmpose\n"
-        f"  Weight URL: {info.url}"
-    )
-
-
 def load(
     name: str,
     device: str = "auto",
-    format: str = "onnx",
     **kwargs
 ):
     """
-    Load model from zoo.
+    Load a zoo model ready for inference.
+
+    The model's verified load settings (task, decoder, color order, normalization, labels) are
+    applied automatically; any keyword argument overrides them.
 
     Args:
-        name: Model name or path
+        name: Model name, or a path to a model file (loaded as-is)
         device: Target device
-        format: Model format
         **kwargs: Additional arguments for ivit.load()
 
     Returns:
         Loaded model ready for inference
 
+    Raises:
+        ValueError: The model has no SDK decoder (see ModelInfo.ready) and no task was given.
+
     Examples:
-        >>> model = ivit.zoo.load("yolov8n")
-        >>> results = model("image.jpg")
-        >>>
-        >>> model = ivit.zoo.load("yolov8n", device="cuda:0")
-        >>> model = ivit.zoo.load("yolov8n", device="npu")
+        >>> model = ivit.zoo.load("yolox-s")
+        >>> results = model.predict(cv2.imread("image.jpg"))
+        >>> model = ivit.zoo.load("resnet18", device="gpu:0")
     """
     import ivit
 
-    # Check if it's a zoo model or a path
     if name in MODEL_REGISTRY:
-        # Download if needed
-        model_path = download(name, format=format)
+        info = MODEL_REGISTRY[name]
+        if not info.ready and "task" not in kwargs:
+            raise ValueError(
+                f"'{name}' has no SDK decoder for its outputs, so zoo.load() cannot return decoded "
+                f"results. Download it with ivit.zoo.download('{name}') and run it in your own "
+                "runtime (Python has no raw-output API; C++ has Model::infer_raw), or pass task=/decoder= "
+                "explicitly if you know a matching contract."
+            )
+        model_path = download(name)
+        options = {**info.load_options, **kwargs}
     else:
-        # Treat as path
         model_path = Path(name)
         if not model_path.exists():
             raise FileNotFoundError(f"Model not found: {name}")
+        options = kwargs
 
-    # Load with ivit
-    return ivit.load(str(model_path), device=device, **kwargs)
+    return ivit.load(str(model_path), device=device, **options)
 
 
 def print_models(task: Optional[str] = None):
@@ -960,19 +1018,21 @@ def print_models(task: Optional[str] = None):
     print("iVIT Model Zoo")
     print("=" * 88)
     print()
-    print(f"{'Model':<28} {'Task':<12} {'Input':<12} {'Description':<30}")
+    print(f"{'Model':<28} {'Task':<12} {'Input':<12} {'SDK':<6} {'Description':<26}")
     print("-" * 88)
 
     for name in models:
         info = MODEL_REGISTRY[name]
         input_str = f"{info.input_size[0]}x{info.input_size[1]}"
-        desc = info.description[:28] + ".." if len(info.description) > 30 else info.description
-        print(f"{name:<28} {info.task:<12} {input_str:<12} {desc:<30}")
+        desc = info.description[:24] + ".." if len(info.description) > 26 else info.description
+        status = "ready" if info.ready else "raw"
+        print(f"{name:<28} {info.task:<12} {input_str:<12} {status:<6} {desc:<26}")
 
     print("-" * 88)
     print(f"Total: {len(models)} models")
     print()
     print("All models use commercial-friendly licenses (Apache-2.0, BSD-3-Clause)")
     print()
+    print("SDK: ready = zoo.load() returns decoded results; raw = download only, decode it yourself")
     print("Usage: model = ivit.zoo.load('yolox-s')")
     print()

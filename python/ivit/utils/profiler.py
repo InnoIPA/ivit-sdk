@@ -7,60 +7,21 @@ from dataclasses import dataclass
 import time
 import json
 import numpy as np
-import logging
-
-logger = logging.getLogger(__name__)
 
 
-def _detect_model_precision(model) -> str:
-    """
-    Detect model precision from configuration.
-
-    Priority:
-    1. Explicit runtime configuration (OpenVINO, TensorRT, etc.)
-    2. LoadConfig precision setting
-    3. Model input dtype
-    4. Default to fp32
-
-    Args:
-        model: Model instance
-
-    Returns:
-        Precision string (e.g., "fp32", "fp16", "int8")
-    """
-    # Check OpenVINO config
-    if hasattr(model, '_openvino_config') and model._openvino_config:
-        config = model._openvino_config
-        if hasattr(config, 'inference_precision') and config.inference_precision:
-            return config.inference_precision.lower()
-
-    # Check TensorRT config
-    if hasattr(model, '_tensorrt_config') and model._tensorrt_config:
-        config = model._tensorrt_config
-        if hasattr(config, 'enable_int8') and config.enable_int8:
-            return "int8"
-        if hasattr(config, 'enable_fp16') and config.enable_fp16:
-            return "fp16"
-        return "fp32"
-
-    # Check LoadConfig
-    if hasattr(model, '_config') and model._config:
-        if hasattr(model._config, 'precision') and model._config.precision:
-            return model._config.precision.lower()
-
-    # Infer from input dtype
-    if hasattr(model, '_input_info') and model._input_info:
-        dtype = model._input_info[0].get("dtype", "float32")
-        dtype_map = {
-            "float32": "fp32",
-            "float16": "fp16",
-            "int8": "int8",
-            "uint8": "int8",
-            "int32": "int32",
-        }
-        return dtype_map.get(str(dtype).lower(), "fp32")
-
-    return "fp32"
+def _dummy_image(model, input_shape: Optional[Tuple[int, ...]]) -> np.ndarray:
+    """A random BGR uint8 image sized for the model (dynamic dimensions fall back to 640)."""
+    shape = tuple(input_shape) if input_shape else tuple(model.input_info[0].shape)
+    h, w = 640, 640
+    if len(shape) == 4:
+        hw = shape[1:3] if shape[3] in (1, 3) else shape[2:4]  # NHWC or NCHW
+    elif len(shape) == 3:
+        hw = shape[0:2] if shape[2] in (1, 3) else shape[1:3]  # HWC or CHW
+    else:
+        hw = shape[-2:]
+    if len(hw) == 2 and all(int(d) > 0 for d in hw):
+        h, w = (int(d) for d in hw)
+    return np.random.randint(0, 256, (h, w, 3), dtype=np.uint8)
 
 
 @dataclass
@@ -86,7 +47,7 @@ class ProfileReport:
     # Throughput
     throughput_fps: float = 0.0
 
-    # Memory
+    # Memory (not measured by benchmark(); fill it in yourself if you need it)
     memory_mb: float = 0.0
 
     def __str__(self) -> str:
@@ -112,7 +73,7 @@ class ProfileReport:
             f"    P99:        {self.latency_p99:.2f} ms",
             "-" * 60,
             f"  Throughput:   {self.throughput_fps:.1f} FPS",
-            f"  Memory:       {self.memory_mb:.1f} MB",
+            f"  Memory:       {f'{self.memory_mb:.1f} MB' if self.memory_mb else 'not measured'}",
             "=" * 60,
             "",
         ]
@@ -167,45 +128,50 @@ class Profiler:
     def benchmark(
         self,
         model,
-        input_shape: Tuple[int, ...],
+        input_shape: Optional[Tuple[int, ...]] = None,
         iterations: int = 100,
         warmup: int = 10,
+        image: Optional[np.ndarray] = None,
     ) -> ProfileReport:
         """
         Run benchmark on model.
 
+        Each iteration is a full ``model.predict()`` call (preprocessing, inference and
+        decoding), the same path an application uses.
+
         Args:
-            model: Model to benchmark
-            input_shape: Input shape (N, C, H, W)
+            model: Loaded model (``ivit.load`` / ``ivit.zoo.load``)
+            input_shape: Model input shape used to size a random image, e.g. (1, 3, 640, 640);
+                defaults to the model's own input shape
             iterations: Number of iterations
             warmup: Warmup iterations
+            image: BGR uint8 image to use instead of a random one
 
         Returns:
             Profile report
         """
-        # Create dummy input
-        dummy = np.random.randn(*input_shape).astype(np.float32)
+        if iterations < 1:
+            raise ValueError("iterations must be at least 1")
+        if image is None:
+            image = _dummy_image(model, input_shape)
 
-        # Warmup
         for _ in range(warmup):
-            model._runtime.infer(model._handle, {"input": dummy})
+            model.predict(image)
 
-        # Benchmark
         self.reset()
         for _ in range(iterations):
             self.start()
-            model._runtime.infer(model._handle, {"input": dummy})
+            model.predict(image)
             self.stop()
 
-        # Calculate stats
         mean, median, std, min_t, max_t, p95, p99 = self.calculate_stats()
-
-        report = ProfileReport(
+        backend = model.backend
+        return ProfileReport(
             model_name=model.name,
             device=model.device,
-            backend=model.backend,
-            precision=_detect_model_precision(model),
-            input_shape=input_shape,
+            backend=getattr(backend, "name", str(backend)).lower(),
+            precision=model.load_config.precision,
+            input_shape=tuple(image.shape),
             iterations=iterations,
             latency_mean=mean,
             latency_median=median,
@@ -216,8 +182,6 @@ class Profiler:
             latency_p99=p99,
             throughput_fps=1000.0 / mean if mean > 0 else 0,
         )
-
-        return report
 
     def start(self) -> None:
         """Start timing."""

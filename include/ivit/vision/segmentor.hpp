@@ -9,11 +9,11 @@
 #include "ivit/core/common.hpp"
 #include "ivit/core/model.hpp"
 #include "ivit/core/result.hpp"
-#include <opencv2/core.hpp>
+#include <map>
 #include <memory>
+#include <opencv2/core.hpp>
 #include <string>
 #include <vector>
-#include <map>
 
 namespace ivit {
 namespace vision {
@@ -40,7 +40,7 @@ namespace vision {
  * @endcode
  */
 class Segmentor {
-public:
+  public:
     /**
      * @brief Construct segmentor
      *
@@ -48,11 +48,8 @@ public:
      * @param device Target device
      * @param config Additional configuration
      */
-    explicit Segmentor(
-        const std::string& model,
-        const std::string& device = "auto",
-        const LoadConfig& config = LoadConfig{}
-    );
+    explicit Segmentor(const std::string &model, const std::string &device = "auto",
+                       const LoadConfig &config = LoadConfig{});
 
     /**
      * @brief Construct from existing model
@@ -71,17 +68,17 @@ public:
      * @param image Input image (BGR format)
      * @return Segmentation results with mask
      */
-    Results predict(const cv::Mat& image);
+    Results predict(const cv::Mat &image);
 
     /**
      * @brief Segment image from file
      */
-    Results predict(const std::string& image_path);
+    Results predict(const std::string &image_path);
 
     /**
      * @brief Batch segmentation
      */
-    std::vector<Results> predict_batch(const std::vector<cv::Mat>& images);
+    std::vector<Results> predict_batch(const std::vector<cv::Mat> &images);
 
     // ========================================================================
     // Properties
@@ -90,7 +87,7 @@ public:
     /**
      * @brief Get class labels
      */
-    const std::vector<std::string>& classes() const { return labels_; }
+    const std::vector<std::string> &classes() const { return labels_; }
 
     /**
      * @brief Get number of classes
@@ -105,31 +102,23 @@ public:
     /**
      * @brief Get default colormap
      */
-    const std::map<int, cv::Vec3b>& colormap() const { return colormap_; }
+    const std::map<int, cv::Vec3b> &colormap() const { return colormap_; }
 
     /**
      * @brief Set custom colormap
      */
-    void set_colormap(const std::map<int, cv::Vec3b>& colormap) {
-        colormap_ = colormap;
-    }
+    void set_colormap(const std::map<int, cv::Vec3b> &colormap) { colormap_ = colormap; }
 
     /**
      * @brief Get underlying model
      */
     std::shared_ptr<Model> model() const { return model_; }
 
-private:
+  private:
     std::shared_ptr<Model> model_;
     std::vector<std::string> labels_;
     cv::Size input_size_;
     std::map<int, cv::Vec3b> colormap_;
-
-    cv::Mat preprocess(const cv::Mat& image);
-    Results postprocess(
-        const std::map<std::string, Tensor>& outputs,
-        const cv::Size& orig_size
-    );
 
     void init_default_colormap();
 };

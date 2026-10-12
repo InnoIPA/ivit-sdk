@@ -1,10 +1,10 @@
 [build-system]
-requires = ["scikit-build-core>=0.5", "pybind11>=2.11"]
+requires = ["scikit-build-core>=0.8", "pybind11>=2.11"]
 build-backend = "scikit_build_core.build"
 
 [project]
 name = "ivit-sdk"
-version = "1.0.0"
+version = "1.1.0"
 description = "iVIT-SDK: Innodisk Vision Intelligence Toolkit - Unified CV SDK with extensible hardware support"
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -30,9 +30,7 @@ classifiers = [
     "Intended Audience :: Science/Research",
     "License :: OSI Approved :: Apache Software License",
     "Operating System :: POSIX :: Linux",
-    "Operating System :: Microsoft :: Windows",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -40,7 +38,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
     "Topic :: Scientific/Engineering :: Image Processing",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"  # OpenVINO 2026 has no Python 3.9 wheels
 dependencies = [
     "numpy>=1.20",
     "opencv-python>=4.5",
@@ -52,18 +50,22 @@ dependencies = [
 
 [project.optional-dependencies]
 # Backend-specific dependencies
+# pip OpenVINO before 2026 is built with the old C++ ABI (_GLIBCXX_USE_CXX11_ABI=0) and cannot be
+# linked with the system OpenCV the SDK uses; 2026 ships the new ABI. See the manual, 3.2.
 openvino = [
-    "openvino>=2024.0",
+    "openvino>=2026.0",
 ]
 tensorrt = [
     "tensorrt>=8.6",
-    "pycuda>=2022.1",
 ]
 # Feature dependencies
+# Exporting from source weights (download(..., from_source=True)). torch >= 2.9 exports through
+# onnxscript. YOLOX also needs the yolox package, whose PyPI release does not build; see the manual.
 zoo = [
     "torch>=2.0",
     "torchvision>=0.15",
     "onnx>=1.14",
+    "onnxscript>=0.1",
 ]
 train = [
     "torch>=2.0",
@@ -76,21 +78,18 @@ dev = [
     "black>=23.0",
     "flake8>=6.0",
     "mypy>=1.0",
-    "sphinx>=6.0",
-    "sphinx-rtd-theme>=1.2",
 ]
 # Combined installations
 all = [
     "ivit-sdk[openvino,tensorrt,zoo,train,dev]",
 ]
-# Alias for backward compatibility
+# Kept so `pip install ivit-sdk[cuda]` written for 1.0 keeps working; same as [tensorrt]
 cuda = [
     "ivit-sdk[tensorrt]",
 ]
 
 [project.urls]
 Homepage = "https://github.com/innodisk-mannywang/ivit-sdk"
-Documentation = "https://ivit-sdk.readthedocs.io"
 Repository = "https://github.com/innodisk-mannywang/ivit-sdk"
 Issues = "https://github.com/innodisk-mannywang/ivit-sdk/issues"
 
@@ -98,10 +97,18 @@ Issues = "https://github.com/innodisk-mannywang/ivit-sdk/issues"
 ivit = "ivit.cli:main"
 
 [tool.scikit-build]
-cmake.minimum-version = "3.18"
+cmake.version = ">=3.18"
 cmake.build-type = "Release"
 wheel.packages = ["python/ivit"]
 wheel.install-dir = "ivit"
+sdist.exclude = [
+    ".venv/**", "venv/**", "build*/**", "dist/**", "deps/**", "models/**",
+    "**/__pycache__/**", "**/*.pyc", "**/*.so", "**/*.pyd", "**/*.egg-info/**",
+    "**/bin/**", "**/obj/**", ".pytest_cache/**", ".env*", "**/*.log",
+    "**/*.engine", "**/*.trt", "**/*.plan", "**/*.blob", "model_cache/**",
+    "examples/data/**/*_output.*", "examples/data/**/*_result.*",
+    "examples/data/**/output.*", ".claude/**", ".codex/**", ".agents/**",
+]
 
 [tool.scikit-build.cmake.define]
 IVIT_BUILD_PYTHON = "ON"
@@ -110,7 +117,7 @@ IVIT_BUILD_EXAMPLES = "OFF"
 
 [tool.black]
 line-length = 88
-target-version = ["py39", "py310", "py311", "py312"]
+target-version = ["py310", "py311", "py312"]
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -122,7 +129,7 @@ exclude = '''
 '''
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true

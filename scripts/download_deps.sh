@@ -8,7 +8,7 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SDK_ROOT="$(dirname "$SCRIPT_DIR")"
-DEPS_DIR="${SDK_ROOT}/deps"
+DEPS_DIR="${IVIT_DEPS_DIR:-${SDK_ROOT}/deps}"   # same default as the CMake IVIT_DEPS_DIR
 INSTALL_DIR="${DEPS_DIR}/install"
 
 # 顏色輸出
@@ -56,26 +56,36 @@ download_openvino() {
         return
     fi
 
+    # Archive names on storage.openvinotoolkit.org carry the full build id and live under the
+    # release directory, e.g. packages/2024.6/linux/l_openvino_toolkit_ubuntu24_2024.6.0.17404.4c0f47d2335_x86_64.tgz
+    local OV_RELEASE="2024.6"
+    local OV_BUILD="2024.6.0.17404.4c0f47d2335"
     local VERSION="2024.6.0"
-    local OS_SUFFIX="ubuntu22"
 
-    # 檢測 Ubuntu 版本
-    if [ -f /etc/os-release ]; then
-        . /etc/os-release
-        if [[ "$VERSION_ID" == "20.04" ]]; then
-            OS_SUFFIX="ubuntu20"
-        elif [[ "$VERSION_ID" == "22.04" ]]; then
-            OS_SUFFIX="ubuntu22"
-        elif [[ "$VERSION_ID" == "24.04" ]]; then
-            OS_SUFFIX="ubuntu24"
-        fi
+    # Read the OS version in a subshell: /etc/os-release also defines VERSION, which would
+    # otherwise overwrite the OpenVINO version above.
+    local OS_ID=""
+    [ -f /etc/os-release ] && OS_ID="$(. /etc/os-release && echo "${VERSION_ID}")"
+    local OS_SUFFIX
+    case "$OS_ID" in
+        20.04) OS_SUFFIX="ubuntu20" ;;
+        22.04) OS_SUFFIX="ubuntu22" ;;
+        24.04) OS_SUFFIX="ubuntu24" ;;
+        *) OS_SUFFIX="ubuntu22" ;;
+    esac
+    local OV_ARCH="x86_64"
+    [ "$ARCH" = "aarch64" ] && OV_ARCH="arm64"
+    if [ "$OV_ARCH" = "arm64" ] && [ "$OS_SUFFIX" != "ubuntu20" ]; then
+        log_error "OpenVINO ${VERSION} has no ${OS_SUFFIX} arm64 archive; install it with pip instead:"
+        log_info "  pip install openvino>=${VERSION}"
+        return 1
     fi
 
     log_info "Downloading OpenVINO ${VERSION}..."
     log_info "Alternative: install via pip instead:"
     log_info "  pip install openvino>=${VERSION}"
 
-    local URL="https://storage.openvinotoolkit.org/repositories/openvino/packages/${VERSION}/linux/l_openvino_toolkit_${OS_SUFFIX}_${VERSION}_${ARCH_SUFFIX}.tgz"
+    local URL="https://storage.openvinotoolkit.org/repositories/openvino/packages/${OV_RELEASE}/linux/l_openvino_toolkit_${OS_SUFFIX}_${OV_BUILD}_${OV_ARCH}.tgz"
     local ARCHIVE="${DEPS_DIR}/openvino-${VERSION}.tgz"
 
     wget -q --show-progress -O "$ARCHIVE" "$URL" || {

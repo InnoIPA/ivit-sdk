@@ -26,21 +26,17 @@ def list_devices(refresh: bool = False) -> List[DeviceInfo]:
     return _cpp_list_devices()
 
 
-def get_best_device(
-    task: str = "",
-    priority: str = "performance"
-) -> DeviceInfo:
+def get_best_device(priority: str = "performance") -> DeviceInfo:
     """
-    Get the best device for a given task.
+    Get the best available device.
 
     Args:
-        task: Task type hint (e.g., "detection", "classification")
         priority: Selection priority ("performance" or "efficiency")
 
     Returns:
         Best available DeviceInfo
     """
-    return _cpp_get_best_device(task, priority)
+    return _cpp_get_best_device(priority)
 
 
 def get_device(device_id: str) -> Optional[DeviceInfo]:
@@ -72,8 +68,11 @@ def get_backend_for_device(device_id: str) -> str:
     dev = get_device(device_id)
     if dev:
         return dev.backend
-    if "cuda" in device_id or "gpu" in device_id:
+    # Same rules as the C++ parse_device_string(): "gpu" is an Intel GPU (OpenVINO); only
+    # "cuda" means NVIDIA (TensorRT).
+    name = device_id.lower()
+    if name == "auto":
+        return "auto"
+    if name.startswith("cuda"):
         return "tensorrt"
-    if "npu" in device_id or "vpu" in device_id:
-        return "openvino"
     return "openvino"

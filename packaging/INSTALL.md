@@ -1,69 +1,43 @@
-# iVIT-SDK Installation Guide
+# Binary SDK Installation
 
-## Prerequisites
+此文件只說明已建置的 platform tarball。原始碼安裝、完整 API 與硬體限制請參閱 repository 的 `docs/sdk-manual.zh-TW.md`。
 
-- Ubuntu 20.04 / 22.04 (x86_64 or aarch64)
-- OpenCV 4.x (`sudo apt install libopencv-dev`)
-- Platform-specific runtime:
-  - **NVIDIA**: CUDA Toolkit + TensorRT
-  - **Intel**: OpenVINO Runtime 2024+
+## 環境需求
 
-## Quick Start
+使用與產物相符的 Linux／CPU 架構，並安裝 OpenCV 開發套件（Intel 版的 OpenVINO 另需 `libtbb12`，安裝 OpenCV 時會一併帶入）。後端函式庫（OpenVINO，或 TensorRT／CUDA runtime）已放在 `deps/lib`；NVIDIA 版另需 GPU 驅動，Intel GPU／NPU 需相應驅動。套件存在不代表目標硬體已完成驗收。
+
+## 安裝
 
 ```bash
-# 1. Extract the tarball
-tar -xzf ivit-sdk-*.tar.gz
-cd ivit-sdk-*
-
-# 2. Set up environment
+tar -xf ivit-sdk-<version>-<platform>.tar.xz
+cd ivit-sdk-<version>-<platform>
 source bin/setup_env.sh
-
-# 3. Verify installation
-python3 -c "import ivit; print(ivit.__version__)"
 ```
 
-## Directory Structure
+## C／C++
 
-```
-ivit-sdk-<version>-<platform>/
-├── lib/libivit.so              # Core shared library
-├── lib/cmake/ivit/             # CMake find_package support
-├── include/ivit/               # C++ headers
-├── deps/lib/                   # Bundled runtime dependencies
-├── python/                     # Python wheel
-├── bin/setup_env.sh            # Environment setup script
-├── examples/                   # C++ and Python examples
-└── INSTALL.md                  # This file
+套件提供 `include/ivit/`、`lib/libivit.so` 及 `lib/cmake/ivit/`。C++ 客戶專案使用：
+
+```cmake
+find_package(ivit 1.1 CONFIG REQUIRED)
+target_link_libraries(app PRIVATE ivit::ivit)
 ```
 
-## C++ Usage
+Configure 時加入 `-DCMAKE_PREFIX_PATH=/absolute/path/to/sdk`。只需另外安裝 OpenCV 開發套件；後端函式庫使用 `deps/lib` 內的版本。C 整合使用 `ivit/c_api.h`。
+
+## Python
+
+先確認 `python/` 內有相符 Python／平台的 wheel；若打包時 wheel 建置失敗，須另行建置。
 
 ```bash
-# Set environment first
-source bin/setup_env.sh
-
-# Compile with CMake
-cmake -Divit_DIR=<sdk-path>/lib/cmake/ivit ..
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install python/ivit_sdk-*.whl
+python3 -c "import ivit; assert ivit.is_cpp_available(); print(ivit.list_devices())"
 ```
 
-Or compile directly:
+原生 extension 不等於完整 Python 套件；單獨設定 PYTHONPATH 無法取代 wheel 安裝。推論模型與 labels 另行交付，TensorRT engine 應在目標平台產生及驗證。
 
-```bash
-g++ -I<sdk-path>/include -L<sdk-path>/lib -livit my_app.cpp -o my_app
-```
+## 函式庫載入
 
-## Python Usage
-
-```bash
-# Install the wheel
-pip install python/ivit_sdk-*.whl
-
-# Or use PYTHONPATH (already set by setup_env.sh)
-python3 -c "import ivit"
-```
-
-## Troubleshooting
-
-**Library not found errors**: Make sure you've run `source bin/setup_env.sh` or added `lib/` and `deps/lib/` to `LD_LIBRARY_PATH`.
-
-**GPU not detected**: Verify your GPU driver and runtime (CUDA/OpenVINO) are correctly installed.
+找不到函式庫時，確認已執行 `setup_env.sh`，並檢查 `lib/`、`deps/lib/` 與 vendor runtime。GPU／NPU 未出現時，檢查裝置權限及相符驅動。

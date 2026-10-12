@@ -29,12 +29,7 @@ class Detector:
         ...     print(f"{det.label}: {det.confidence:.2%}")
     """
 
-    def __init__(
-        self,
-        model: str,
-        device: str = "auto",
-        **kwargs
-    ):
+    def __init__(self, model: str, device: str = "auto", **kwargs):
         """
         Create detector.
 
@@ -46,8 +41,9 @@ class Detector:
         config = _CppLoadConfig()
         config.device = device
         for key, value in kwargs.items():
-            if hasattr(config, key):
-                setattr(config, key, value)
+            if not hasattr(config, key):
+                raise TypeError(f"Unknown configuration option: {key}")
+            setattr(config, key, value)
 
         self._cpp_detector = _CppDetector(model, device, config)
         self._device = device
@@ -55,10 +51,11 @@ class Detector:
     def predict(
         self,
         image: Union[str, np.ndarray],
-        conf_threshold: float = 0.25,
+        conf_threshold: float = 0.5,
         iou_threshold: float = 0.45,
         classes: Optional[List[int]] = None,
-        max_detections: int = 300,
+        max_detections: int = 100,
+        agnostic_nms: bool = False,
     ) -> Results:
         """
         Detect objects in image.
@@ -69,31 +66,43 @@ class Detector:
             iou_threshold: NMS IoU threshold (0.0 - 1.0)
             classes: Filter by class IDs (None = all classes)
             max_detections: Maximum number of detections
+            agnostic_nms: Suppress overlapping boxes across classes (default: per class)
 
         Returns:
             Results object containing detections
         """
         if isinstance(image, str):
-            return self._cpp_detector.predict(image, conf_threshold, iou_threshold)
-        return self._cpp_detector.predict(image, conf_threshold, iou_threshold)
+            import cv2
+
+            image = cv2.imread(image)
+            if image is None:
+                raise ValueError("Failed to load image")
+        config = _CppInferConfig()
+        config.conf_threshold = conf_threshold
+        config.iou_threshold = iou_threshold
+        config.classes = [] if classes is None else classes
+        config.max_detections = max_detections
+        config.agnostic_nms = agnostic_nms
+        return self._cpp_detector.predict_config(image, config)
 
     def __call__(
         self,
         image: Union[str, np.ndarray],
-        conf_threshold: float = 0.25,
+        conf_threshold: float = 0.5,
         iou_threshold: float = 0.45,
-        **kwargs
+        **kwargs,
     ) -> Results:
         """Shorthand for predict()."""
-        return self.predict(image, conf_threshold=conf_threshold,
-                            iou_threshold=iou_threshold, **kwargs)
+        return self.predict(
+            image, conf_threshold=conf_threshold, iou_threshold=iou_threshold, **kwargs
+        )
 
     def predict_batch(
         self,
         images: List[Union[str, np.ndarray]],
-        conf_threshold: float = 0.25,
+        conf_threshold: float = 0.5,
         iou_threshold: float = 0.45,
-        **kwargs
+        **kwargs,
     ) -> List[Results]:
         """
         Batch detection on multiple images.
@@ -107,6 +116,7 @@ class Detector:
             List of Results objects
         """
         import cv2
+
         np_images = []
         for img in images:
             if isinstance(img, str):
@@ -120,6 +130,11 @@ class Detector:
         config = _CppInferConfig()
         config.conf_threshold = conf_threshold
         config.iou_threshold = iou_threshold
+        config.classes = kwargs.pop("classes", []) or []
+        config.max_detections = kwargs.pop("max_detections", 100)
+        config.agnostic_nms = kwargs.pop("agnostic_nms", False)
+        if kwargs:
+            raise TypeError(f"Unknown predict_batch options: {list(kwargs)}")
 
         return self._cpp_detector.predict_batch(np_images, config)
 
@@ -127,9 +142,9 @@ class Detector:
         self,
         source: Union[str, int],
         callback: Callable[[Results, np.ndarray], None],
-        conf_threshold: float = 0.25,
+        conf_threshold: float = 0.5,
         iou_threshold: float = 0.45,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Detect objects in video stream.
@@ -148,8 +163,12 @@ class Detector:
                 ret, frame = cap.read()
                 if not ret:
                     break
-                results = self.predict(frame, conf_threshold=conf_threshold,
-                                       iou_threshold=iou_threshold, **kwargs)
+                results = self.predict(
+                    frame,
+                    conf_threshold=conf_threshold,
+                    iou_threshold=iou_threshold,
+                    **kwargs,
+                )
                 callback(results, frame)
         finally:
             cap.release()

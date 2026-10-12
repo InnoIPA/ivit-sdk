@@ -10,8 +10,25 @@ Provides detailed error messages with:
 from typing import List, Optional, Dict, Any
 from pathlib import Path
 
+# Inherit from the C++ exception tree so that a single
+# ``except ivit.IVITError`` (or ``ivit.ModelLoadError`` ...) catches errors
+# raised from C++ as well as the ones defined below. Without the C++ extension
+# there is nothing to inherit from, so fall back to plain Exception.
+try:
+    from .._ivit_core import (
+        IVITError as _CppIVITError,
+        ModelLoadError as _CppModelLoadError,
+        DeviceNotFoundError as _CppDeviceNotFoundError,
+        InferenceError as _CppInferenceError,
+    )
+except ImportError:
+    _CppIVITError = Exception
+    _CppModelLoadError = Exception
+    _CppDeviceNotFoundError = Exception
+    _CppInferenceError = Exception
 
-class IVITError(Exception):
+
+class IVITError(_CppIVITError):
     """
     Base exception for all iVIT-SDK errors.
 
@@ -53,7 +70,7 @@ class IVITError(Exception):
         return "\n".join(lines)
 
 
-class ModelLoadError(IVITError):
+class ModelLoadError(IVITError, _CppModelLoadError):
     """Error raised when model loading fails."""
 
     def __init__(
@@ -77,7 +94,7 @@ class ModelLoadError(IVITError):
             suggestions.append("使用絕對路徑確保檔案位置正確")
         else:
             # Check file extension
-            supported_formats = [".onnx", ".xml", ".engine", ".trt", ".dlc", ".bin"]
+            supported_formats = [".onnx", ".xml", ".engine", ".trt", ".plan"]
             if path.suffix.lower() not in supported_formats:
                 causes.append(f"格式不支援：目前支援 {', '.join(supported_formats)}")
                 suggestions.append("使用 `ivit convert` 轉換模型格式")
@@ -94,9 +111,6 @@ class ModelLoadError(IVITError):
             causes.append("OpenVINO IR 模型需要對應的 .bin 權重檔")
             suggestions.append("確認 .xml 和 .bin 檔案在同一目錄")
             suggestions.append("確認已安裝 OpenVINO Runtime")
-        elif backend == "snpe" or path.suffix.lower() == ".dlc":
-            causes.append("SNPE 僅支援 Qualcomm 裝置")
-            suggestions.append("確認在支援的 Qualcomm 硬體上執行")
 
         if reason:
             causes.append(reason)
@@ -111,7 +125,7 @@ class ModelLoadError(IVITError):
         )
 
 
-class DeviceNotFoundError(IVITError):
+class DeviceNotFoundError(IVITError, _CppDeviceNotFoundError):
     """Error raised when specified device is not available."""
 
     def __init__(self, device: str, available_devices: Optional[List[str]] = None):
@@ -150,7 +164,6 @@ class BackendNotAvailableError(IVITError):
     BACKEND_INSTALL_HINTS = {
         "openvino": "pip install openvino",
         "tensorrt": "請參考 NVIDIA TensorRT 安裝指南",
-        "snpe": "請參考 Qualcomm SNPE SDK 安裝指南",
     }
 
     def __init__(self, backend: str, reason: Optional[str] = None):
@@ -178,7 +191,7 @@ class BackendNotAvailableError(IVITError):
         )
 
 
-class InferenceError(IVITError):
+class InferenceError(IVITError, _CppInferenceError):
     """Error raised when inference fails."""
 
     def __init__(
@@ -356,7 +369,7 @@ class ResourceExhaustedError(IVITError):
             suggestions.append("釋放其他佔用記憶體的程序")
         elif "gpu" in resource_type.lower():
             suggestions.append("執行 `nvidia-smi` 查看 GPU 記憶體使用情況")
-            suggestions.append("使用 `model.configure_tensorrt(workspace_size=...)` 調整工作區大小")
+            suggestions.append("載入時以 `ivit.load(..., workspace_size=...)` 調整 TensorRT 工作區大小")
 
         suggestions.append("使用串流模式處理大量資料")
 

@@ -3,11 +3,21 @@
  * @brief Object detection demo
  */
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <iomanip>
 #include <opencv2/opencv.hpp>
 #include "ivit/vision/detector.hpp"
+
+// A window needs a display; without one (SSH, CI, containers) OpenCV's GUI aborts the process.
+static bool has_display() {
+#ifdef _WIN32
+    return true;
+#else
+    return std::getenv("DISPLAY") || std::getenv("WAYLAND_DISPLAY");
+#endif
+}
 
 using namespace ivit;
 using namespace ivit::vision;
@@ -54,16 +64,18 @@ void draw_detections(cv::Mat& image, const Results& results) {
 }
 
 void print_usage(const char* program) {
-    std::cout << "Usage: " << program << " <model_path> <image_path> [device] [conf_threshold]\n";
+    std::cout << "Usage: " << program << " <model_path> <image_path> [device] [conf_threshold] [yolox]\n";
     std::cout << "\n";
     std::cout << "Arguments:\n";
     std::cout << "  model_path      Path to detection model (YOLO, SSD, etc.)\n";
     std::cout << "  image_path      Path to input image\n";
     std::cout << "  device          Target device (auto, cpu, gpu:0, npu) [default: auto]\n";
     std::cout << "  conf_threshold  Confidence threshold [default: 0.5]\n";
+    std::cout << "  yolox           Use the input settings of the Model Zoo YOLOX exports\n";
+    std::cout << "                  (BGR, 0-255, top-left letterbox, decoded boxes)\n";
     std::cout << "\n";
     std::cout << "Example:\n";
-    std::cout << "  " << program << " yolov8n.onnx street.jpg gpu:0 0.5\n";
+    std::cout << "  " << program << " yolox-s.onnx bus.jpg cpu 0.5 yolox\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -76,13 +88,22 @@ int main(int argc, char* argv[]) {
     std::string image_path = argv[2];
     std::string device = argc > 3 ? argv[3] : "auto";
     float conf_threshold = argc > 4 ? std::stof(argv[4]) : 0.5f;
+    const bool yolox = argc > 5 && std::string(argv[5]) == "yolox";
 
     try {
         // Load detector
         std::cout << "Loading model: " << model_path << std::endl;
         std::cout << "Device: " << device << std::endl;
 
-        Detector detector(model_path, device);
+        // The input contract must match how the model was exported (see the SDK manual, 4.2).
+        LoadConfig config;
+        if (yolox) {
+            config.decoder = "yolox_decoded";
+            config.input_color = "bgr";
+            config.input_scale = 1.0f;
+            config.resize_mode = "letterbox_top_left";
+        }
+        Detector detector(model_path, device, config);
 
         // Load and detect
         std::cout << "Detecting objects in: " << image_path << std::endl;
@@ -113,9 +134,13 @@ int main(int argc, char* argv[]) {
         if (!image.empty()) {
             draw_detections(image, results);
 
-            cv::imshow("Detection Result", image);
-            std::cout << "\nPress any key to exit..." << std::endl;
-            cv::waitKey(0);
+            cv::imwrite("detection_result.jpg", image);
+            std::cout << "\nSaved: detection_result.jpg" << std::endl;
+            if (has_display()) {
+                cv::imshow("Detection Result", image);
+                std::cout << "Press any key to exit..." << std::endl;
+                cv::waitKey(0);
+            }
         }
 
     } catch (const std::exception& e) {

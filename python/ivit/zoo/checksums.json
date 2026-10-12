@@ -1,0 +1,10 @@
+{
+  "schema": 1,
+  "sha256": {
+    "yolox-l": "bcb47f120fb6e34827e67f8b54919f066402170cc64d8824c1c87a98b056f079",
+    "yolox-m": "6ea8c12e0ddebec15052ab4a913e48cc0c572a9c7ae94087555a7a89f0fb4fcb",
+    "yolox-nano": "1191aa15f9619338b7a72a0bd2c63957ca7d856f04a13e94b1d38180cd8a6141",
+    "yolox-s": "035e9de086731a7f867bf015a63fcc2ea537c1da46164ba494b437d06f7ff57f",
+    "yolox-tiny": "ea49f241a0e01f711390f60279ac7b436500c140df986df3c2d1b3d9a7ba0d0d"
+  }
+}

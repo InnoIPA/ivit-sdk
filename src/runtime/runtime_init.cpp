@@ -13,17 +13,15 @@
 #include "ivit/runtime/openvino_runtime.hpp"
 #endif
 
-
 namespace ivit {
 
 /**
  * @brief Runtime auto-registration on library load
  */
 class RuntimeAutoRegister {
-public:
+  public:
     RuntimeAutoRegister() {
-        auto& factory = RuntimeFactory::instance();
-
+        auto &factory = RuntimeFactory::instance();
 #ifdef IVIT_HAS_TENSORRT
         try {
             auto tensorrt = std::make_shared<TensorRTRuntime>();
@@ -45,7 +43,6 @@ public:
             // OpenVINO not available, skip
         }
 #endif
-
     }
 };
 

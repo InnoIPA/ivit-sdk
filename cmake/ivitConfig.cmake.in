@@ -1,0 +1,49 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+find_dependency(OpenCV COMPONENTS core imgproc imgcodecs highgui videoio dnn)
+
+# A self-contained SDK (the release tarball) ships its backend libraries in deps/lib. Use those;
+# requiring the OpenVINO / CUDA / TensorRT development installs would defeat the bundling. The
+# SDK's public headers include no OpenVINO, CUDA or TensorRT headers, so linking is all it needs.
+set(_ivit_bundle_dir "${PACKAGE_PREFIX_DIR}/deps/lib")
+set(_ivit_backend_libs "")
+
+if(@IVIT_USE_OPENVINO@)
+    if(EXISTS "${_ivit_bundle_dir}/libopenvino.so")
+        list(APPEND _ivit_backend_libs "${_ivit_bundle_dir}/libopenvino.so")
+    else()
+        find_dependency(OpenVINO @OpenVINO_VERSION@ EXACT COMPONENTS Runtime)
+        list(APPEND _ivit_backend_libs openvino::runtime)
+    endif()
+endif()
+
+if(@IVIT_USE_TENSORRT@)
+    if(EXISTS "${_ivit_bundle_dir}/libnvinfer.so")
+        list(APPEND _ivit_backend_libs "${_ivit_bundle_dir}/libnvinfer.so"
+             "${_ivit_bundle_dir}/libnvonnxparser.so" "${_ivit_bundle_dir}/libcudart.so")
+    else()
+        find_dependency(CUDAToolkit)
+        find_library(ivit_NVINFER_LIBRARY NAMES nvinfer libnvinfer.so.@IVIT_TENSORRT_MAJOR@
+            HINTS ${TENSORRT_ROOT} PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu)
+        find_library(ivit_NVONNXPARSER_LIBRARY NAMES nvonnxparser libnvonnxparser.so.@IVIT_TENSORRT_MAJOR@
+            HINTS ${TENSORRT_ROOT} PATH_SUFFIXES lib lib64 lib/x86_64-linux-gnu)
+        if(NOT ivit_NVINFER_LIBRARY OR NOT ivit_NVONNXPARSER_LIBRARY)
+            set(ivit_FOUND FALSE)
+            set(ivit_NOT_FOUND_MESSAGE "TensorRT runtime libraries not found; set TENSORRT_ROOT")
+            return()
+        endif()
+        list(APPEND _ivit_backend_libs "${ivit_NVINFER_LIBRARY}" "${ivit_NVONNXPARSER_LIBRARY}" CUDA::cudart)
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/ivitTargets.cmake")
+
+if(_ivit_backend_libs)
+    set_property(TARGET ivit::ivit APPEND PROPERTY INTERFACE_LINK_LIBRARIES ${_ivit_backend_libs})
+endif()
+
+set(ivit_VERSION "@PROJECT_VERSION@")
+set(ivit_OPENVINO_ENABLED @IVIT_USE_OPENVINO@)
+set(ivit_TENSORRT_ENABLED @IVIT_USE_TENSORRT@)
+check_required_components(ivit)

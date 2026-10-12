@@ -2,18 +2,19 @@
 
 import pytest
 from pathlib import Path
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 from ivit.zoo.registry import (
     ModelInfo,
     MODEL_REGISTRY,
     download,
+    get_model_info,
+    load as registry_load,
     _download_onnx_direct,
     _MIN_ONNX_SIZE,
 )
 
 
-_ONNX_URL_BASE = "https://github.com/innodisk-mannywang/ivit-sdk/releases/download/models-v1.0"
 
 # Models that should have onnx_url set
 _MODELS_WITH_ONNX_URL = [
@@ -22,10 +23,6 @@ _MODELS_WITH_ONNX_URL = [
     "yolox-s",
     "yolox-m",
     "yolox-l",
-    "rtdetr-l",
-    "rtdetr-x",
-    "rtmpose-s",
-    "rtmpose-m",
 ]
 
 
@@ -40,7 +37,6 @@ class TestModelInfoOnnxUrl:
             description="test model",
             input_size=(640, 640),
             num_classes=80,
-            formats=["onnx"],
         )
         assert info.onnx_url is None
 
@@ -53,18 +49,20 @@ class TestModelInfoOnnxUrl:
             description="test model",
             input_size=(640, 640),
             num_classes=80,
-            formats=["onnx"],
             onnx_url=url,
         )
         assert info.onnx_url == url
 
     @pytest.mark.parametrize("model_name", _MODELS_WITH_ONNX_URL)
     def test_models_have_onnx_url(self, model_name):
-        """All 9 target models should have onnx_url set."""
-        info = MODEL_REGISTRY[model_name]
-        assert info.onnx_url is not None
-        assert info.onnx_url.startswith(_ONNX_URL_BASE)
-        assert info.onnx_url.endswith(".onnx")
+        """Every pre-converted model has a usable https onnx_url."""
+        from ivit.zoo.registry import _google_drive_file_id
+
+        url = MODEL_REGISTRY[model_name].onnx_url
+        assert url is not None and url.startswith("https://")
+        assert _google_drive_file_id(url) or url.endswith(".onnx"), url
+        if model_name.startswith("yolox-"):
+            assert _google_drive_file_id(url), url  # hosted on Google Drive
 
     def test_torchvision_models_have_no_onnx_url(self):
         """Torchvision models should not have onnx_url."""
@@ -78,13 +76,13 @@ class TestModelInfoOnnxUrl:
                 f"Torchvision model '{name}' should not have onnx_url"
             )
 
-    def test_all_nine_models_accounted_for(self):
-        """Exactly 9 models should have onnx_url."""
+    def test_all_pre_converted_models_accounted_for(self):
+        """Exactly the 5 YOLOX models have onnx_url."""
         models_with_url = [
             name for name, info in MODEL_REGISTRY.items()
             if info.onnx_url is not None
         ]
-        assert len(models_with_url) == 9
+        assert len(models_with_url) == 5
 
 
 class TestDownloadRouting:
@@ -99,12 +97,12 @@ class TestDownloadRouting:
         expected_path = tmp_dir / "yolox-s.onnx"
         mock_direct.return_value = expected_path
 
-        result = download("yolox-s", format="onnx")
+        result = download("yolox-s")
 
         mock_direct.assert_called_once()
         call_args = mock_direct.call_args
         assert call_args[0][0] == "yolox-s"  # name
-        assert "yolox-s.onnx" in call_args[0][1]  # onnx_url
+        assert call_args[0][1] == MODEL_REGISTRY["yolox-s"].onnx_url
         assert result == expected_path
 
     @patch("ivit.zoo.registry._export_yolox_onnx")
@@ -116,7 +114,7 @@ class TestDownloadRouting:
         expected_path = tmp_dir / "yolox-s.onnx"
         mock_export.return_value = expected_path
 
-        result = download("yolox-s", format="onnx", from_source=True)
+        result = download("yolox-s", from_source=True)
 
         mock_export.assert_called_once()
         assert result == expected_path
@@ -130,63 +128,32 @@ class TestDownloadRouting:
         expected_path = tmp_dir / "resnet18.onnx"
         mock_export.return_value = expected_path
 
-        result = download("resnet18", format="onnx")
+        result = download("resnet18")
 
         mock_export.assert_called_once()
         assert result == expected_path
 
-    @patch("ivit.zoo.registry._download_onnx_direct")
-    @patch("ivit.zoo.registry._get_cache_dir")
-    def test_download_non_onnx_format_skips_direct(self, mock_cache_dir, mock_direct):
-        """Non-ONNX format should never use direct download even if onnx_url exists."""
-        tmp_dir = Path("/tmp/test_zoo_cache")
-        mock_cache_dir.return_value = tmp_dir
+    def test_download_has_no_format_option(self):
+        """Zoo models are ONNX only; ivit.load() converts them per backend."""
+        import inspect
 
-        # openvino format for yolox-s — should not call _download_onnx_direct
-        # It won't have a conversion path either, but the routing should skip direct
-        try:
-            download("yolox-s", format="openvino")
-        except Exception:
-            pass  # May fail for missing converter, that's OK
-
-        mock_direct.assert_not_called()
-
-    @patch("ivit.zoo.registry._download_onnx_direct")
-    @patch("ivit.zoo.registry._get_cache_dir")
-    def test_download_rtdetr_uses_direct_onnx(self, mock_cache_dir, mock_direct):
-        """RT-DETR models should use direct ONNX download by default."""
-        tmp_dir = Path("/tmp/test_zoo_cache")
-        mock_cache_dir.return_value = tmp_dir
-        expected_path = tmp_dir / "rtdetr-l.onnx"
-        mock_direct.return_value = expected_path
-
-        result = download("rtdetr-l", format="onnx")
-
-        mock_direct.assert_called_once()
-        assert result == expected_path
-
-    @patch("ivit.zoo.registry._download_onnx_direct")
-    @patch("ivit.zoo.registry._get_cache_dir")
-    def test_download_rtmpose_uses_direct_onnx(self, mock_cache_dir, mock_direct):
-        """RTMPose models should use direct ONNX download by default."""
-        tmp_dir = Path("/tmp/test_zoo_cache")
-        mock_cache_dir.return_value = tmp_dir
-        expected_path = tmp_dir / "rtmpose-s.onnx"
-        mock_direct.return_value = expected_path
-
-        result = download("rtmpose-s", format="onnx")
-
-        mock_direct.assert_called_once()
-        assert result == expected_path
+        assert "format" not in inspect.signature(download).parameters
+        assert "format" not in inspect.signature(registry_load).parameters
+        assert not hasattr(get_model_info("yolox-s"), "formats")
 
     @patch("ivit.zoo.registry._get_cache_dir")
     def test_download_cached_model_returns_immediately(self, mock_cache_dir, tmp_path):
-        """If model file already exists, download() should return it without downloading."""
+        """A cached file is returned without downloading when no checksum is registered.
+
+        Without a registered checksum the cache cannot be verified and is trusted; models
+        with a checksum are re-verified (see test_zoo_checksum.py).
+        """
         mock_cache_dir.return_value = tmp_path
         cached_file = tmp_path / "yolox-s.onnx"
         cached_file.write_bytes(b"fake onnx content")
 
-        result = download("yolox-s", format="onnx")
+        with patch("ivit.zoo.registry._expected_sha256", return_value=None):
+            result = download("yolox-s")
 
         assert result == cached_file
 
@@ -226,3 +193,14 @@ class TestDownloadRouting:
 
         assert result == onnx_path
         assert onnx_path.exists()
+
+
+def test_list_models_filters_by_zoo_task_and_rejects_unknown_names():
+    from ivit.zoo import list_models
+
+    assert "yolox-s" in list_models(task="detect")
+    assert "resnet18" in list_models(task="classify") and "yolox-s" not in list_models(task="classify")
+    assert "deeplabv3-resnet50" in list_models(task="segment")
+    # "classification" is the LoadConfig spelling, not a zoo task: say so instead of returning [].
+    with pytest.raises(ValueError, match="classify"):
+        list_models(task="classification")

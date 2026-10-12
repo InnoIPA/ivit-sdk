@@ -1,7 +1,8 @@
 """
 Training module for iVIT-SDK.
 
-Provides transfer learning capabilities for classification and detection models.
+Provides transfer learning for classification, object detection (YOLO 系列),
+and semantic segmentation。
 """
 
 from .dataset import (
@@ -9,10 +10,18 @@ from .dataset import (
     ImageFolderDataset,
     COCODataset,
     YOLODataset,
+    SegmentationDataset,
     split_dataset,
 )
 
-from .trainer import Trainer
+from .base import BaseTrainer
+from .classification import ClassificationTrainer
+from .segmentation import SegmentationTrainer
+
+from .detection import DetectionTrainer
+
+# 向後相容
+from .classification import ClassificationTrainer as Trainer
 
 from .callbacks import (
     TrainingCallback,
@@ -45,9 +54,14 @@ __all__ = [
     "ImageFolderDataset",
     "COCODataset",
     "YOLODataset",
+    "SegmentationDataset",
     "split_dataset",
-    # Trainer
-    "Trainer",
+    # Trainers
+    "BaseTrainer",
+    "ClassificationTrainer",
+    "SegmentationTrainer",
+    "DetectionTrainer",
+    "Trainer",  # alias = ClassificationTrainer
     # Callbacks
     "TrainingCallback",
     "EarlyStopping",

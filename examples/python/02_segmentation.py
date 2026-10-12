@@ -8,18 +8,18 @@ Supports multiple backends (TensorRT, OpenVINO).
 Usage:
     # Run from project root
     python examples/python/02_segmentation.py \
-        -m ~/.cache/ivit/models/deeplabv3-mobilenetv3.onnx \
+        -m deeplabv3-mobilenetv3 \
         -i examples/data/images/bus.jpg
 
     # With specific device
     python examples/python/02_segmentation.py \
-        -m ~/.cache/ivit/models/deeplabv3-mobilenetv3.onnx \
+        -m deeplabv3-mobilenetv3 \
         -i examples/data/images/bus.jpg \
         -d npu
 
     # Benchmark mode
     python examples/python/02_segmentation.py \
-        -m ~/.cache/ivit/models/deeplabv3-mobilenetv3.onnx \
+        -m deeplabv3-mobilenetv3 \
         -i examples/data/images/bus.jpg \
         -d npu -b -n 100
 """
@@ -33,21 +33,31 @@ import os
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.abspath(os.path.join(SCRIPT_DIR, '..', '..'))
 
-sys.path.insert(0, os.path.join(PROJECT_ROOT, 'python'))
-
 import ivit
 from ivit.vision import Segmentor
+
+
+def resolve_model(model):
+    """A Model Zoo name -> (local file, its verified load settings); a file path -> (path, {}).
+
+    Zoo models need the settings their export was made for (task, decoder, color order,
+    normalization, labels); with your own model file, pass the settings that match its export.
+    """
+    if model in ivit.zoo.list_models():
+        return str(ivit.zoo.download(model)), dict(ivit.zoo.get_model_info(model).load_options)
+    return model, {}
 import cv2
 import numpy as np
 
 
 def main():
     parser = argparse.ArgumentParser(description='iVIT-SDK Segmentation Demo')
-    parser.add_argument('--model', '-m', type=str, required=True,
-                        help='Path to the model file (ONNX, TensorRT engine, OpenVINO IR)')
+    parser.add_argument('--model', '-m', type=str, default='deeplabv3-mobilenetv3',
+                        help='Model Zoo name or model file (default: deeplabv3-mobilenetv3)')
     parser.add_argument('--device', '-d', type=str, default='auto',
                         help='Device to use (auto, cpu, cuda:0, npu)')
-    parser.add_argument('--image', '-i', type=str, required=True,
+    parser.add_argument('--image', '-i', type=str,
+                        default=os.path.join(PROJECT_ROOT, 'examples', 'data', 'images', 'bus.jpg'),
                         help='Path to the input image')
     parser.add_argument('--output', '-o', type=str, default='output_seg.jpg',
                         help='Path to the output image')
@@ -78,7 +88,11 @@ def main():
     # Load model
     print(f"Loading model: {args.model}")
     t0 = time.perf_counter()
-    segmentor = Segmentor(args.model, device=device)
+    model_path, options = resolve_model(args.model)
+    for key, value in options.items():
+        if key != "labels":  # 80+ names: print the count instead
+            print(f"  {key} = {value}")
+    segmentor = Segmentor(model_path, device=device, **options)
     load_time = (time.perf_counter() - t0) * 1000
     print(f"Model loaded in {load_time:.1f} ms")
     print(f"  Input size: {segmentor.input_size}")

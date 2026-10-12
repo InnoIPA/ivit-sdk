@@ -24,6 +24,7 @@ namespace ivit {
 struct OpenVINOModel {
     ov::CompiledModel compiled_model;
     ov::InferRequest infer_request;
+    std::mutex infer_mutex;  ///< Serializes use of the single infer_request
     std::vector<TensorInfo> input_infos;
     std::vector<TensorInfo> output_infos;
     std::string device;
@@ -90,7 +91,6 @@ public:
     /**
      * @brief Enable/disable async inference
      */
-    void set_async(bool enable) { use_async_ = enable; }
 
 private:
     void initialize();
@@ -103,7 +103,6 @@ private:
     ov::Core core_;
     std::mutex mutex_;
     bool initialized_ = false;
-    bool use_async_ = false;
     std::string cache_dir_;
 };
 

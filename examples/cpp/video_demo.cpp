@@ -3,10 +3,20 @@
  * @brief Video object detection demo
  */
 
+#include <cstdlib>
 #include <iostream>
 #include <string>
 #include <opencv2/opencv.hpp>
 #include "ivit/vision/detector.hpp"
+
+// A window needs a display; without one (SSH, CI, containers) OpenCV's GUI aborts the process.
+static bool has_display() {
+#ifdef _WIN32
+    return true;
+#else
+    return std::getenv("DISPLAY") || std::getenv("WAYLAND_DISPLAY");
+#endif
+}
 
 using namespace ivit;
 using namespace ivit::vision;
@@ -58,8 +68,11 @@ void print_usage(const char* program) {
     std::cout << "  conf_threshold  Confidence threshold [default: 0.5]\n";
     std::cout << "\n";
     std::cout << "Examples:\n";
-    std::cout << "  " << program << " yolov8n.onnx video.mp4 gpu:0 0.5\n";
-    std::cout << "  " << program << " yolov8n.onnx 0 gpu:0 0.5  # Use camera 0\n";
+    std::cout << "  " << program << " detector.onnx video.mp4 gpu:0 0.5\n";
+    std::cout << "  " << program << " detector.onnx 0 gpu:0 0.5  # Use camera 0\n";
+    std::cout << "\nModels are loaded with the default input contract (RGB, pixel/255, no mean/std).\n"
+                 "Models exported differently need matching LoadConfig settings (SDK manual 4.2);\n"
+                 "for the Model Zoo YOLOX files use: detection_demo <model> <image> cpu 0.5 yolox\n";
 }
 
 int main(int argc, char* argv[]) {
@@ -82,12 +95,10 @@ int main(int argc, char* argv[]) {
 
         // Open video source
         cv::VideoCapture cap;
-        bool is_camera = false;
 
         try {
             int cam_id = std::stoi(video_source);
             cap.open(cam_id);
-            is_camera = true;
             std::cout << "Opening camera: " << cam_id << std::endl;
         } catch (...) {
             cap.open(video_source);
@@ -107,7 +118,11 @@ int main(int argc, char* argv[]) {
 
         std::cout << "Video: " << frame_width << "x" << frame_height
                   << " @ " << fps << " FPS" << std::endl;
-        std::cout << "\nPress 'q' or ESC to quit..." << std::endl;
+        const bool show = has_display();
+        if (show)
+            std::cout << "\nPress 'q' or ESC to quit..." << std::endl;
+        else
+            std::cout << "\nNo display: processing without a window" << std::endl;
 
         // Process frames
         cv::Mat frame;
@@ -138,25 +153,30 @@ int main(int argc, char* argv[]) {
                 cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(0, 255, 0), 2);
 
             // Display
-            cv::imshow("Video Detection", frame);
-
-            // Check for quit
-            int key = cv::waitKey(1);
-            if (key == 'q' || key == 27) {  // 'q' or ESC
-                break;
+            if (show) {
+                cv::imshow("Video Detection", frame);
+                int key = cv::waitKey(1);
+                if (key == 'q' || key == 27) {  // 'q' or ESC
+                    break;
+                }
             }
         }
 
         // Print statistics
         std::cout << "\n=== Statistics ===" << std::endl;
         std::cout << "Total frames: " << frame_count << std::endl;
+        if (frame_count == 0 || total_inference_time <= 0) {
+            std::cerr << "No frames were processed" << std::endl;
+            return 1;
+        }
         std::cout << "Average inference time: "
                   << (total_inference_time / frame_count) << " ms" << std::endl;
         std::cout << "Average FPS: "
                   << (1000.0 * frame_count / total_inference_time) << std::endl;
 
         cap.release();
-        cv::destroyAllWindows();
+        if (show)
+            cv::destroyAllWindows();
 
     } catch (const std::exception& e) {
         std::cerr << "Error: " << e.what() << std::endl;
