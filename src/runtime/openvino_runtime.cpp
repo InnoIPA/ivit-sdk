@@ -9,9 +9,7 @@
 
 #include <algorithm>
 #include <cstdio>
-#include <fcntl.h>
 #include <filesystem>
-#include <unistd.h>
 
 namespace ivit {
 
@@ -56,20 +54,11 @@ std::vector<DeviceInfo> OpenVINORuntime::get_devices() const {
     std::vector<DeviceInfo> devices;
 
     try {
-        // Suppress stderr noise from Intel OpenCL compiler (IGC) during device enumeration
-        fflush(stderr);
-        int saved_stderr = dup(STDERR_FILENO);
-        int devnull = open("/dev/null", O_WRONLY);
-        dup2(devnull, STDERR_FILENO);
-        close(devnull);
-
+        // Do not redirect process-wide stderr here: dup2 on fd 2 is not thread safe (two
+        // concurrent callers could leave stderr pointing at /dev/null for good), other threads
+        // may be logging, and an exception would skip the restore. DeviceManager does the same.
         ov::Core core;
         auto available = core.get_available_devices();
-
-        // Restore stderr
-        fflush(stderr);
-        dup2(saved_stderr, STDERR_FILENO);
-        close(saved_stderr);
 
         for (const auto &device_name : available) {
             DeviceInfo info;
@@ -283,8 +272,13 @@ std::map<std::string, Tensor> OpenVINORuntime::infer(void *handle,
         model->infer_request.set_tensor(info.name, ov_tensor);
     }
 
-    // Run inference
-    model->infer_request.infer();
+    // Run inference. OpenVINO's own exception type would otherwise escape: callers (and the C
+    // API, which maps IVITError to a category) only know the SDK's exceptions.
+    try {
+        model->infer_request.infer();
+    } catch (const ov::Exception &error) {
+        throw InferenceError(std::string("OpenVINO inference failed: ") + error.what());
+    }
 
     // Get output tensors
     std::map<std::string, Tensor> outputs;
@@ -298,8 +292,23 @@ std::map<std::string, Tensor> OpenVINORuntime::infer(void *handle,
         const auto output_shape = ov_tensor.get_shape();
         Shape shape(output_shape.begin(), output_shape.end());
         DataType dtype = ov_to_dtype(ov_tensor.get_element_type());
+        if (dtype == DataType::Unknown) {
+            // Unknown is sized as 4 bytes per element, which is wrong for i16/u16/f64/bf16...:
+            // copying would read past the OpenVINO buffer or silently drop half the data.
+            throw InferenceError("Output '" + info.name + "' has element type " +
+                                 ov_tensor.get_element_type().get_type_name() +
+                                 ", which iVIT cannot represent; cast it to float32, float16, "
+                                 "int32 or int64 in the model");
+        }
         Tensor output(shape, dtype);
         output.set_name(info.name);
+
+        if (output.byte_size() != ov_tensor.get_byte_size()) {
+            throw InferenceError("Output '" + info.name + "' has " +
+                                 std::to_string(ov_tensor.get_byte_size()) +
+                                 " bytes, but iVIT expected " +
+                                 std::to_string(output.byte_size()));
+        }
 
         // Copy data
         std::memcpy(output.data(), ov_tensor.data(), output.byte_size());

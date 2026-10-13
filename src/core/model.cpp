@@ -298,14 +298,49 @@ std::future<std::vector<Results>> Model::predict_batch_async(const std::vector<c
                       });
 }
 
+namespace {
+// Detached submit_inference threads in flight. Never destroyed: a thread may still touch it
+// while static destruction runs.
+struct PendingWork {
+    std::mutex mutex;
+    std::condition_variable idle;
+    int count = 0;
+};
+
+PendingWork &pending_work() {
+    static PendingWork *state = new PendingWork;
+    return *state;
+}
+
+// Created on the first submit_inference, i.e. after the inference runtimes exist, so static
+// destruction runs it first: the process waits for detached work before the runtime goes away.
+struct WaitAtExit {
+    ~WaitAtExit() { wait_for_pending_work(std::chrono::seconds(30)); }
+};
+} // namespace
+
+bool wait_for_pending_work(std::chrono::milliseconds timeout) {
+    auto &state = pending_work();
+    std::unique_lock<std::mutex> lock(state.mutex);
+    return state.idle.wait_for(lock, timeout, [&state] { return state.count == 0; });
+}
+
 void Model::submit_inference(const cv::Mat &image, std::function<void(Results)> callback,
                              const InferConfig &config) {
     // Fire-and-forget: launch async task that calls callback
     cv::Mat image_copy = image.clone();
 
+    static WaitAtExit wait_at_exit;
+    (void)wait_at_exit;
+    auto &state = pending_work();
+    {
+        std::lock_guard<std::mutex> lock(state.mutex);
+        ++state.count; // counted before the thread starts, so a waiter cannot miss it
+    }
+
     // The thread is detached, so it must own a reference to the model: a raw
     // `this` would dangle if the caller released the model right after submitting.
-    std::thread([this, self = keep_alive(), image_copy, callback, config]() {
+    std::thread([this, self = keep_alive(), image_copy, callback, config, &state]() mutable {
         try {
             Results results = this->predict(image_copy, config);
             if (callback) {
@@ -315,6 +350,15 @@ void Model::submit_inference(const cv::Mat &image, std::function<void(Results)> 
             // Log error but don't propagate - this is fire-and-forget
             detail::log(LogLevel::ERROR, std::string("Async inference error: ") + e.what());
         }
+        // Drop what the thread holds (possibly the last reference to the model, which unloads
+        // it) before reporting idle, so a waiter knows nothing is left running.
+        callback = nullptr;
+        self.reset();
+        {
+            std::lock_guard<std::mutex> lock(state.mutex);
+            --state.count;
+        }
+        state.idle.notify_all();
     }).detach();
 }
 
@@ -367,10 +411,10 @@ std::vector<Results> Model::predict_concurrent(const std::vector<cv::Mat> &image
     }
     for (auto &future : futures)
         future.get();
+    // BatchEnd pairs with BatchStart even when an image failed, so a listener never waits for it.
+    trigger_callback(CallbackEvent::BatchEnd, 0.0, static_cast<int>(images.size()));
     if (first_error)
         std::rethrow_exception(first_error);
-
-    trigger_callback(CallbackEvent::BatchEnd, 0.0, static_cast<int>(images.size()));
     return results;
 }
 
@@ -447,25 +491,67 @@ static cv::Mat apply_augmentation(const cv::Mat &image, const std::string &aug) 
     return image.clone();
 }
 
+static bool is_known_augmentation(const std::string &aug) {
+    static const char *const names[] = {"original",  "hflip",     "vflip",     "rotate90",
+                                        "rotate180", "rotate270", "scale_up",  "scale_down"};
+    for (const char *name : names)
+        if (aug == name)
+            return true;
+    return false;
+}
+
+// Map a box found in the augmented image (aug_w x aug_h) back to the original image
+// (orig_w x orig_h). All transforms are exact on continuous coordinates.
 static void reverse_bbox_augmentation(Detection &det, const std::string &aug, int orig_w,
-                                      int orig_h) {
+                                      int orig_h, int aug_w, int aug_h) {
     auto &b = det.bbox;
+    const float W = static_cast<float>(orig_w), H = static_cast<float>(orig_h);
+    const BBox a = b; // augmented-image coordinates
     if (aug == "hflip") {
-        float new_x1 = orig_w - b.x2;
-        float new_x2 = orig_w - b.x1;
-        b.x1 = new_x1;
-        b.x2 = new_x2;
+        b.x1 = W - a.x2;
+        b.x2 = W - a.x1;
     } else if (aug == "vflip") {
-        float new_y1 = orig_h - b.y2;
-        float new_y2 = orig_h - b.y1;
-        b.y1 = new_y1;
-        b.y2 = new_y2;
+        b.y1 = H - a.y2;
+        b.y2 = H - a.y1;
+    } else if (aug == "rotate180") {
+        b.x1 = W - a.x2;
+        b.x2 = W - a.x1;
+        b.y1 = H - a.y2;
+        b.y2 = H - a.y1;
+    } else if (aug == "rotate90") { // clockwise: original (x, y) became (H - y, x)
+        b.x1 = a.y1;
+        b.x2 = a.y2;
+        b.y1 = H - a.x2;
+        b.y2 = H - a.x1;
+    } else if (aug == "rotate270") { // counter-clockwise: original (x, y) became (y, W - x)
+        b.x1 = W - a.y2;
+        b.x2 = W - a.y1;
+        b.y1 = a.x1;
+        b.y2 = a.x2;
+    } else if (aug == "scale_up" || aug == "scale_down") {
+        const float sx = static_cast<float>(aug_w) / W, sy = static_cast<float>(aug_h) / H;
+        b.x1 = a.x1 / sx;
+        b.x2 = a.x2 / sx;
+        b.y1 = a.y1 / sy;
+        b.y2 = a.y2 / sy;
     }
-    // For rotations and scaling, more complex reverse transforms would be needed
+    b.x1 = std::clamp(b.x1, 0.0f, W);
+    b.x2 = std::clamp(b.x2, 0.0f, W);
+    b.y1 = std::clamp(b.y1, 0.0f, H);
+    b.y2 = std::clamp(b.y2, 0.0f, H);
 }
 
 Results Model::predict_tta(const cv::Mat &image, const std::vector<std::string> &augmentations,
                            const InferConfig &config) {
+    if (augmentations.empty())
+        throw IVITError("predict_tta needs at least one augmentation");
+    for (const auto &aug : augmentations) {
+        if (!is_known_augmentation(aug))
+            throw IVITError("Unknown TTA augmentation '" + aug +
+                            "'; supported: original, hflip, vflip, rotate90, rotate180, "
+                            "rotate270, scale_up, scale_down");
+    }
+
     std::vector<Results> all_results;
     all_results.reserve(augmentations.size());
 
@@ -475,16 +561,19 @@ Results Model::predict_tta(const cv::Mat &image, const std::vector<std::string> 
     for (const auto &aug : augmentations) {
         cv::Mat augmented = apply_augmentation(image, aug);
         Results result = predict(augmented, config);
+        if (!result.segmentation_mask.empty())
+            throw InferenceError("predict_tta supports classification and detection; masks of a "
+                                 "segmentation model cannot be merged across augmentations");
 
         // Reverse augmentation on detections
         for (auto &det : result.detections) {
-            reverse_bbox_augmentation(det, aug, orig_w, orig_h);
+            reverse_bbox_augmentation(det, aug, orig_w, orig_h, augmented.cols, augmented.rows);
         }
 
         all_results.push_back(std::move(result));
     }
 
-    // Merge results using WBF-style approach
+    // Merge results
     Results merged;
     merged.image_size = image.size();
     merged.device_used = device();
@@ -512,34 +601,13 @@ Results Model::predict_tta(const cv::Mat &image, const std::vector<std::string> 
                   });
     }
 
-    // For detections: collect all and apply NMS
+    // For detections: collect all, then the same NMS predict() uses (per class unless
+    // agnostic_nms, float boxes, max_detections).
     for (const auto &r : all_results) {
-        for (const auto &det : r.detections) {
-            merged.detections.push_back(det);
-        }
+        merged.detections.insert(merged.detections.end(), r.detections.begin(),
+                                 r.detections.end());
     }
-    if (!merged.detections.empty()) {
-        // Re-apply NMS to merged detections
-        std::vector<cv::Rect> boxes;
-        std::vector<float> scores;
-        std::vector<int> class_ids;
-        for (const auto &det : merged.detections) {
-            boxes.emplace_back(static_cast<int>(det.bbox.x1), static_cast<int>(det.bbox.y1),
-                               static_cast<int>(det.bbox.x2 - det.bbox.x1),
-                               static_cast<int>(det.bbox.y2 - det.bbox.y1));
-            scores.push_back(det.confidence);
-            class_ids.push_back(det.class_id);
-        }
-        std::vector<int> keep;
-        cv::dnn::NMSBoxes(boxes, scores, detail::effective_confidence(config, TaskType::Detection),
-                          config.iou_threshold, keep);
-
-        std::vector<Detection> kept;
-        for (int idx : keep) {
-            kept.push_back(merged.detections[idx]);
-        }
-        merged.detections = std::move(kept);
-    }
+    detail::merge_detections(merged.detections, config);
 
     return merged;
 }
@@ -609,6 +677,8 @@ ModelManager &ModelManager::instance() {
 std::shared_ptr<Model> ModelManager::load(const std::string &path,
                                           const LoadConfig &requested_config) {
     LoadConfig config = requested_config;
+    if (path.empty())
+        throw ModelLoadError("Model path is empty");
     detail::validate_contract(config);
     const BackendType requested_backend = backend_from_string(config.backend);
     if (config.precision != "fp32" && config.precision != "fp16" && config.precision != "int8")
@@ -629,11 +699,13 @@ std::shared_ptr<Model> ModelManager::load(const std::string &path,
         namespace fs = std::filesystem;
         fs::path labels_file = config.labels_path;
         if (labels_file.empty()) {
+            std::error_code ec;
             labels_file = fs::path(path).replace_extension(".labels.txt");
-            if (!fs::exists(labels_file))
+            if (!fs::exists(labels_file, ec))
                 labels_file = fs::path(path).parent_path() / "labels.txt";
         }
-        if (!config.labels_path.empty() || fs::exists(labels_file)) {
+        std::error_code ignored; // an unreadable directory means "no labels file", not a crash
+        if (!config.labels_path.empty() || fs::exists(labels_file, ignored)) {
             std::ifstream file(labels_file);
             if (!file)
                 throw ModelLoadError("Cannot read labels: " + labels_file.string());

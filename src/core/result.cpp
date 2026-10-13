@@ -4,6 +4,7 @@
  */
 
 #include "ivit/core/result.hpp"
+#include "utils/image_utils.hpp"
 #include "utils/json.hpp"
 #include <fstream>
 #include <iomanip>
@@ -80,7 +81,8 @@ cv::Mat Results::colorize_mask(const std::map<int, cv::Vec3b> &colormap) const {
     return colored;
 }
 
-cv::Mat Results::overlay_mask(const cv::Mat &image, float alpha) const {
+cv::Mat Results::overlay_mask(const cv::Mat &source, float alpha) const {
+    const cv::Mat image = detail::ensure_bgr(source);
     cv::Mat colored = colorize_mask();
     cv::Mat overlay;
 
@@ -95,7 +97,7 @@ cv::Mat Results::overlay_mask(const cv::Mat &image, float alpha) const {
 
 cv::Mat Results::visualize(const cv::Mat &image, bool show_labels, bool show_confidence,
                            bool show_boxes, bool show_masks) const {
-    cv::Mat vis = image.clone();
+    cv::Mat vis = detail::ensure_bgr(image).clone();
 
     // Color palette
     const std::vector<cv::Scalar> colors = {
@@ -193,25 +195,32 @@ std::string Results::to_json() const {
 }
 
 void Results::save(const std::string &path, const std::string &format) const {
-    std::string fmt = format;
-    if (fmt == "json" || path.substr(path.length() - 5) == ".json") {
-        std::ofstream file(path);
+    // `format` alone decides ("json" or "txt"); the file extension is not consulted.
+    if (format != "json" && format != "txt")
+        throw IVITError("Unsupported save format: " + format + " (use \"json\" or \"txt\")");
+
+    std::ofstream file(path);
+    if (!file)
+        throw IVITError("Cannot open file for writing: " + path);
+
+    if (format == "json") {
         file << to_json();
-    } else if (fmt == "txt" || path.substr(path.length() - 4) == ".txt") {
-        // YOLO format
-        std::ofstream file(path);
+    } else {
+        // YOLO format: class cx cy w h, normalized by the image size
+        if (!detections.empty() && (image_size.width <= 0 || image_size.height <= 0))
+            throw IVITError("Cannot write YOLO text: the image size is unknown");
         for (const auto &det : detections) {
             auto [cx, cy, w, h] = det.bbox.to_cxcywh();
-            // Normalize by image size
             cx /= image_size.width;
             cy /= image_size.height;
             w /= image_size.width;
             h /= image_size.height;
             file << det.class_id << " " << cx << " " << cy << " " << w << " " << h << "\n";
         }
-    } else {
-        throw IVITError("Unsupported save format: " + format);
     }
+    file.close();
+    if (!file)
+        throw IVITError("Failed to write " + path);
 }
 
 } // namespace ivit

@@ -7,6 +7,7 @@
 #include "ivit/runtime/runtime.hpp"
 #include "vision/processing.hpp"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
 #include <filesystem>
 #include <fstream>
@@ -111,12 +112,15 @@ void Detector::predict_video(const std::string &source,
                              const InferConfig &config) {
     cv::VideoCapture cap;
 
-    // Try to open as camera index or file
-    try {
+    // Only an all-digit string is a camera index: std::stoi("720p.mp4") parses "720" and used to
+    // open camera 720 instead of the file.
+    const bool is_camera =
+        !source.empty() && std::all_of(source.begin(), source.end(),
+                                       [](unsigned char c) { return std::isdigit(c) != 0; });
+    if (is_camera)
         cap.open(std::stoi(source));
-    } catch (...) {
+    else
         cap.open(source);
-    }
 
     if (!cap.isOpened()) {
         throw IVITError("Failed to open video source: " + source);

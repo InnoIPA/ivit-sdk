@@ -11,6 +11,7 @@
 #include "ivit/core/result.hpp"
 #include "ivit/core/tensor.hpp"
 #include <atomic>
+#include <chrono>
 #include <condition_variable>
 #include <functional>
 #include <future>
@@ -276,6 +277,18 @@ class ModelManager {
     std::string cache_dir_;
     std::map<std::string, std::shared_ptr<Model>> cache_;
 };
+
+/**
+ * @brief Wait for fire-and-forget work started by Model::submit_inference
+ *
+ * Those threads are detached. Without waiting, a process that exits while one is still running
+ * tears the inference runtime down underneath it and crashes. This is done automatically at
+ * process exit (and by the Python package's atexit hook); call it yourself to know that every
+ * callback has run, or before releasing resources the callbacks use.
+ *
+ * @return false if the work did not finish within the timeout
+ */
+bool wait_for_pending_work(std::chrono::milliseconds timeout = std::chrono::seconds(30));
 
 } // namespace ivit
 

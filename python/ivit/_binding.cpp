@@ -128,6 +128,17 @@ cv::Mat numpy_to_mat(py::array array) {
     return mat.clone();
 }
 
+namespace {
+// Py_IsFinalizing() is public from 3.13; earlier versions only expose the underscore name.
+inline bool ivit_py_finalizing() {
+#if PY_VERSION_HEX >= 0x030D0000
+    return Py_IsFinalizing();
+#else
+    return _Py_IsFinalizing();
+#endif
+}
+} // namespace
+
 /**
  * @brief Python callable that can be copied and destroyed on any thread
  *
@@ -141,6 +152,11 @@ struct GilSafeCallable {
 
     explicit GilSafeCallable(py::function f)
         : fn(new py::function(std::move(f)), [](py::function* p) {
+              // A detached inference thread can drop its last reference after the interpreter
+              // has started shutting down; taking the GIL then crashes (PyThreadState_New on a
+              // finalized runtime). Leak the reference instead, as set_log_callback does.
+              if (!Py_IsInitialized() || ivit_py_finalizing())
+                  return;
               py::gil_scoped_acquire gil;
               delete p;
           }) {}
@@ -150,16 +166,6 @@ struct GilSafeCallable {
 // Python Module Definition
 // ============================================================================
 
-namespace {
-// Py_IsFinalizing() is public from 3.13; earlier versions only expose the underscore name.
-inline bool ivit_py_finalizing() {
-#if PY_VERSION_HEX >= 0x030D0000
-    return Py_IsFinalizing();
-#else
-    return _Py_IsFinalizing();
-#endif
-}
-} // namespace
 
 PYBIND11_MODULE(_ivit_core, m) {
     m.doc() = "iVIT-SDK C++ bindings - Unified Computer Vision SDK";
@@ -705,6 +711,8 @@ PYBIND11_MODULE(_ivit_core, m) {
             cv::Mat mat = numpy_to_mat(image);
             GilSafeCallable cb(std::move(callback));
             model.submit_inference(mat, [cb](ivit::Results results) {
+                if (!Py_IsInitialized() || ivit_py_finalizing())
+                    return; // interpreter is shutting down: nothing can run Python code now
                 py::gil_scoped_acquire acquire;
                 (*cb.fn)(results);
             }, config);
@@ -719,6 +727,8 @@ PYBIND11_MODULE(_ivit_core, m) {
                        py::function callback, int priority) {
             GilSafeCallable cb(std::move(callback));
             return model.on(event, [cb](const ivit::CallbackContext& ctx) {
+                if (!Py_IsInitialized() || ivit_py_finalizing())
+                    return;
                 py::gil_scoped_acquire acquire;
                 (*cb.fn)(ctx);
             }, priority);
@@ -862,6 +872,15 @@ Examples:
     # Convert to OpenVINO IR
     ivit.convert_model("yolov8n.onnx", "yolov8n.xml", "cpu", "fp16")
 )doc");
+
+    // Releases the GIL while waiting: pending callbacks need it to finish.
+    m.def("wait_for_pending_work", [](double timeout) {
+              py::gil_scoped_release release;
+              return ivit::wait_for_pending_work(std::chrono::milliseconds(
+                  static_cast<long long>(std::max(0.0, timeout) * 1000.0)));
+          },
+          py::arg("timeout") = 30.0,
+          "Wait for submit_inference work still running; False if it did not finish in time");
 
     m.def("clear_cache", &ivit::clear_cache,
           py::arg("cache_dir") = "",

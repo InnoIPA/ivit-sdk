@@ -452,6 +452,34 @@ std::vector<TensorInfo> TensorRTRuntime::get_output_info(void *handle) const {
     return engine->output_infos;
 }
 
+namespace {
+std::string describe(const Shape &shape) {
+    std::string text = "[";
+    for (size_t i = 0; i < shape.size(); ++i)
+        text += (i ? "," : "") + std::to_string(shape[i]);
+    return text + "]";
+}
+
+// Fixed dimensions must match exactly; dynamic ones (negative in the engine) are validated by
+// setInputShape against the optimization profile.
+void validate_input(const TensorInfo &info, const Tensor &input) {
+    if (input.dtype() != info.dtype) {
+        throw InferenceError("Input '" + info.name + "' has data type " + to_string(input.dtype()) +
+                             " but the engine expects " + to_string(info.dtype));
+    }
+    if (input.shape().size() != info.shape.size()) {
+        throw InferenceError("Input '" + info.name + "' has shape " + describe(input.shape()) +
+                             " but the engine expects " + describe(info.shape));
+    }
+    for (size_t d = 0; d < info.shape.size(); ++d) {
+        if (info.shape[d] >= 0 && input.shape()[d] != info.shape[d]) {
+            throw InferenceError("Input '" + info.name + "' has shape " + describe(input.shape()) +
+                                 " but the engine expects " + describe(info.shape));
+        }
+    }
+}
+} // namespace
+
 std::map<std::string, Tensor> TensorRTRuntime::infer(void *handle,
                                                      const std::map<std::string, Tensor> &inputs) {
     TensorRTEngine *engine = static_cast<TensorRTEngine *>(handle);
@@ -474,6 +502,11 @@ std::map<std::string, Tensor> TensorRTRuntime::infer(void *handle,
         }
 
         const Tensor &input = it->second;
+
+        // The copy below only checks that the bytes fit. A wrong dtype or shape that happens to
+        // fit would run on stale or reinterpreted device memory and return wrong numbers without
+        // any error, so check them against the engine (OpenVINO already rejects these).
+        validate_input(info, input);
 
         // Dynamic inputs: tell the context the actual shape for this call
         if (info.is_dynamic()) {
@@ -831,6 +864,12 @@ TensorRTRuntime::create_engine_wrapper(std::shared_ptr<nvinfer1::ICudaEngine> en
             TensorInfo info;
             info.name = name;
             info.dtype = nv_to_dtype(nv_dtype);
+            if (info.dtype == DataType::Unknown) {
+                // Buffers and host tensors are sized from the dtype; Unknown would be wrong.
+                throw ModelLoadError(std::string("Tensor '") + name + "' has a data type iVIT "
+                                     "cannot represent (e.g. bfloat16 or FP8); keep model "
+                                     "inputs and outputs in float32, float16, int8, int32 or int64");
+            }
 
             // Keep the declared shape (negative = dynamic) so callers can tell
             info.shape = to_shape(dims);

@@ -4,6 +4,7 @@
  */
 
 #include "ivit/utils/visualizer.hpp"
+#include "utils/image_utils.hpp"
 #include <opencv2/imgproc.hpp>
 #include <sstream>
 #include <iomanip>
@@ -209,7 +210,7 @@ cv::Mat Visualizer::draw_segmentation(
         return image.clone();
     }
 
-    cv::Mat output = image.clone();
+    cv::Mat output = detail::ensure_bgr(image).clone();
     cv::Mat colored_mask(image.size(), CV_8UC3, cv::Scalar(0, 0, 0));
 
     // Resize mask if needed
@@ -340,6 +341,8 @@ cv::Mat Visualizer::create_comparison(
 
     // Determine grid size
     int n = static_cast<int>(images.size());
+    if (cols < 1)
+        throw IVITError("create_comparison needs at least 1 column");
     int rows = (n + cols - 1) / cols;
 
     // Find max size

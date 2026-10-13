@@ -94,7 +94,13 @@ DeviceStatus DeviceManager::get_device_status(const std::string &device_id) {
 #ifdef IVIT_HAS_TENSORRT
     {
         // Get CUDA device index
-        int dev_idx = device_index.empty() ? 0 : std::stoi(device_index);
+        int dev_idx = 0;
+        try {
+            dev_idx = device_index.empty() ? 0 : std::stoi(device_index);
+        } catch (const std::exception &) {
+            status.is_available = false; // "cuda:abc" is not a device (stoi used to throw)
+            break;
+        }
 
         // Set device and query properties
         cudaError_t err = cudaSetDevice(dev_idx);
@@ -139,16 +145,30 @@ DeviceStatus DeviceManager::get_device_status(const std::string &device_id) {
         try {
             ov::Core core;
 
-            // Map device_id to OpenVINO device name
-            std::string ov_device;
+            // Map device_id to the OpenVINO names it may enumerate as ("GPU" when it is the only
+            // one, "GPU.<n>" otherwise). An id that is not a device must not be reported as
+            // available under the CPU's name.
+            std::vector<std::string> candidates;
             if (device_id == "cpu") {
-                ov_device = "CPU";
-            } else if (device_id == "gpu:0" || device_id == "gpu") {
-                ov_device = "GPU";
+                candidates = {"CPU"};
+            } else if (device_id == "gpu" || device_id == "gpu:0") {
+                candidates = {"GPU", "GPU.0"};
+            } else if (device_id.rfind("gpu:", 0) == 0 && device_id.size() > 4) {
+                candidates = {"GPU." + device_id.substr(4)};
             } else if (device_id == "npu") {
-                ov_device = "NPU";
-            } else {
-                ov_device = "CPU";
+                candidates = {"NPU"};
+            }
+            std::string ov_device;
+            const auto enumerated = core.get_available_devices();
+            for (const auto &candidate : candidates) {
+                if (std::find(enumerated.begin(), enumerated.end(), candidate) != enumerated.end()) {
+                    ov_device = candidate;
+                    break;
+                }
+            }
+            if (ov_device.empty()) {
+                status.is_available = false;
+                break;
             }
 
             // Query device full name
@@ -513,6 +533,13 @@ static void configure_tensorrt_logging([[maybe_unused]] LogLevel level) {
 }
 
 void set_log_level(const std::string &level) {
+    std::string lowered = level;
+    std::transform(lowered.begin(), lowered.end(), lowered.begin(), ::tolower);
+    static const char *const known[] = {"debug", "verbose", "info",  "warning",
+                                        "warn",  "error",   "off",   "none"};
+    if (std::find(std::begin(known), std::end(known), lowered) == std::end(known))
+        throw std::invalid_argument("Unknown log level '" + level +
+                                    "'; use debug, info, warning, error or off");
     {
         std::lock_guard<std::mutex> lock(g_log_level_mutex);
         g_log_level = level;
@@ -537,13 +564,18 @@ std::string get_log_level() {
 
 // Global cache directory
 static std::string g_cache_dir = "";
+static std::mutex g_cache_dir_mutex; // set_cache_dir() can race a TensorRT load reading it
 
 void set_cache_dir(const std::string &path) {
-    g_cache_dir = path;
+    {
+        std::lock_guard<std::mutex> lock(g_cache_dir_mutex);
+        g_cache_dir = path;
+    }
     ModelManager::instance().set_cache_dir(path);
 }
 
 std::string get_cache_dir() {
+    std::lock_guard<std::mutex> lock(g_cache_dir_mutex);
     if (g_cache_dir.empty()) {
         // Default cache directory
         const char *home = std::getenv("HOME");

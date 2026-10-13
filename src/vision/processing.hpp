@@ -13,6 +13,9 @@ Results decode_outputs(const std::map<std::string, Tensor> &outputs, cv::Size im
 using StageNotifier = std::function<void(CallbackEvent, double latency_ms, const Results *)>;
 Results predict_image(Model &model, const LoadConfig &contract, const cv::Mat &image,
                       const InferConfig &config, const StageNotifier &notify = {});
+/// The NMS predict() applies (per class unless config.agnostic_nms, honours max_detections);
+/// also used to merge detections from several passes (predict_tta).
+void merge_detections(std::vector<Detection> &detections, const InferConfig &config);
 void validate_contract(const LoadConfig &contract);
 /// Number of classes a decoder will read from the model's declared outputs, or -1 when it cannot
 /// be known before running (decoder "raw", several outputs without output_name, dynamic or

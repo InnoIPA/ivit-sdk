@@ -13,6 +13,7 @@
 #include <map>
 #include <string>
 #include <optional>
+#include <stdexcept>
 
 namespace ivit {
 
@@ -169,6 +170,8 @@ public:
      * @brief Get top-K classification results
      */
     std::vector<ClassificationResult> topk(int k) const {
+        if (k < 0)
+            throw std::invalid_argument("topk: k must not be negative");
         int n = std::min(k, static_cast<int>(classifications.size()));
         return std::vector<ClassificationResult>(
             classifications.begin(),

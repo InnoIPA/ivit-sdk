@@ -12,7 +12,7 @@ Example:
     >>> # One-liner inference (auto device selection)
     >>> model = ivit.load("yolov8n.onnx")
     >>> results = model("image.jpg")
-    >>> results.show()
+    >>> cv2.imwrite("out.jpg", results.visualize(cv2.imread("image.jpg")))
     >>>
     >>> # Task-specific classes
     >>> detector = ivit.Detector("yolov8n.onnx", device="cuda:0")
@@ -66,6 +66,7 @@ try:
         Model,
         load_model,
         clear_cache,
+        wait_for_pending_work,
         # Callback system
         CallbackEvent,
         CallbackContext,
@@ -99,6 +100,9 @@ try:
     # during final teardown falls back to stderr instead of calling into Python.
     _atexit.register(set_log_callback, None)
     _atexit.register(clear_cache)
+    # Registered last, so it runs first: let submit_inference work (and its Python callbacks)
+    # finish while the interpreter and the inference runtime are still fully alive.
+    _atexit.register(wait_for_pending_work)
 except ImportError as e:
     _CPP_ERROR = str(e)
     # Don't raise - allow package to load for zoo/CLI functionality
@@ -177,7 +181,7 @@ def load(source: str, device: str = "auto", task: str = None, **kwargs):
     Load a model for inference.
 
     Args:
-        source: Model path (.onnx, .xml, .engine) or Model Zoo name
+        source: Model path (.onnx, .xml, .engine). For a Model Zoo name use ivit.zoo.load()
         device: Target device ("auto", "cpu", "cuda:0", "npu")
         task: Image decoder task ("detect", "classify", "segment"); omit and predict() returns no decoded results (raw outputs are C++ only, via Model::infer_raw)
 
@@ -213,6 +217,7 @@ __all__ = [
     "load",
     "load_model",
     "clear_cache",
+    "wait_for_pending_work",
     "convert_model",
     "devices",
     "Device",

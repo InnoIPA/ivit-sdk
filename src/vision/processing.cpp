@@ -138,6 +138,10 @@ void validate_inference(const InferConfig &c) {
 }
 } // namespace
 
+void merge_detections(std::vector<Detection> &detections, const InferConfig &config) {
+    non_max_suppression(detections, config);
+}
+
 float effective_confidence(const InferConfig &config, TaskType task) {
     if (config.conf_threshold != -1.0f)
         return config.conf_threshold;
@@ -486,10 +490,17 @@ Results decode_outputs(const std::map<std::string, Tensor> &outputs, cv::Size im
                 mask.at<int>(y, x) = best;
             }
         if (letterbox(c, task)) {
+            // The mask covers the whole padded model input. Keep the rectangle the image occupies:
+            // centered padding surrounds it, top-left padding sits only on the right and bottom
+            // (the previous symmetric crop left that padding in the result).
             const auto g = geometry(input, c, task, image_size);
-            const int x = static_cast<int>(std::round(float(g.pad_x) * w / g.width));
-            const int y = static_cast<int>(std::round(float(g.pad_y) * h / g.height));
-            const int rw = std::max(1, w - 2 * x), rh = std::max(1, h - 2 * y);
+            const float sx = float(w) / g.width, sy = float(h) / g.height;
+            const int content_w = std::max(1, static_cast<int>(std::lround(g.scale_x * image_size.width)));
+            const int content_h = std::max(1, static_cast<int>(std::lround(g.scale_y * image_size.height)));
+            const int x = std::min(static_cast<int>(std::round(g.pad_x * sx)), w - 1);
+            const int y = std::min(static_cast<int>(std::round(g.pad_y * sy)), h - 1);
+            const int rw = std::clamp(static_cast<int>(std::round(content_w * sx)), 1, w - x);
+            const int rh = std::clamp(static_cast<int>(std::round(content_h * sy)), 1, h - y);
             mask = mask(cv::Rect(x, y, rw, rh));
         }
         cv::resize(mask, result.segmentation_mask, image_size, 0, 0, cv::INTER_NEAREST);

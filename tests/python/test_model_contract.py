@@ -269,3 +269,154 @@ def test_stage_callbacks_fire_in_order_for_single_and_batch_predict(sdk, tmp_pat
     seen.clear()
     model.predict(image, infer_config(sdk))
     assert not seen
+
+
+def segmentation_model_file(path, size):
+    """[1,3,S,S] -> [1,2,S,S]: class 1 where the channel mean exceeds 0.7, else class 0.
+
+    A white image gives class 1 everywhere; letterbox padding (gray 114/255) gives class 0.
+    """
+    onnx = pytest.importorskip("onnx")
+    from onnx import TensorProto, helper, numpy_helper
+
+    zero = numpy_helper.from_array(np.zeros((1, 1, size, size), np.float32), "zero")
+    thresh = numpy_helper.from_array(np.full((1, 1, size, size), 0.7, np.float32), "thresh")
+    nodes = [
+        helper.make_node("ReduceMean", ["input"], ["mean"], axes=[1], keepdims=1),
+        helper.make_node("Sub", ["mean", "thresh"], ["class1"]),  # > 0 where bright
+        helper.make_node("Concat", ["zero", "class1"], ["output"], axis=1),
+    ]
+    graph = helper.make_graph(
+        nodes,
+        "seg",
+        [helper.make_tensor_value_info("input", TensorProto.FLOAT, [1, 3, size, size])],
+        [helper.make_tensor_value_info("output", TensorProto.FLOAT, [1, 2, size, size])],
+        initializer=[zero, thresh],
+    )
+    model = helper.make_model(graph, opset_imports=[helper.make_opsetid("", 13)])
+    model.ir_version = 8
+    onnx.save(model, path)
+    return str(path)
+
+
+@pytest.mark.parametrize("mode", ["stretch", "letterbox", "letterbox_top_left"])
+@pytest.mark.parametrize("shape", [(40, 100), (101, 33), (64, 64)])  # wide, tall (odd pad), square
+def test_segmentation_mask_covers_only_the_image_in_every_resize_mode(sdk, tmp_path, mode, shape):
+    path = segmentation_model_file(tmp_path / "seg.onnx", 64)
+    model = load_with(sdk, path, task="segmentation", resize_mode=mode, input_scale=1.0 / 255.0)
+    white = np.full((shape[0], shape[1], 3), 255, np.uint8)
+    mask = np.asarray(model.predict(white).segmentation_mask)
+    assert mask.shape == shape
+    # Every output pixel maps to a pixel of the white image, never to letterbox padding.
+    assert (mask == 1).mean() > 0.98, f"{mode} {shape}: only {(mask == 1).mean():.0%} class 1"
+
+
+def tta_maps():
+    """(augmentation, undo) per name, both built from OpenCV so they do not share code with the SDK."""
+    cv2 = pytest.importorskip("cv2")
+    forward = {
+        "hflip": lambda image: cv2.flip(image, 1),
+        "vflip": lambda image: cv2.flip(image, 0),
+        "rotate180": lambda image: cv2.rotate(image, cv2.ROTATE_180),
+        "rotate90": lambda image: cv2.rotate(image, cv2.ROTATE_90_CLOCKWISE),
+        "rotate270": lambda image: cv2.rotate(image, cv2.ROTATE_90_COUNTERCLOCKWISE),
+        "scale_up": lambda image: cv2.resize(image, None, fx=1.2, fy=1.2),
+        "scale_down": lambda image: cv2.resize(image, None, fx=0.8, fy=0.8),
+    }
+    undo = {
+        "hflip": lambda canvas, size: cv2.flip(canvas, 1),
+        "vflip": lambda canvas, size: cv2.flip(canvas, 0),
+        "rotate180": lambda canvas, size: cv2.rotate(canvas, cv2.ROTATE_180),
+        "rotate90": lambda canvas, size: cv2.rotate(canvas, cv2.ROTATE_90_COUNTERCLOCKWISE),
+        "rotate270": lambda canvas, size: cv2.rotate(canvas, cv2.ROTATE_90_CLOCKWISE),
+        "scale_up": lambda canvas, size: cv2.resize(canvas, size, interpolation=cv2.INTER_NEAREST),
+        "scale_down": lambda canvas, size: cv2.resize(canvas, size, interpolation=cv2.INTER_NEAREST),
+    }
+    return forward, undo
+
+
+TTA_NAMES = ["hflip", "vflip", "rotate180", "rotate90", "rotate270", "scale_up", "scale_down"]
+
+
+def tta_detector(sdk, tmp_path):
+    output = np.array(
+        [[[32, 32], [32, 32], [32, 32], [16, 16], [0.9, 0.1], [0.1, 0.8]]], np.float32
+    )
+    path = model_file(tmp_path / "tta.onnx", [1, 3, 64, 64], output)
+    model = sdk.load(
+        path, device="cpu", task="detection", backend="openvino", use_cache=False,
+        decoder="yolov8", labels=["first", "second"],
+    )
+    config = infer_config(sdk)
+    config.classes = [1]
+    return model, config
+
+
+@pytest.mark.parametrize("aug", TTA_NAMES)
+def test_predict_tta_maps_boxes_back_to_the_original_image(sdk, tmp_path, aug):
+    forward, undo = tta_maps()
+    model, config = tta_detector(sdk, tmp_path)
+    image = np.zeros((20, 40, 3), np.uint8)  # wide, so rotations change the aspect ratio
+    augmented = forward[aug](image)
+    found = model.predict(augmented, config).detections
+    assert len(found) == 1
+    box = found[0].bbox
+    # Independent reference: paint the box on a canvas of the augmented size and undo the
+    # augmentation with OpenCV; its bounding rectangle is where the box belongs.
+    canvas = np.zeros(augmented.shape[:2], np.uint8)
+    canvas[int(round(box.y1)):int(round(box.y2)), int(round(box.x1)):int(round(box.x2))] = 255
+    ys, xs = np.nonzero(undo[aug](canvas, (40, 20)))
+    expected = [xs.min(), ys.min(), xs.max() + 1, ys.max() + 1]
+
+    merged = model.predict_tta(image, [aug], config).detections
+    assert len(merged) == 1
+    got = [merged[0].bbox.x1, merged[0].bbox.y1, merged[0].bbox.x2, merged[0].bbox.y2]
+    np.testing.assert_allclose(got, expected, atol=1.6)
+    assert 0 <= min(got) and got[2] <= 40 and got[3] <= 20  # inside the original image
+
+
+def test_predict_tta_rejects_what_it_cannot_do(sdk, tmp_path):
+    model, config = tta_detector(sdk, tmp_path)
+    image = np.zeros((20, 40, 3), np.uint8)
+    with pytest.raises(sdk.IVITError, match="bogus"):
+        model.predict_tta(image, ["original", "bogus"], config)
+    with pytest.raises(sdk.IVITError, match="at least one"):
+        model.predict_tta(image, [], config)
+    segmenter = load_with(sdk, segmentation_model_file(tmp_path / "seg.onnx", 64), task="segmentation")
+    with pytest.raises(sdk.IVITError, match="segmentation"):
+        segmenter.predict_tta(np.full((20, 40, 3), 255, np.uint8), ["original", "hflip"])
+
+
+def test_predict_tta_merge_is_per_class_and_honours_max_detections(sdk, tmp_path):
+    model, _ = tta_detector(sdk, tmp_path)  # two classes, same box
+    image = np.zeros((20, 40, 3), np.uint8)
+    both = infer_config(sdk)
+    both.max_detections = 100
+    assert {d.label for d in model.predict_tta(image, ["original", "hflip"], both).detections} == {
+        "first", "second"
+    }  # class-agnostic merging used to drop one of them
+    one = infer_config(sdk)
+    one.max_detections = 1
+    assert len(model.predict_tta(image, ["original", "hflip"], one).detections) == 1
+
+
+def test_results_save_follows_format_not_extension_and_reports_failures(sdk, tmp_path, monkeypatch):
+    model, config = tta_detector(sdk, tmp_path)
+    result = model.predict(np.zeros((20, 40, 3), np.uint8), config)
+    assert len(result.detections) == 1
+
+    result.save(str(tmp_path / "a.txt"), "json")  # the extension does not change the format
+    assert (tmp_path / "a.txt").read_text().lstrip().startswith("{")
+    result.save(str(tmp_path / "b.json"), "txt")
+    fields = (tmp_path / "b.json").read_text().split()
+    assert len(fields) == 5 and fields[0] == "1"  # class cx cy w h
+    result.save(str(tmp_path / "c.json"))  # default format
+    assert (tmp_path / "c.json").read_text().lstrip().startswith("{")
+
+    monkeypatch.chdir(tmp_path)
+    result.save("x", "txt")  # a 1-character relative path
+    assert (tmp_path / "x").exists()
+    with pytest.raises(sdk.IVITError, match="Unsupported save format"):
+        result.save(str(tmp_path / "d.json"), "xml")
+    with pytest.raises(sdk.IVITError, match="Cannot open"):
+        result.save(str(tmp_path / "no_such_dir" / "e.json"))
