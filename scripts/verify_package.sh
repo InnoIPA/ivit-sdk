@@ -78,10 +78,8 @@ verify_tarball() {
     check "setup_env.sh exists" test -f "$sdk_dir/bin/setup_env.sh"
     check "INSTALL.md exists" test -f "$sdk_dir/INSTALL.md"
 
-    # 測試 Python import (若有 wheel)
-    if ls "$sdk_dir"/python/*.whl >/dev/null 2>&1; then
-        check "Python wheel exists" test -f "$sdk_dir"/python/*.whl
-    fi
+    # The wheel is part of the tarball; this used to be checked only when one was present.
+    check "Python wheel exists" ls "$sdk_dir"/python/*.whl
 }
 
 # Each check runs a single command, so the grep has to live inside it: piping `check ... | grep`

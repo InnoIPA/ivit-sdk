@@ -288,6 +288,69 @@ and C++ applications must be rebuilt after a minor upgrade.
     `--tensorrt` and `IVIT_REQUIRE_BACKENDS` above.
   - `.[dev]` did not include `onnx`, so after the documented install about 20 test files were
     skipped without a hint. It is now in `.[dev]`.
+- Found by auditing the finished branch (each reproduced before fixing):
+  - **Crash at interpreter exit** after `submit_inference` (about 60% of runs with a real model
+    in flight): the detached worker threads kept running while the inference runtime and Python
+    were torn down. The SDK now waits for them at exit (Python `atexit`, C++ static destruction),
+    and there is `ivit.wait_for_pending_work()` / `ivit::wait_for_pending_work()`. Python callbacks
+    no longer try to take the GIL once the interpreter is finalizing.
+  - **TensorRT accepted any input shape or dtype** that fit the device buffer and returned wrong
+    numbers (stale or reinterpreted memory); OpenVINO already rejected them. Both now reject.
+  - **OpenVINO outputs of an unrepresentable type** (int16, float64, bfloat16...) were sized as
+    4 bytes per element: an over-read for 16-bit types and half the data dropped for float64. They
+    now fail with a clear error; TensorRT does the same at load time.
+  - **Segmentation with `resize_mode="letterbox_top_left"`** returned a misaligned mask (content
+    squeezed into the top ~27%; 60% agreement with the correct mask); centered letterboxing of
+    images with odd padding was off by a pixel row/column. The mask is now cropped to the area
+    the image occupies.
+  - **`predict_tta`**: boxes from `rotate*` / `scale_*` were never mapped back (some fell outside
+    the image), segmentation silently returned an empty mask, unknown names and an empty list were
+    accepted, and the merge ignored classes, truncated boxes to integers and ignored
+    `max_detections`. All augmentations are now mapped back and verified against OpenCV; the merge
+    uses the same NMS as `predict`; unsupported input raises.
+  - **`Results.save`** crashed on paths shorter than 5 characters, ignored write failures, and let
+    the file extension override `format` (contradicting the manual). `format` alone decides and
+    failures raise.
+  - **C#**: `Predict` defaulted to `confidence = 0.5`, so a classifier returned no classes unless
+    0 was passed. It defaults to -1 (task default) like every other interface;
+    `ivit_model_predict_bgr` now accepts exactly -1.
+  - OpenVINO `get_devices` redirected process-wide stderr with `dup2`, which two concurrent loads
+    could race and leave stderr pointing at /dev/null (the same hack was already removed from
+    `DeviceManager`).
+  - **Model Zoo cache**: two processes downloading the same model shared one `<name>.onnx.part`
+    and corrupted each other (spurious SHA256 mismatch or FileNotFoundError); an interrupted or
+    failed export, or weight download, left a half-written `.onnx`/`.pth` that the next call
+    returned as cached. Downloads use per-call temporary names; exports are built in a private
+    directory and published (`.onnx` last) only when complete.
+  - **CLI**: `ivit zoo download <unknown>`, network failures and a missing optional package
+    ended in a Python traceback (now `Error: ...`, exit code 1; Ctrl-C exits 130); `ivit predict`
+    treated RTSP/RTMP URLs and `.webm`/`.m4v`/... files as images; its output for URL sources had
+    no usable name. `ivit export -t intel_*` always printed the same OpenVINO IR regardless of
+    target, because an IR does not depend on the device; the help now says so.
+  - Smaller: `ivit.load("")` raised a bare `RuntimeError` (now `ModelLoadError`);
+    `Results.topk(-1)` and `set_log_level("bogus")` are rejected with `ValueError`;
+    `devices.gpu(7)` returned `gpu:0`; `devices.best("bogus")` silently used another ranking;
+    `visualize()` threw an OpenCV exception for grayscale/BGRA canvases and
+    `Visualizer::create_comparison` divided by zero for `cols=0`; `Detector::predict_video` treated
+    "720p.mp4" as camera 720 and the Python `Detector.predict_video` ended silently for a source
+    that cannot be opened; `DeviceManager::get_device_status` reported unknown ids (`gpu:1`,
+    `npu` without an NPU) as available under the CPU's name and threw on `cuda:abc`;
+    `predict_concurrent` skipped `BatchEnd` when an image failed; `set_cache_dir` was an
+    unsynchronised global; OpenVINO's own exception type escaped `infer`.
+  - **Packaging**: a failed Python wheel build was swallowed and the tarball shipped without it,
+    and `verify_package.sh` only checked for the wheel when one existed. The wheel is now required.
+  - Docs that disagreed with the code: `max_detections` default (100, not 300), top-level
+    `ivit.Detector`/`Classifier`/`Segmentor` are slimmer native classes, not `ivit.vision.*`, the
+    `ivit.load` docstring offered Model Zoo names, and the module docstring called a
+    non-existent `results.show()`. Python exception hierarchy: catch `ivit.IVITError`,
+    `ivit.ModelLoadError`, ... (native errors are instances of those); the `ivit.core.*` classes
+    are Python-side subclasses with causes/suggestions and do not catch native errors.
+  - **Release workflow**: a manual run with a subset of platforms failed in `prepare` (multi-line
+    `jq` output in `GITHUB_OUTPUT`); a tag push always included the Jetson job, which blocks the
+    whole release when no self-hosted arm64 runner exists (now opt-in through the repository
+    variable `IVIT_JETSON_RUNNER`); release notes of a pre-release tag listed file names that do
+    not exist. `.gitignore` did not cover `output_seg*` written by an example; `docs/README.md`
+    said CI runs on every push (it runs on `main`, PRs, manual runs and release tags).
   - The Zoo export error said `pip install torch torchvision`, after which the export still failed
     on `onnxscript`. The message now names every dependency (`.[zoo]`), and a missing `onnx` /
     `onnxscript` during export is reported the same way instead of as a torch-internal traceback.

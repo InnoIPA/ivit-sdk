@@ -42,6 +42,7 @@ logs/
 models/
 
 # Example outputs
+examples/data/**/output_*
 *_output.jpg
 *_result.jpg
 *_result.mp4

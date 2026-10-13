@@ -27,7 +27,7 @@ Configure 時加入 `-DCMAKE_PREFIX_PATH=/absolute/path/to/sdk`。只需另外�
 
 ## Python
 
-先確認 `python/` 內有相符 Python／平台的 wheel；若打包時 wheel 建置失敗，須另行建置。
+先確認 `python/` 內的 wheel 與你的 Python 版本和平台相符（打包時 wheel 建置失敗會讓整個打包失敗，tarball 一定含有 wheel；它是用打包機器的 Python 建置的，版本不同時須自行建置）。
 
 ```bash
 python3 -m venv .venv

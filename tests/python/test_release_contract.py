@@ -132,6 +132,36 @@ def test_ci_script_tells_the_user_how_to_run_the_build_and_nvidia_headers_are_sy
     assert "target_include_directories(ivit SYSTEM PRIVATE ${TENSORRT_INCLUDE_DIR})" in read("CMakeLists.txt")
 
 
+def test_csharp_predict_defaults_to_the_task_default_confidence():
+    # 0.5 here made a classifier return no classes at all, unlike Python/C++ (manual: -1 = task default).
+    assert "float confidence = -1f" in read("bindings/csharp/IvitSdk/Model.cs")
+
+
+def test_release_matrix_and_notes_cannot_break_the_publish_job():
+    release = read(".github/workflows/release.yml")
+    # GITHUB_OUTPUT is line based: pretty-printed jq output was rejected as "Invalid format".
+    assert "jq -cR" in release and "jq -R" not in release
+    # A tag push builds "all"; Jetson needs a self-hosted arm64 runner, so it is opt-in.
+    assert "vars.IVIT_JETSON_RUNNER" in release
+    assert "'[\"x86_64-nvidia\", \"x86_64-intel\", \"aarch64-jetson\"]'" not in release
+    # Files carry the CMake version; the tag of a pre-release only adds a suffix.
+    assert 'FILE_VERSION="${VERSION%%-*}"' in release
+    assert "IVIT_JETSON_RUNNER" in read("docs/deployment/release-automation.md")
+
+
+def test_example_outputs_written_into_the_source_tree_are_ignored():
+    # 02_segmentation.py writes examples/data/images/output_seg*.{jpg,png}
+    assert "examples/data/**/output_*" in read(".gitignore")
+
+
+def test_the_python_wheel_is_mandatory_in_the_tarball():
+    build = read("scripts/build_tarball.sh")
+    # a failed wheel build used to be swallowed (stderr to /dev/null, "skipping")
+    assert "skipping" not in build and "2>/dev/null ||" not in build.split("Python wheel", 1)[1]
+    verify = read("scripts/verify_package.sh")
+    assert 'check "Python wheel exists" ls' in verify and "若有 wheel" not in verify
+
+
 def test_gpu_job_fails_when_tensorrt_tests_were_skipped():
     workflow = read(".github/workflows/ci.yml")
     assert "TensorRT GPU required" in workflow  # the skip reason the GPU job treats as failure

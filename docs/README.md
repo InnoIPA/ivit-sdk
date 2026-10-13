@@ -10,7 +10,7 @@
 
 - [Repository Guidelines](../AGENTS.md)：貢獻規範。
 - [新增後端](hardware-extension.md)：C++ runtime 擴充位置。
-- [持續整合](../.github/workflows/ci.yml)：每次 push／PR 執行；本機以 `scripts/ci/build_and_test.sh [--tensorrt]` 重現同一套建置與測試。
+- [持續整合](../.github/workflows/ci.yml)：推送到 `main`、PR、手動觸發，以及發布 tag 時（由 Release workflow 呼叫）執行；其他分支的 push 不會自動執行；本機以 `scripts/ci/build_and_test.sh [--tensorrt]` 重現同一套建置與測試。
 - [Release automation](deployment/release-automation.md)：平台 tarball 與 deb 流程；各平台仍須獨立驗收。
 
 ## 驗證紀錄

@@ -363,11 +363,11 @@ labels 優先順序為明確 `labels`、`labels_path`、`model.labels.txt`、目
 | `predict_async(image, config)` | `concurrent.futures.Future` | `std::future<Results>` | Python 使用 `.result()` 或 `asyncio.wrap_future()` |
 | `predict_batch_async(images, config)` | Future | ✓ | 同步／非同步結果格式相同 |
 | `predict_concurrent(images, max_concurrent=4, config)` | ✓ | ✓ | 前後處理會並行；推論本身在 OpenVINO 與 `num_instances=1` 的 TensorRT 上依序執行，TensorRT 設 `num_instances>1` 才會真正同時在 GPU 上執行 |
-| `submit_inference(image, callback, config)` | ✓ | ✓ | Callback 模式；需確認 shutdown 與例外處理 |
+| `submit_inference(image, callback, config)` | ✓ | ✓ | Callback 模式（發射後不管，背景執行緒）。程序結束時 SDK 會等待這些工作完成（Python 於 `atexit`，C++ 於靜態解構，最長 30 秒）；需要確定所有 callback 都已執行，可呼叫 `ivit.wait_for_pending_work(timeout=30.0)`（C++ `ivit::wait_for_pending_work()`），逾時回傳 false。callback 丟出的例外只記錄日誌 |
 | `stream(source, config)` | 迭代器 | StreamIterator | 影片、攝影機字串 `"0"`、RTSP |
 | `on(event, callback, priority=0)` | ✓ | ✓ | 註冊 callback。`predict`／`predict_batch` 依序觸發 `pre_process`、`infer_start`、`infer_end`（`latency_ms` 為推論本身耗時）、`post_process`（`latency_ms` 為整次呼叫耗時）；真正合併成一批推論的 `predict_batch` 每次呼叫只觸發一組、`batch_size` 為張數。`predict_concurrent` 另觸發 `batch_start`／`batch_end`，串流觸發 `stream_start`／`stream_frame`／`stream_end`。`infer_raw` 不觸發任何事件。callback 在推論執行緒同步執行，丟出的例外會使該次推論失敗 |
 | `remove_callback(event, id)`、`remove_all_callbacks(event)` | ✓ | ✓ | 移除 callback |
-| `predict_tta(image, augmentations, config)` | ✓ | ✓ | 測試時增強；需驗證合併與座標還原 |
+| `predict_tta(image, augmentations, config)` | ✓ | ✓ | 測試時增強。`augmentations` 可用 `original`、`hflip`、`vflip`、`rotate90`、`rotate180`、`rotate270`、`scale_up`（1.2 倍）、`scale_down`（0.8 倍），未知名稱或空清單會報錯。偵測框會還原到原圖座標（已用 OpenCV 反向轉換驗證），再以與 `predict` 相同的 NMS 合併（依類別，除非 `agnostic_nms`；遵守 `max_detections`）；分類取各次分數平均。**不支援分割模型**（遮罩無法跨增強合併），會報錯 |
 
 模型資訊：`name`、`task`、`device`、`backend`、`input_info`、`output_info`、`memory_usage`、`labels`；Python 另有 `load_config`（實際生效的 LoadConfig）。`memory_usage` 是張量大小估計，不是實際 GPU／程序記憶體統計。
 
@@ -378,7 +378,7 @@ Python 從 `ivit.vision` 匯入；C++ 位於 `ivit::vision`。
 | 類別 | 主要 API | 備註 |
 |---|---|---|
 | `Classifier` | 建構、`predict(image, top_k)`、`predict_batch` | 分類專用前後處理 |
-| `Detector` | 建構、`predict(image, conf_threshold, iou_threshold, classes, max_detections, agnostic_nms)`、`predict_batch`、`predict_video(source, callback, ...)` | 預設 confidence 0.5、`iou_threshold=0.45`、`max_detections=100`；`ivit.vision.Detector`、頂層 `ivit.Detector` 與 C++ 一致 |
+| `Detector` | 建構、`predict(image, conf_threshold, iou_threshold, classes, max_detections, agnostic_nms)`、`predict_batch`、`predict_video(source, callback, ...)` | 預設 confidence 0.5、`iou_threshold=0.45`、`max_detections=100`；`ivit.vision.Detector` 與 C++ 一致。頂層 `ivit.Detector`、`ivit.Classifier`、`ivit.Segmentor` 是更精簡的原生類別（不是同一個類別）：`Detector.predict` 只有 `conf_threshold`、`iou_threshold`，沒有 `classes`／`max_detections`／`predict_video`；需要完整參數請用 `ivit.vision` |
 | `Segmentor` | 建構、`predict(image)`；`predict_batch` 僅 C++ | 語意分割 |
 | C++ `Detector` | `predict(image, InferConfig)`、`predict_video(source, callback, config)` | config overload 與逐幀 callback |
 
@@ -388,15 +388,17 @@ C++ 各任務類別另有 `classes()`、`num_classes()`、`input_size()`、`mode
 
 | API／欄位 | 用途 |
 |---|---|
-| `classifications`、`top1()`、`topk(k)` | 分類 class ID、label、score |
+| `classifications`、`top1()`、`topk(k)` | 分類 class ID、label、score；`k` 為負數會丟 `ValueError` |
 | `detections`、`num_detections()` | 偵測框、class ID、confidence、label |
 | `filter_by_class(ids)`、`filter_by_confidence(value)` | 返回過濾後的 Detection 清單，不修改原 Results |
 | `segmentation_mask`、`colorize_mask()`、`overlay_mask(image, alpha)` | 分割遮罩與疊圖 |
 | `inference_time_ms`、`device_used`、`image_size` | 推論資訊；時間涵蓋範圍依路徑不同 |
-| `visualize(image, ...)` | 返回繪製後影像 |
-| `to_json()`、`save(path, format="json")` | JSON 序列化／儲存；`format="txt"` 輸出 YOLO 格式的正規化框。副檔名不影響格式 |
+| `visualize(image, ...)` | 返回繪製後影像（3 通道 BGR）；灰階或 BGRA 影像會先轉成 BGR |
+| `to_json()`、`save(path, format="json")` | JSON 序列化／儲存；`format="txt"` 輸出 YOLO 格式的正規化框。副檔名不影響格式；`format` 不是 `json`／`txt`、無法開啟或寫入檔案時丟 `IVITError` |
 | C++ `Tensor` | shape、dtype、layout、具名資料、`data_ptr<T>()`、`reshape()`、`clone()` |
 | `TensorInfo` | 張量 name、shape、dtype、layout；動態維度需解析後才能配置 |
+
+**例外**：原生錯誤都是 `ivit.IVITError` 的實例（`ModelLoadError`、`InferenceError`、`DeviceNotFoundError`… 同理），請用頂層的 `ivit.IVITError`／`ivit.ModelLoadError` 等名稱捕捉。`ivit.core.exceptions` 裡的同名類別是帶「可能原因／建議」的 Python 端子類別，**不會**捕捉原生錯誤。參數值錯誤（例如 `set_log_level("bogus")`、`topk(-1)`）丟 `ValueError`。
 
 目前 bound Results 沒有 `show()`；存影像使用 `cv2.imwrite()`／`cv::imwrite()`，不要將 `save("output.jpg")` 當成影像輸出。
 
@@ -469,7 +471,7 @@ cv2.imwrite("detections.jpg", results.visualize(image))
 results.save("detections.json")
 ```
 
-`classes`（類別過濾）與 `max_detections`（預設 300）會傳入底層推論並在 NMS 內生效；未知的額外參數會報錯。也可以對結果使用 `filter_by_class()` 另外過濾。
+`classes`（類別過濾）與 `max_detections`（預設 100）會傳入底層推論並在 NMS 內生效；未知的額外參數會報錯。也可以對結果使用 `filter_by_class()` 另外過濾。
 
 ### 6.3 批次與影片
 

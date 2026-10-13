@@ -95,15 +95,13 @@ cp -r "$PROJECT_ROOT/examples/python" "$PACKAGE_DIR/examples/" 2>/dev/null || tr
 # 複製安裝說明
 cp "$PROJECT_ROOT/packaging/INSTALL.md" "$PACKAGE_DIR/" 2>/dev/null || true
 
-# 建置 Python wheel
-if command -v pip3 &>/dev/null; then
-    echo "=== Building Python wheel ==="
-    mkdir -p "$PACKAGE_DIR/python"
-    cd "$PROJECT_ROOT"
-    pip3 wheel . --no-deps --wheel-dir "$PACKAGE_DIR/python" 2>/dev/null || \
-        echo "Warning: Python wheel build failed, skipping"
-    cd -
-fi
+# 建置 Python wheel。The tarball is documented to contain it, so a failed build must fail the
+# job: it used to be swallowed (stderr to /dev/null) and the tarball shipped without a wheel.
+command -v pip3 &>/dev/null || { echo "Error: pip3 is required to build the Python wheel" >&2; exit 1; }
+echo "=== Building Python wheel ==="
+mkdir -p "$PACKAGE_DIR/python"
+(cd "$PROJECT_ROOT" && pip3 wheel . --no-deps --wheel-dir "$PACKAGE_DIR/python")
+ls "$PACKAGE_DIR"/python/*.whl >/dev/null
 
 # 建立 tarball。xz rather than gzip: with TensorRT 11 the NVIDIA package is 3.5 GB unpacked and
 # 2.35 GB as .tar.gz, over GitHub's 2 GiB per-asset limit; .tar.xz is 1.41 GB.

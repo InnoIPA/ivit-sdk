@@ -169,10 +169,10 @@ x86 平台使用 GitHub 提供的 `ubuntu-24.04` runner：
   `release.yml` 兩個工作的 `CUDA_VERSION`／`TRT_VERSION`，以及 CI 用的
   `scripts/ci/build_and_test.sh` 中的 `TRT_VERSION`／`TRT_TAG`／`ONNX_PARSER_BRANCH`。
 
-Jetson 平台需要 ARM64 runner：
+Jetson 平台需要 ARM64 runner，**預設不會建置**：推送 tag 或以 `platforms=all` 手動觸發時，只有設定了 repository variable `IVIT_JETSON_RUNNER`（任意非空值）才會包含 `aarch64-jetson`。沒有 runner 時該工作會一直排隊直到逾時，而發布需要所有建置工作都成功，會連 x86 的發布一起擋住。手動觸發時也可以直接指定 `platforms=aarch64-jetson`。發布說明只列出實際建出的平台，檔名使用 CMake 的版本（預發行 tag 如 `v1.1.0-rc1` 的檔名仍是 `1.1.0`）。
 
 1. 在 Jetson 設備上安裝 GitHub Actions Runner
-2. 加入 label：`self-hosted-arm64`
+2. 加入 label：`self-hosted-arm64`，並設定 repository variable `IVIT_JETSON_RUNNER`
 3. 確保已安裝 JetPack（CUDA 於 `/usr/local/cuda`、TensorRT）。工作開始時檢查 `nvcc` 與 TensorRT 標頭，缺少即失敗；OpenCV、CMake 由工作以 `sudo apt-get` 安裝，runner 帳號需可免密碼 sudo。
 
 ---

@@ -69,13 +69,21 @@ jobs:
 
       - name: Build matrix
         id: matrix
+        env:
+          JETSON_RUNNER: ${{ vars.IVIT_JETSON_RUNNER }}
         run: |
           PLATFORMS="${{ github.event.inputs.platforms || 'all' }}"
           if [[ "$PLATFORMS" == "all" ]]; then
-            MATRIX='["x86_64-nvidia", "x86_64-intel", "aarch64-jetson"]'
+            # The Jetson job needs a self-hosted arm64 runner. Without one it would queue until it
+            # times out and, because publishing needs every job, block the x86 release as well:
+            # include it only when the repository variable IVIT_JETSON_RUNNER is set.
+            MATRIX='["x86_64-nvidia", "x86_64-intel"'
+            if [[ -n "$JETSON_RUNNER" ]]; then MATRIX+=', "aarch64-jetson"'; fi
+            MATRIX+=']'
           else
-            # Convert comma-separated to JSON array
-            MATRIX=$(echo "$PLATFORMS" | jq -R 'split(",") | map(gsub("^\\s+|\\s+$"; ""))')
+            # Convert comma-separated to a single-line JSON array: GITHUB_OUTPUT is line based, and
+            # pretty-printed (multi-line) jq output is rejected as "Invalid format".
+            MATRIX=$(echo "$PLATFORMS" | jq -cR 'split(",") | map(gsub("^\\s+|\\s+$"; ""))')
           fi
           echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
           echo "Matrix: $MATRIX"
@@ -276,6 +284,20 @@ jobs:
         id: release-notes
         run: |
           VERSION="${{ needs.prepare.outputs.version }}"
+          # Files are named after the CMake version; a pre-release tag (1.1.0-rc1) only adds a suffix.
+          FILE_VERSION="${VERSION%%-*}"
+          # List only what was actually built (the Jetson build is optional).
+          ROWS=""
+          for entry in "x86_64 + NVIDIA|x86_64-nvidia|amd64-nvidia" \
+                       "x86_64 + Intel|x86_64-intel|amd64-intel" \
+                       "aarch64 + Jetson|aarch64-jetson|arm64-nvidia"; do
+            IFS='|' read -r label platform debsuffix <<< "$entry"
+            tarball="ivit-sdk-${FILE_VERSION}-${platform}.tar.xz"
+            deb="ivit-sdk_${FILE_VERSION}_${debsuffix}.deb"
+            if [[ -f "release/$tarball" ]]; then
+              ROWS+="| ${label} | \`${tarball}\` | \`${deb}\` |"$'\n'
+            fi
+          done
           cat << EOF > release-notes.md
           ## iVIT-SDK v${VERSION}
 
@@ -283,22 +305,19 @@ jobs:
 
           | 平台 | Tarball | Deb |
           |------|---------|-----|
-          | x86_64 + NVIDIA | \`ivit-sdk-${VERSION}-x86_64-nvidia.tar.xz\` | \`ivit-sdk_${VERSION}_amd64-nvidia.deb\` |
-          | x86_64 + Intel | \`ivit-sdk-${VERSION}-x86_64-intel.tar.xz\` | \`ivit-sdk_${VERSION}_amd64-intel.deb\` |
-          | aarch64 + Jetson | \`ivit-sdk-${VERSION}-aarch64-jetson.tar.xz\` | \`ivit-sdk_${VERSION}_arm64-nvidia.deb\` |
-
+          ${ROWS}
           ### 安裝方式
 
           **Tarball**
           \`\`\`bash
-          tar -xf ivit-sdk-${VERSION}-<platform>.tar.xz
-          cd ivit-sdk-${VERSION}-<platform>
+          tar -xf ivit-sdk-${FILE_VERSION}-<platform>.tar.xz
+          cd ivit-sdk-${FILE_VERSION}-<platform>
           source bin/setup_env.sh
           \`\`\`
 
           **Deb**
           \`\`\`bash
-          sudo dpkg -i ivit-sdk_${VERSION}_<arch>-<backend>.deb
+          sudo dpkg -i ivit-sdk_${FILE_VERSION}_<arch>-<backend>.deb
           sudo apt-get install -f  # 安裝依賴
           \`\`\`
           EOF
