@@ -6,6 +6,7 @@ set -Eeuo pipefail
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 SDK_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 VENV_DIR="$SDK_DIR/.venv"
+VENV_EXPLICIT=0
 MODE=python
 INSTALL_SYSTEM=1
 WITH_DEV=0
@@ -21,7 +22,8 @@ Installs the OpenVINO edition (add --tensorrt for the NVIDIA backend too). Requi
 Ubuntu/Debian and Internet access.
 System packages use apt-get (sudo if needed); Python packages use a venv.
 
-  --venv PATH       Use/create this venv (default: repository/.venv)
+  --venv PATH       Use/create this venv. Default: the virtual environment that is active in
+                    this shell ($VIRTUAL_ENV), otherwise repository/.venv
   --mode MODE       python or cpp (default: python)
   --dev             Include Python development tools / C++ GoogleTest
   --tensorrt        Also build the TensorRT backend. Needs the NVIDIA driver and the CUDA /
@@ -53,7 +55,7 @@ while (($#)); do
             (($# >= 2)) || die "$1 requires a value"
             [[ -n "$2" && "$2" != --* ]] || die "$1 requires a value"
             case "$1" in
-                --venv) VENV_DIR="$2" ;;
+                --venv) VENV_DIR="$2"; VENV_EXPLICIT=1 ;;
                 --mode) MODE="$2" ;;
                 --jobs) JOBS="$2" ;;
             esac
@@ -66,6 +68,16 @@ while (($#)); do
         *) die "Unknown option: $1 (use --help)" ;;
     esac
 done
+# An already-active virtual environment is where the user expects the install to go (as with
+# pip). Ignoring it silently created a second .venv and left the active one empty.
+if ((!VENV_EXPLICIT)) && [[ -n "${VIRTUAL_ENV:-}" ]]; then
+    if [[ -f "$VIRTUAL_ENV/pyvenv.cfg" && -x "$VIRTUAL_ENV/bin/python3" ]]; then
+        VENV_DIR="$VIRTUAL_ENV"
+        log "A virtual environment is active; installing into it: $VENV_DIR (use --venv PATH to choose another)"
+    else
+        log "Ignoring VIRTUAL_ENV=$VIRTUAL_ENV (not a usable venv); using $VENV_DIR"
+    fi
+fi
 [[ "$MODE" == python || "$MODE" == cpp ]] || die '--mode must be python or cpp'
 [[ "$JOBS" =~ ^[1-9][0-9]*$ ]] || die '--jobs must be a positive integer'
 [[ -f /etc/os-release ]] || die 'Cannot identify the operating system'
@@ -207,4 +219,11 @@ else
     fi
 fi
 log 'Installation checks completed; model accuracy/inference still requires a compatible model.'
-printf 'Activate the venv in each new terminal: source %q/bin/activate\n' "$VENV_DIR"
+if [[ "${VIRTUAL_ENV:-}" == "$VENV_DIR" ]]; then
+    log 'This virtual environment is already active in this terminal.'
+else
+    if [[ -n "${VIRTUAL_ENV:-}" ]]; then
+        log "Note: this terminal has a different virtual environment active ($VIRTUAL_ENV); it does not contain the SDK."
+    fi
+    printf 'Activate the venv in each new terminal: source %q/bin/activate\n' "$VENV_DIR"
+fi

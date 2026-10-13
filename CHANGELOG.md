@@ -317,6 +317,11 @@ and C++ applications must be rebuilt after a minor upgrade.
   - OpenVINO `get_devices` redirected process-wide stderr with `dup2`, which two concurrent loads
     could race and leave stderr pointing at /dev/null (the same hack was already removed from
     `DeviceManager`).
+  - `install_sdk.sh` ignored an already-active virtual environment: run inside a fresh venv it
+    created a separate `.venv` in the repository and left the active one without the SDK (the
+    next `import ivit` failed with `ModuleNotFoundError`). It now installs into the active
+    environment, says so, and warns when the terminal has a different one active; `--venv` still
+    wins and without an active environment it creates `.venv` as before.
   - **Model Zoo cache**: two processes downloading the same model shared one `<name>.onnx.part`
     and corrupted each other (spurious SHA256 mismatch or FileNotFoundError); an interrupted or
     failed export, or weight download, left a half-written `.onnx`/`.pth` that the next call

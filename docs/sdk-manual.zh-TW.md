@@ -128,7 +128,7 @@ bash scripts/install_sdk.sh --tensorrt
 bash scripts/install_sdk.sh --skip-system --venv /tmp/ivit-venv --jobs 2
 ```
 
-`--venv` 可指定目錄；既有 venv 可重用，不會覆寫其他類型目錄。`--jobs` 控制編譯平行度，預設 2。純 C++ 的 `--dev` 會安裝 GoogleTest 並執行 CTest。純 C++ 模式的建置輸出在 `build/install-openvino/`；Python 模式以 `pip install -e` 安裝到 venv。
+**安裝到哪個 Python 環境**：已啟用虛擬環境時（`$VIRTUAL_ENV`）裝進該環境；沒有啟用時建立並使用 repository 的 `.venv`；`--venv PATH` 明確指定且優先。腳本一開始與結束時都會印出實際使用的環境，並在終端機啟用的是另一個環境時提醒。既有 venv 可重用，不會覆寫其他類型目錄。`--jobs` 控制編譯平行度，預設 2。純 C++ 的 `--dev` 會安裝 GoogleTest 並執行 CTest。純 C++ 模式的建置輸出在 `build/install-openvino/`；Python 模式以 `pip install -e` 安裝到 venv。
 
 腳本預設只安裝 OpenVINO 版本；`--tensorrt` 會另外編入 TensorRT，但不自動安裝 NVIDIA 驅動、CUDA／TensorRT 開發套件或 GPU／NPU 驅動（缺少時在建置前報錯並指向 3.4）。Python 模式最後驗證 bindings 和可用裝置；模型推論與準確度仍需客戶模型測試。依賴沒有完全鎖版，重跑可能使用較新的相容套件。
 

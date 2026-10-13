@@ -154,6 +154,14 @@ def test_example_outputs_written_into_the_source_tree_are_ignored():
     assert "examples/data/**/output_*" in read(".gitignore")
 
 
+def test_install_script_uses_the_active_virtual_environment():
+    script = read("scripts/install_sdk.sh")
+    # run inside a fresh venv it used to build a second .venv and leave the active one empty
+    assert 'VENV_DIR="$VIRTUAL_ENV"' in script and "VENV_EXPLICIT=1" in script
+    assert "already active in this terminal" in script
+    assert "VIRTUAL_ENV" in read("README.md") and "VIRTUAL_ENV" in read("docs/sdk-manual.zh-TW.md")
+
+
 def test_the_python_wheel_is_mandatory_in_the_tarball():
     build = read("scripts/build_tarball.sh")
     # a failed wheel build used to be swallowed (stderr to /dev/null, "skipping")

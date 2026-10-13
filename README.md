@@ -11,7 +11,7 @@ bash scripts/install_sdk.sh
 ./.venv/bin/python3 -c 'import ivit; assert ivit.is_cpp_available(); print(ivit.list_devices())'
 ```
 
-安裝腳本會建立 `.venv/`、安裝系統開發套件及建置 Python bindings；需要網路與系統套件安裝權限。之後可用 `source .venv/bin/activate` 啟用環境。驗證命令只檢查 bindings 與裝置，不需要模型。
+安裝腳本會安裝系統開發套件並建置 Python bindings，需要網路與系統套件安裝權限。**Python 環境**：若 shell 已啟用虛擬環境（`$VIRTUAL_ENV`），SDK 會裝進該環境，畫面會印出路徑；否則建立並使用 `.venv/`（之後用 `source .venv/bin/activate` 啟用）；也可用 `--venv PATH` 明確指定。上面的驗證命令用的是 `.venv`；裝進自己的環境時，改在該環境裡執行 `python3 -c ...`。驗證命令只檢查 bindings 與裝置，不需要模型。
 
 - 純 C++ 建置：`bash scripts/install_sdk.sh --mode cpp`。
 - 只查看選項：`bash scripts/install_sdk.sh --help`。
