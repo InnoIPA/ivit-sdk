@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Install the OpenVINO edition on Ubuntu/Debian; Python packages stay in a venv.
+# Install the OpenVINO edition (optionally with the TensorRT backend) on Ubuntu/Debian; Python
+# packages stay in a venv.
 set -Eeuo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -8,6 +9,7 @@ VENV_DIR="$SDK_DIR/.venv"
 MODE=python
 INSTALL_SYSTEM=1
 WITH_DEV=0
+WITH_TENSORRT=0
 CHECK_ONLY=0
 JOBS=2
 
@@ -15,12 +17,16 @@ usage() {
     cat <<'HELP'
 Usage: bash scripts/install_sdk.sh [options]
 
-Installs the OpenVINO edition. Requires Ubuntu/Debian and Internet access.
+Installs the OpenVINO edition (add --tensorrt for the NVIDIA backend too). Requires
+Ubuntu/Debian and Internet access.
 System packages use apt-get (sudo if needed); Python packages use a venv.
 
   --venv PATH       Use/create this venv (default: repository/.venv)
   --mode MODE       python or cpp (default: python)
   --dev             Include Python development tools / C++ GoogleTest
+  --tensorrt        Also build the TensorRT backend. Needs the NVIDIA driver and the CUDA /
+                    TensorRT development packages installed first (SDK manual 3.4); fails if
+                    they are missing instead of building without TensorRT
   --skip-system     Do not install system packages; require them beforehand
   --jobs NUMBER     Limit native build parallelism (default: 2)
   --check           Check prerequisites only; install nothing
@@ -29,10 +35,12 @@ System packages use apt-get (sudo if needed); Python packages use a venv.
 Examples:
   bash scripts/install_sdk.sh
   bash scripts/install_sdk.sh --dev
+  bash scripts/install_sdk.sh --tensorrt
   bash scripts/install_sdk.sh --mode cpp
   bash scripts/install_sdk.sh --skip-system --venv /tmp/ivit-venv
 
-NVIDIA drivers, CUDA, TensorRT and Intel GPU/NPU drivers are not installed.
+NVIDIA drivers, CUDA, TensorRT and Intel GPU/NPU drivers are not installed by this script.
+For --tensorrt set TENSORRT_ROOT / CUDAToolkit_ROOT if they are not in the system paths.
 HELP
 }
 log() { printf '[iVIT] %s\n' "$*"; }
@@ -52,6 +60,7 @@ while (($#)); do
             shift 2 ;;
         --skip-system) INSTALL_SYSTEM=0; shift ;;
         --dev) WITH_DEV=1; shift ;;
+        --tensorrt) WITH_TENSORRT=1; shift ;;
         --check) CHECK_ONLY=1; shift ;;
         -h|--help) usage; exit 0 ;;
         *) die "Unknown option: $1 (use --help)" ;;
@@ -73,8 +82,25 @@ check_native() {
     log "OpenCV C++: $(pkg-config --modversion opencv4)"
 }
 
+# --tensorrt: the SDK only compiles the backend when CUDA and the TensorRT headers/libraries are
+# present, and pip would otherwise finish "successfully" without it. Check before the long build.
+check_tensorrt() {
+    local nvcc="" header="" dir
+    if command -v nvcc >/dev/null; then nvcc="$(command -v nvcc)"
+    elif [[ -x "${CUDAToolkit_ROOT:-/usr/local/cuda}/bin/nvcc" ]]; then nvcc="${CUDAToolkit_ROOT:-/usr/local/cuda}/bin/nvcc"; fi
+    for dir in "${TENSORRT_ROOT:+$TENSORRT_ROOT/include}" /usr/include/x86_64-linux-gnu \
+               /usr/include/aarch64-linux-gnu /usr/include /usr/local/tensorrt/include; do
+        if [[ -n "$dir" && -f "$dir/NvInfer.h" ]]; then header="$dir"; break; fi
+    done
+    [[ -n "$nvcc" ]] || die '--tensorrt needs the CUDA toolkit (nvcc not found). Install cuda-nvcc and cuda-cudart-dev from the NVIDIA apt repository (SDK manual 3.4) or set CUDAToolkit_ROOT'
+    [[ -n "$header" ]] || die '--tensorrt needs the TensorRT development files (NvInfer.h not found). Install libnvinfer-dev and libnvonnxparsers-dev (SDK manual 3.4) or set TENSORRT_ROOT'
+    log "CUDA compiler: $nvcc"
+    log "TensorRT headers: $header"
+}
+
 if ((CHECK_ONLY)); then
     check_native
+    if ((WITH_TENSORRT)); then check_tensorrt; fi
     python3 -c 'import venv, ensurepip'
     log 'Native prerequisites found. CMake/OpenVINO and SDK compilation are checked during installation.'
     exit 0
@@ -99,6 +125,19 @@ if ((INSTALL_SYSTEM)); then
     "${SUDO[@]}" apt-get install -y "${PACKAGES[@]}"
 fi
 check_native
+if ((WITH_TENSORRT)); then check_tensorrt; fi
+
+# Backend selection. --tensorrt also makes configuring fail when a requested backend is missing.
+TRT_STATE=OFF
+CMAKE_EXTRA=()
+if ((WITH_TENSORRT)); then
+    TRT_STATE=ON
+    CMAKE_EXTRA+=(IVIT_REQUIRE_BACKENDS=ON)
+    if [[ -n "${TENSORRT_ROOT:-}" ]]; then CMAKE_EXTRA+=("TENSORRT_ROOT=$TENSORRT_ROOT"); fi
+    if [[ -n "${CUDAToolkit_ROOT:-}" ]]; then CMAKE_EXTRA+=("CUDAToolkit_ROOT=$CUDAToolkit_ROOT"); fi
+fi
+PIP_CMAKE=(); CMAKE_D=()
+for item in "${CMAKE_EXTRA[@]}"; do PIP_CMAKE+=("-Ccmake.define.$item"); CMAKE_D+=("-D$item"); done
 
 # Refuse to replace an unrelated directory or use a symlinked environment.
 [[ ! -L "$VENV_DIR" ]] || die 'Venv path must not be a symlink'
@@ -127,7 +166,8 @@ if [[ "$MODE" == python ]]; then
     log 'Building and installing Python SDK'
     "$VENV_PY" -m pip install -e "$SDK_DIR[$EXTRAS]" \
         -Ccmake.define.IVIT_USE_OPENVINO=ON \
-        -Ccmake.define.IVIT_USE_TENSORRT=OFF \
+        "-Ccmake.define.IVIT_USE_TENSORRT=$TRT_STATE" \
+        "${PIP_CMAKE[@]}" \
         "-Ccmake.define.OpenVINO_DIR=$OV_CMAKE_DIR"
     "$VENV_PY" -m pip check
     "$VENV_PY" - <<'PYVERIFY'
@@ -139,6 +179,15 @@ print("SDK version:", ivit.__version__)
 for device in devices:
     print(device.id, device.name, device.backend, device.is_available)
 PYVERIFY
+    if ((WITH_TENSORRT)); then
+        "$VENV_PY" - <<'PYTRT'
+import ivit
+if any(d.backend == "tensorrt" and d.is_available for d in ivit.list_devices()):
+    print("TensorRT backend: built in and an NVIDIA GPU is available")
+else:
+    print("TensorRT backend: built in, but no usable NVIDIA GPU was found (check the driver with nvidia-smi)")
+PYTRT
+    fi
 else
     BUILD_DIR="$SDK_DIR/build/install-openvino"
     TESTS=OFF
@@ -148,7 +197,8 @@ else
         -DCMAKE_BUILD_TYPE=Release \
         -DIVIT_BUILD_PYTHON=OFF -DIVIT_BUILD_EXAMPLES=ON \
         "-DIVIT_BUILD_TESTS=$TESTS" \
-        -DIVIT_USE_OPENVINO=ON -DIVIT_USE_TENSORRT=OFF \
+        -DIVIT_USE_OPENVINO=ON "-DIVIT_USE_TENSORRT=$TRT_STATE" \
+        "${CMAKE_D[@]}" \
         "-DOpenVINO_DIR=$OV_CMAKE_DIR"
     cmake --build "$BUILD_DIR" --parallel "$JOBS"
     "$BUILD_DIR/bin/simple_inference" devices

@@ -64,6 +64,20 @@ def test_manual_python_examples_are_valid_syntax():
             raise AssertionError(f"manual python block #{index + 1}: {error}\n{block}")
 
 
+def test_manual_classification_examples_warn_about_imagenet_and_limit_output():
+    manual = read("docs/sdk-manual.zh-TW.md")
+    # Zoo's resnet18 through the default contract gives a confident wrong answer (no error), and
+    # printing every class floods the terminal with 1000 lines.
+    for language in ("python", "cpp"):
+        block = next(
+            b for b in re.findall(r"```%s\n(.*?)```" % language, manual, re.S)
+            if "classifier.onnx" in b and "classifications" in b
+        )
+        assert "0.485" in block and "0.229" in block, language
+    assert "classifications[:5]" in manual
+    assert "i < 5" in manual
+
+
 def test_manual_relative_links_resolve():
     manual_path = ROOT / "docs/sdk-manual.zh-TW.md"
     manual = manual_path.read_text(encoding="utf-8")
@@ -104,6 +118,18 @@ def test_ci_script_cleans_up_the_source_tree_and_tracks_the_pinned_tensorrt_rele
     assert 'ONNX_PARSER_BRANCH="release/11.4-GA"' in script
     assert 'libnvinfer.so.$TRT_MAJOR' in script  # the soname follows the pinned major
     assert "tensorrt-cu12==$TRT_VERSION" in script
+
+
+def test_ci_script_builds_the_extension_for_the_venv_python():
+    script = read("scripts/ci/build_and_test.sh")
+    assert '-DPython_EXECUTABLE="$PY"' in script
+
+
+def test_ci_script_tells_the_user_how_to_run_the_build_and_nvidia_headers_are_system():
+    script = read("scripts/ci/build_and_test.sh")
+    done = script[script.index('step "Done"'):]
+    assert "LD_LIBRARY_PATH" in done and "PYTHONPATH" in done
+    assert "target_include_directories(ivit SYSTEM PRIVATE ${TENSORRT_INCLUDE_DIR})" in read("CMakeLists.txt")
 
 
 def test_gpu_job_fails_when_tensorrt_tests_were_skipped():
@@ -319,8 +345,10 @@ def test_release_runners_match_their_apt_sources():
 def test_release_pins_tensorrt_so_apt_cannot_pick_a_newer_major():
     release = read(".github/workflows/release.yml")
     assert release.count("TRT_VERSION: '11.4.0.106-1+cuda12.9'") == 2  # tarball and deb jobs
+    # libnvinfer-dev depends on libnvinfer-safe-headers-dev of the same build; left unpinned, apt
+    # picked the cuda13.4 one and the install failed with "unmet dependencies".
     for package in ("libnvinfer11", "libnvinfer-dev", "libnvinfer-headers-dev",
-                    "libnvonnxparsers11", "libnvonnxparsers-dev"):
+                    "libnvinfer-safe-headers-dev", "libnvonnxparsers11", "libnvonnxparsers-dev"):
         assert f'"{package}=${{TRT_VERSION}}"' in release, package
     assert 'CUDAToolkit_ROOT=${CUDA_HOME}' in release
 
@@ -332,6 +360,23 @@ def test_release_pins_openvino_2026_from_the_unversioned_intel_repo():
     assert "openvino/2025" not in release
     assert release.count("OV=2026.4.1") == 2
     assert release.count('"libopenvino-dev-$OV" "libopenvino-intel-cpu-plugin-$OV"') == 2
+
+
+def test_tensorrt_python_install_is_scripted_documented_and_fails_loudly():
+    script = read("scripts/install_sdk.sh")
+    assert "--tensorrt)" in script and "IVIT_REQUIRE_BACKENDS=ON" in script
+    assert "check_tensorrt" in script  # fails before the long build, not after a silent downgrade
+    cmake = read("CMakeLists.txt")
+    # the option plus the three places a requested backend can go missing (OpenVINO, CUDA, TensorRT)
+    assert cmake.count("IVIT_REQUIRE_BACKENDS") >= 4
+    manual = read("docs/sdk-manual.zh-TW.md")
+    release = read(".github/workflows/release.yml")
+    pinned = re.search(r"TRT_VERSION: '([^']+)'", release).group(1)
+    # the manual's apt command pins the same TensorRT build as the release workflow
+    assert f"libnvinfer11={pinned}" in manual
+    assert f"libnvinfer-safe-headers-dev={pinned}" in manual
+    assert "install_sdk.sh --tensorrt" in manual and "install_sdk.sh --tensorrt" in read("README.md")
+    assert "onnx>=1.14" in read("pyproject.toml").split("dev = [")[1].split("]")[0]
 
 
 def test_deb_depends_on_the_backend_runtimes_it_was_linked_against():

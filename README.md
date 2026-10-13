@@ -16,7 +16,7 @@ bash scripts/install_sdk.sh
 - 純 C++ 建置：`bash scripts/install_sdk.sh --mode cpp`。
 - 只查看選項：`bash scripts/install_sdk.sh --help`。
 - 已準備好依賴時，可用 `--check` 檢查；此選項不會安裝缺少的套件。
-- 此腳本只安裝 OpenVINO 版；TensorRT 版的建置見手冊 3.4／3.5。Intel GPU／NPU 與 NVIDIA 驅動另行準備。
+- 預設只安裝 OpenVINO 版。要編入 TensorRT：先依手冊 3.4 安裝 NVIDIA 驅動與 CUDA／TensorRT 開發套件，再執行 `bash scripts/install_sdk.sh --tensorrt`（缺少套件時會在建置前報錯）。Intel GPU／NPU 驅動另行準備。
 
 推論須自行提供相容模型、影像及模型設定；本專案不附 `classifier.onnx`。實際推論、C/C++ 及 C# 整合請依 [SDK 使用手冊](docs/sdk-manual.zh-TW.md) 操作。二進位 tarball 的安裝方式見 [INSTALL](packaging/INSTALL.md)。
 

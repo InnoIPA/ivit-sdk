@@ -67,6 +67,9 @@ CMAKE_ARGS=(
     -DIVIT_USE_OPENVINO=ON -DIVIT_BUILD_PYTHON=ON -DIVIT_BUILD_TESTS=ON -DIVIT_BUILD_EXAMPLES=ON
     -DOpenVINO_DIR="$SITE/openvino/cmake"
     -Dpybind11_DIR="$("$PY" -m pybind11 --cmakedir)"
+    # Build the extension for the venv's interpreter, not whichever python CMake finds first on
+    # PATH (a second Python there produced a module the venv could not import).
+    -DPython_EXECUTABLE="$PY"
 )
 LIBPATH="$SITE/openvino/libs:$BUILD/lib"
 
@@ -134,3 +137,10 @@ PYTHONPATH="$STAGE" "$PY" -m pytest tests/python -q -p no:cacheprovider -rs \
     2>&1 | tee "$WORK/pytest.log"
 
 step "Done"
+cat <<EOF
+To run your own code against this build, in a new terminal:
+  export LD_LIBRARY_PATH="$LIBPATH\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}"
+  export PYTHONPATH="$STAGE"
+  "$PY" -c 'import ivit; print(ivit.list_devices())'
+C++ programs from this build are in $BUILD/bin (same LD_LIBRARY_PATH).
+EOF

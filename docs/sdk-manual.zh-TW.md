@@ -116,6 +116,8 @@ bash scripts/install_sdk.sh
 bash scripts/install_sdk.sh --dev
 # 純 C++ 建置；venv 僅提供 CMake／OpenVINO 建置工具。
 bash scripts/install_sdk.sh --mode cpp
+# 另外編入 TensorRT 後端（需先依 3.4 安裝 NVIDIA 驅動與 CUDA／TensorRT 開發套件）。
+bash scripts/install_sdk.sh --tensorrt
 ```
 
 腳本預設透過 `sudo apt-get` 安裝 `build-essential`、`python3`、`python3-venv`、`libopencv-dev`、`pkg-config`（Python 模式另加 `python3-dev`，`--mode cpp --dev` 另加 `libgtest-dev`）；套件下載需網路，sudo 可能要求密碼。Python 套件全部使用專案 `.venv`，不使用系統 pip。
@@ -128,7 +130,7 @@ bash scripts/install_sdk.sh --skip-system --venv /tmp/ivit-venv --jobs 2
 
 `--venv` 可指定目錄；既有 venv 可重用，不會覆寫其他類型目錄。`--jobs` 控制編譯平行度，預設 2。純 C++ 的 `--dev` 會安裝 GoogleTest 並執行 CTest。純 C++ 模式的建置輸出在 `build/install-openvino/`；Python 模式以 `pip install -e` 安裝到 venv。
 
-目前腳本只提供 OpenVINO 版本，不自動安裝 NVIDIA CUDA／TensorRT 或 GPU／NPU 驅動。Python 模式最後驗證 bindings 和可用 OpenVINO 裝置；模型推論與準確度仍需客戶模型測試。依賴沒有完全鎖版，重跑可能使用較新的相容套件。
+腳本預設只安裝 OpenVINO 版本；`--tensorrt` 會另外編入 TensorRT，但不自動安裝 NVIDIA 驅動、CUDA／TensorRT 開發套件或 GPU／NPU 驅動（缺少時在建置前報錯並指向 3.4）。Python 模式最後驗證 bindings 和可用裝置；模型推論與準確度仍需客戶模型測試。依賴沒有完全鎖版，重跑可能使用較新的相容套件。
 
 ### 3.1 前置條件與指令檢查
 
@@ -179,11 +181,33 @@ python3 -m pip install -e '.[dev,openvino]' \
 python3 -c "import ivit; print(ivit.__version__); assert ivit.is_cpp_available(), ivit.get_runtime_info(); print(ivit.list_devices())"
 ```
 
-`import ivit` 成功不代表 bindings 成功；上面的 assertion 必須通過。`.[dev]` 包含 pytest 與開發工具，只需推論可改用 `.[openvino]`。`.[zoo]`、`.[train]` 是選用功能，仍需依模型安裝匯出依賴。
+`import ivit` 成功不代表 bindings 成功；上面的 assertion 必須通過。`.[dev]` 包含 pytest、onnx（測試用來產生小模型；缺少時約 20 個測試檔會被跳過）與開發工具，只需推論可改用 `.[openvino]`。訓練相關測試另需 torch（`.[train]`），C ABI 測試需設定 `IVIT_C_LIBRARY`（見 9.2）。`.[zoo]`、`.[train]` 是選用功能，仍需依模型安裝匯出依賴。
 
 若使用自訂 OpenCV 安裝位置，可在 pip 命令加上 `-Ccmake.define.OpenCV_DIR=/absolute/path/to/opencv/cmake`。該目錄必須實際包含 `OpenCVConfig.cmake`。
 
 關閉終端或執行 `deactivate` 後，再次使用 SDK 前需重新執行 `source .venv/bin/activate`。
+
+### 啟用 TensorRT 的 Python 安裝
+
+先依 3.4 安裝 NVIDIA 驅動與 CUDA／TensorRT 開發套件，再用安裝腳本（建立 `.venv`、建置、驗證一次完成）：
+
+```bash
+bash scripts/install_sdk.sh --tensorrt          # 缺少 CUDA／TensorRT 時會在建置前報錯並指向 3.4
+```
+
+或手動執行與上面相同的 pip 命令，把 TensorRT 改為 ON，並加上 `IVIT_REQUIRE_BACKENDS`：
+
+```bash
+python3 -m pip install -e '.[dev,openvino]' \
+  -Ccmake.define.IVIT_USE_OPENVINO=ON \
+  -Ccmake.define.IVIT_USE_TENSORRT=ON \
+  -Ccmake.define.IVIT_REQUIRE_BACKENDS=ON
+python3 -c "import ivit; print(ivit.list_devices())"      # 應出現 cuda:0（tensorrt）
+```
+
+沒有 `IVIT_REQUIRE_BACKENDS=ON` 時，找不到 TensorRT 或 CUDA 只會讓 CMake 發出警告並建出沒有 TensorRT 的版本，而 pip 預設不顯示這個警告；因此要求 TensorRT 時務必加上。TensorRT／CUDA 不在系統路徑時，加 `-Ccmake.define.TENSORRT_ROOT=...`、`-Ccmake.define.CUDAToolkit_ROOT=...`（`install_sdk.sh` 會讀取同名環境變數）。裝置列表只在有可用的 NVIDIA GPU 與驅動時才會出現 `cuda:0`，可先用 `nvidia-smi` 確認。已實測：25 秒完成，yolox-s FP16 在 RTX 2070 SUPER 約 4.3 ms，完整 Python 測試通過（261 項，跳過的只有 C ABI、torch、NPU 相關）。
+
+不想安裝系統套件時，可改用 3.5 的 `--tensorrt`（CUDA／TensorRT 函式庫取自 pip，產物留在建置目錄）。
 
 ### 3.3 純 C++：OpenVINO 版本
 
@@ -205,7 +229,32 @@ cmake --build build-openvino -j
 
 ### 3.4 純 C++：TensorRT 版本
 
-先安裝 TensorRT／CUDA 的 native 開發依賴與驅動，再將上例改為 `IVIT_USE_OPENVINO=OFF`、`IVIT_USE_TENSORRT=ON`，建置目錄改為 `build-tensorrt`。`pip install openvino` 不會安裝這些 NVIDIA 依賴。必要時指定 `-DTENSORRT_ROOT=/path/to/tensorrt`。
+先安裝 NVIDIA 驅動（需支援 CUDA 12.9），以及 CUDA／TensorRT 的 native 開發套件。`pip install openvino` 不會安裝這些 NVIDIA 依賴。Ubuntu 24.04 使用 NVIDIA 的 apt 來源（其他版本請把 `ubuntu2404` 換成對應名稱）：
+
+```bash
+wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2404/x86_64/cuda-keyring_1.1-1_all.deb
+sudo dpkg -i cuda-keyring_1.1-1_all.deb
+sudo apt-get update
+sudo apt-get install -y --no-install-recommends \
+  cuda-nvcc-12-9 cuda-cudart-dev-12-9 \
+  libnvinfer11=11.4.0.106-1+cuda12.9 libnvinfer-dev=11.4.0.106-1+cuda12.9 \
+  libnvinfer-headers-dev=11.4.0.106-1+cuda12.9 libnvinfer-safe-headers-dev=11.4.0.106-1+cuda12.9 \
+  libnvonnxparsers11=11.4.0.106-1+cuda12.9 libnvonnxparsers-dev=11.4.0.106-1+cuda12.9
+```
+
+版本必須全部指定：不指定時 apt 會選到來源中最新的 CUDA 13／其他 TensorRT 版本，`libnvinfer` 的 soname 也會不同；漏掉 `libnvinfer-safe-headers-dev` 會出現 `unmet dependencies`（`libnvinfer-dev` 要求同一版）。下載約 1.5 GB、安裝後約 4 GB。安裝後 `nvcc`、`NvInfer.h` 與函式庫都在系統路徑（`/usr/local/cuda`、`/usr/include/x86_64-linux-gnu`、`/usr/lib/x86_64-linux-gnu`），建置與執行都不必設定環境變數；裝在其他位置時指定 `-DTENSORRT_ROOT=/path/to/tensorrt`、`-DCUDAToolkit_ROOT=/path/to/cuda`。
+
+接著把 3.3 的設定改為 `IVIT_USE_OPENVINO=OFF`、`IVIT_USE_TENSORRT=ON`，建置目錄改為 `build-tensorrt`，並加上 `-DIVIT_REQUIRE_BACKENDS=ON`（找不到 TensorRT／CUDA 時直接失敗，而不是建出沒有 TensorRT 的版本）：
+
+```bash
+cmake -S . -B build-tensorrt -DCMAKE_BUILD_TYPE=Release \
+  -DIVIT_BUILD_PYTHON=OFF -DIVIT_BUILD_TESTS=OFF -DIVIT_BUILD_EXAMPLES=ON \
+  -DIVIT_USE_OPENVINO=OFF -DIVIT_USE_TENSORRT=ON -DIVIT_REQUIRE_BACKENDS=ON
+cmake --build build-tensorrt -j
+./build-tensorrt/bin/simple_inference devices        # 應列出 cuda:0（tensorrt）
+```
+
+已在 Ubuntu 24.04、上述套件與 RTX 2070 SUPER 驗證：6 秒建完、無警告，`detection_demo` 以 `cuda:0` 推論 Zoo 的 yolox-s 與 CPU 結果一致。
 
 **必須檢查 CMake Summary**：找不到後端時，建置可能停用該後端，成功編譯不代表具備可用推論引擎。TensorRT API 相容性需實際編譯確認，不能只依 Python metadata 的最低版本判斷。
 
@@ -218,6 +267,16 @@ bash scripts/ci/build_and_test.sh              # OpenVINO 版
 bash scripts/ci/build_and_test.sh --tensorrt   # OpenVINO + TensorRT 版
 ```
 
+腳本結束時會印出使用這份建置結果的指令。要在自己的程式使用，需設定兩個環境變數（此時 `LD_LIBRARY_PATH` 必須包含 pip 版 OpenVINO／TensorRT／CUDA runtime 的函式庫目錄，否則會出現 `libnvinfer.so.11: cannot open shared object file`）：
+
+```bash
+export LD_LIBRARY_PATH="$PWD/build-ci/build/lib:$PWD/build-ci/venv/lib/python3.12/site-packages/openvino/libs:$PWD/build-ci/venv/lib/python3.12/site-packages/tensorrt_libs:$PWD/build-ci/venv/lib/python3.12/site-packages/nvidia/cuda_runtime/lib"
+export PYTHONPATH="$PWD/build-ci/stage"
+build-ci/venv/bin/python -c 'import ivit; print(ivit.list_devices())'   # 應列出 cuda:0
+```
+
+C++ 範例在 `build-ci/build/bin/`（同一組 `LD_LIBRARY_PATH`）。用 `--work DIR` 時請把 `build-ci` 換成該目錄；Python 版本不是 3.12 時請調整路徑。
+
 `--tensorrt` 不需要預先安裝 CUDA toolkit：TensorRT 與 CUDA runtime 函式庫取自 pip，TensorRT 標頭取自 NVIDIA 開源版本（與 pip 套件同一版 11.4）。沒有 GPU 時仍會編譯並連結 TensorRT 後端，只跳過需要 GPU 的測試。腳本需要 3.1 列出的系統套件（含 `cmake` 3.18 以上與 `libgtest-dev`）；`--tensorrt` 另需 `curl` 與網路，以下載 TensorRT 標頭。
 
 ### 3.6 指定 GPU／NPU 驗證
@@ -228,7 +287,7 @@ bash scripts/ci/build_and_test.sh --tensorrt   # OpenVINO + TensorRT 版
 
 ### 3.7 指定 TensorRT 驗證
 
-建置 TensorRT／OpenVINO 雙後端後，執行 `python3 scripts/verify_tensorrt.py --precision fp32`，可加 `--precision fp16`、`--dynamic-batch` 或 `--report PATH`。工具需要已建置 bindings、ONNX 與 OpenVINO CPU 參考，不會將後端缺席算作通過。RTX 2070 SUPER 上，TensorRT 10.12 已通過四組靜態／動態分類、併發、engine 往返與退出測試；TensorRT 11.4 以 `--precision fp32`、`--precision fp16`、`--precision fp16 --dynamic-batch` 重新驗證皆通過。TensorRT 11.4 的 FP16 與 FP32 比較（Zoo 全部 11 個 ready 模型、bus.jpg）：6 個分類模型 top-1 皆相同（分數差 ≤0.0023）；2 個 DeepLabV3 遮罩 ≥99.97% 一致；5 個 YOLOX 偵測數相同、框 IoU ≥0.989；FP16 每張快 1.2–3.1 倍（例：yolox-s 10.89 → 3.99 ms、deeplabv3-resnet50 52.07 → 16.78 ms）。相依套件路徑與驗證限制見 [TensorRT 驗證紀錄](development/tensorrt-device-verification.zh-TW.md)。安裝腳本仍僅安裝 OpenVINO 版，不自動安裝 CUDA／TensorRT。
+建置 TensorRT／OpenVINO 雙後端後，執行 `python3 scripts/verify_tensorrt.py --precision fp32`，可加 `--precision fp16`、`--dynamic-batch` 或 `--report PATH`。工具需要已建置 bindings、ONNX 與 OpenVINO CPU 參考，不會將後端缺席算作通過。RTX 2070 SUPER 上，TensorRT 10.12 已通過四組靜態／動態分類、併發、engine 往返與退出測試；TensorRT 11.4 以 `--precision fp32`、`--precision fp16`、`--precision fp16 --dynamic-batch` 重新驗證皆通過。TensorRT 11.4 的 FP16 與 FP32 比較（Zoo 全部 11 個 ready 模型、bus.jpg）：6 個分類模型 top-1 皆相同（分數差 ≤0.0023）；2 個 DeepLabV3 遮罩 ≥99.97% 一致；5 個 YOLOX 偵測數相同、框 IoU ≥0.989；FP16 每張快 1.2–3.1 倍（例：yolox-s 10.89 → 3.99 ms、deeplabv3-resnet50 52.07 → 16.78 ms）。相依套件路徑與驗證限制見 [TensorRT 驗證紀錄](development/tensorrt-device-verification.zh-TW.md)。安裝腳本預設只安裝 OpenVINO 版；`--tensorrt` 可編入 TensorRT，但不自動安裝 CUDA／TensorRT 套件。
 
 ## 4. 模型與輸入契約
 
@@ -375,6 +434,9 @@ image = cv2.imread("image.jpg")
 if image is None:
     raise FileNotFoundError("image.jpg")
 
+# 預設前處理：RGB、pixel/255、mean=0、std=1。torchvision／ImageNet 模型（例如 Zoo 的 resnet18）
+# 需再加上 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]，否則不會報錯但結果是錯的（見 4.2）；
+# ivit.zoo.load("resnet18") 已自動帶入。
 model = ivit.load(
     "classifier.onnx", device="cpu", backend="openvino",
     task="classification", use_cache=False,
@@ -382,7 +444,7 @@ model = ivit.load(
 print(model.input_info, model.output_info)
 model.warmup(3)
 results = model.predict(image)
-for item in results.classifications:
+for item in results.classifications[:5]:  # 所有類別依分數由高到低排列，這裡只看前 5 名
     print(item.class_id, item.label, item.score)
 results.save("classification.json")
 ```
@@ -492,7 +554,7 @@ cmake -S /path/to/customer -B /path/to/customer/build \
 cmake --build /path/to/customer/build -j2
 ```
 
-自行建置安裝的 TensorRT 版需設定 `CUDAToolkit_ROOT`、`TENSORRT_ROOT`（release tarball 不需要）。執行時 runtime libraries 仍需可被 loader 找到（例如設定 `LD_LIBRARY_PATH`）。獨立客戶驗證專案見 `tests/integration/cmake_consumer`。
+自行建置安裝的 TensorRT 版需設定 `CUDAToolkit_ROOT`、`TENSORRT_ROOT`（release tarball 不需要）。執行時 runtime libraries 仍需可被 loader 找到（例如設定 `LD_LIBRARY_PATH`），否則會出現 `error while loading shared libraries: libopenvino.so.…: cannot open shared object file`。pip 版 OpenVINO 的函式庫在 venv 內：`export LD_LIBRARY_PATH="$VIRTUAL_ENV/lib/python3.12/site-packages/openvino/libs:$LD_LIBRARY_PATH"`（依實際 Python 版本調整）；官方 tgz 在其 `runtime/lib/intel64`；apt 安裝的在系統路徑，不必設定。獨立客戶驗證專案見 `tests/integration/cmake_consumer`。
 
 ### 7.2 完整單張分類程式
 
@@ -513,6 +575,10 @@ int main() {
         config.backend = "openvino";
         config.task = "classification";
         config.use_cache = false;
+        // 預設前處理：RGB、pixel/255、mean=0、std=1。torchvision／ImageNet 模型（例如 Zoo 的
+        // resnet18）必須再加上下面兩行，否則不會報錯但結果是錯的（見 4.2）：
+        // config.mean = {0.485f, 0.456f, 0.406f};
+        // config.std = {0.229f, 0.224f, 0.225f};
 
         auto model = ivit::load_model("classifier.onnx", config);
         cv::Mat image = cv::imread("image.jpg");
@@ -522,8 +588,10 @@ int main() {
         }
         model->warmup(3);
         auto result = model->predict(image);
-        for (const auto& item : result.classifications) {
-            std::cout << item.class_id << ": " << item.score << '\n';
+        // classifications 含所有類別，依分數由高到低排列；這裡只印前 5 名。
+        const auto& items = result.classifications;
+        for (size_t i = 0; i < items.size() && i < 5; ++i) {
+            std::cout << items[i].class_id << ": " << items[i].score << '\n';
         }
         result.save("classification.json");
         return 0;

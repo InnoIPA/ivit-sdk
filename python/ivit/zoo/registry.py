@@ -457,6 +457,28 @@ _TORCHVISION_MODEL_MAP = {
 }
 
 
+_ZOO_EXTRAS_HINT = (
+    "Install the Zoo export dependencies: pip install -e \".[zoo]\" (from the source tree), or "
+    "pip install torch torchvision onnx onnxscript"
+)
+
+
+def _export_with_new_exporter(torch, model, dummy, onnx_path: Path, **kwargs) -> None:
+    """torch.onnx.export for classification/segmentation.
+
+    Since PyTorch 2.9 the default exporter imports onnxscript lazily, so a missing package
+    surfaces as a bare ModuleNotFoundError from deep inside torch. Say what to install instead.
+    """
+    try:
+        torch.onnx.export(model, dummy, str(onnx_path), **kwargs)
+    except ModuleNotFoundError as error:
+        if error.name in ("onnx", "onnxscript"):
+            raise ImportError(
+                f"Exporting to ONNX needs the '{error.name}' package. {_ZOO_EXTRAS_HINT}"
+            ) from error
+        raise
+
+
 def _export_torchvision_onnx(name: str, onnx_path: Path, info: ModelInfo) -> Path:
     """Export a torchvision model to ONNX."""
     try:
@@ -466,8 +488,8 @@ def _export_torchvision_onnx(name: str, onnx_path: Path, info: ModelInfo) -> Pat
         import torchvision.models.detection as det_models
     except ImportError:
         raise ImportError(
-            "PyTorch and torchvision required for torchvision model export. "
-            "Install with: pip install torch torchvision"
+            "PyTorch and torchvision are required for torchvision model export. "
+            + _ZOO_EXTRAS_HINT
         )
 
     if name not in _TORCHVISION_MODEL_MAP:
@@ -595,10 +617,11 @@ def _export_torchvision_onnx(name: str, onnx_path: Path, info: ModelInfo) -> Pat
                 export_params=True,
             )
     else:
-        torch.onnx.export(
+        _export_with_new_exporter(
+            torch,
             model,
             dummy,
-            str(onnx_path),
+            onnx_path,
             opset_version=18,
             input_names=["input"],
             output_names=output_names,

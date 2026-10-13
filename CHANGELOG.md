@@ -64,6 +64,14 @@ and C++ applications must be rebuilt after a minor upgrade.
 - Corrected the SDK manual where it contradicted the code (Detector decoder
   selection, `classes`/`max_detections`, `use_cache`).
 
+### Added
+- `bash scripts/install_sdk.sh --tensorrt`: builds the Python SDK (or `--mode cpp`) with the
+  TensorRT backend. It checks for `nvcc` and the TensorRT headers first and stops with a pointer
+  to the manual (3.4) instead of building without TensorRT.
+- CMake option `IVIT_REQUIRE_BACKENDS` (default OFF): configuring fails, with the fix, when a
+  requested backend (OpenVINO, CUDA/TensorRT) is not found, instead of dropping it with a warning
+  that pip hides.
+
 ### Removed
 - OpenVINO `.pdmodel` (PaddlePaddle) loading: never tested or documented, and the Intel deb has
   no Paddle frontend. Loading one now fails with an unsupported-format error.
@@ -254,6 +262,35 @@ and C++ applications must be rebuilt after a minor upgrade.
 - Project URLs in `pyproject.toml` point to github.com/InnoIPA/ivit-sdk.
 - Callback events `pre_process`, `infer_start`, `infer_end` and `post_process` could be registered
   but never fired. `predict`/`predict_batch` now fire them in that order.
+- Found by following the docs as a first-time user:
+  - The manual's classification examples (Python 6.1, C++ 7.2) printed all 1000 class scores and,
+    for the Zoo's resnet18, gave a wrong top-1 without any error (the example used the default
+    input contract; ImageNet models need mean/std). They now print the top 5 and show the
+    mean/std settings; the manual also says where pip OpenVINO's libraries are for
+    `LD_LIBRARY_PATH`.
+  - `simple_inference detect` on a Zoo YOLOX silently reported 0 objects (default contract, wrong
+    decoder). It now explains why and points to `detection_demo ... yolox`; `classify` points to
+    `classification_demo ... imagenet`. The usage text no longer splits the `convert` examples.
+  - `scripts/ci/build_and_test.sh` let CMake pick any Python on PATH, so with a second Python
+    installed it built the extension for that one and the venv could not import it (31
+    unrelated-looking test failures). It now builds for the venv's interpreter.
+  - Following the TensorRT path: `build_and_test.sh --tensorrt` ended with just "Done", and running
+    what it built failed with `libnvinfer.so.11: cannot open shared object file`. It now prints
+    the `LD_LIBRARY_PATH`/`PYTHONPATH` to use and the manual (3.5) explains them. The TensorRT
+    headers are included as SYSTEM headers, which removes 50 deprecation warnings per build that
+    came from NVIDIA's own headers.
+  - Installing NVIDIA's packages as `release.yml` did failed: `libnvinfer-dev` needs
+    `libnvinfer-safe-headers-dev` of the same build, and with it unpinned apt chose the cuda13.4
+    one ("unmet dependencies"). Both release jobs would have failed on GitHub at that step. It is
+    now pinned, and the manual (3.4) documents the full apt command.
+  - There was no documented way to get TensorRT in a Python from-source install (3.2 only showed
+    `IVIT_USE_TENSORRT=OFF`, and pip silently built without TensorRT when it was missing). See
+    `--tensorrt` and `IVIT_REQUIRE_BACKENDS` above.
+  - `.[dev]` did not include `onnx`, so after the documented install about 20 test files were
+    skipped without a hint. It is now in `.[dev]`.
+  - The Zoo export error said `pip install torch torchvision`, after which the export still failed
+    on `onnxscript`. The message now names every dependency (`.[zoo]`), and a missing `onnx` /
+    `onnxscript` during export is reported the same way instead of as a torch-internal traceback.
 - The release notes named the Jetson deb `..._arm64-jetson.deb`; CMake builds `..._arm64-nvidia.deb`.
 - `ivit.zoo.list_models(task=...)` returned `[]` for an unknown task name (for example
   `"classification"`, the `LoadConfig` spelling); it now raises `ValueError` listing `classify`,

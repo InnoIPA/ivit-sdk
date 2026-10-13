@@ -9,6 +9,9 @@ option(IVIT_BUILD_TESTS "Build tests" ON)
 option(IVIT_BUILD_EXAMPLES "Build examples" ON)
 option(IVIT_USE_OPENVINO "Enable OpenVINO backend" ON)
 option(IVIT_USE_TENSORRT "Enable TensorRT backend" ON)
+# By default a backend that cannot be found is dropped with a warning (which pip hides). Turn this
+# on when you asked for a backend and need to know you did not get it: configuring then fails.
+option(IVIT_REQUIRE_BACKENDS "Fail instead of dropping a requested backend that is not found" OFF)
 
 # 依賴打包選項
 option(IVIT_BUNDLE_DEPS "Bundle dependencies into SDK for redistribution" OFF)
@@ -99,6 +102,11 @@ if(IVIT_USE_OPENVINO)
             endif()
         endif()
     else()
+        if(IVIT_REQUIRE_BACKENDS)
+            message(FATAL_ERROR "OpenVINO was requested but not found. Install it (pip install "
+                    "'openvino>=2026.0' or the Intel apt packages) and set OpenVINO_DIR to its cmake "
+                    "directory, or build without it (-DIVIT_USE_OPENVINO=OFF).")
+        endif()
         message(WARNING "OpenVINO not found, disabling OpenVINO backend")
         set(IVIT_USE_OPENVINO OFF)
     endif()
@@ -138,10 +146,21 @@ if(IVIT_USE_TENSORRT)
                 list(APPEND IVIT_BUNDLE_LIBRARIES ${CUDA_RUNTIME_LIBS})
             endif()
         else()
+            if(IVIT_REQUIRE_BACKENDS)
+                message(FATAL_ERROR "TensorRT was requested but its headers/libraries "
+                        "(NvInfer.h, libnvinfer, libnvonnxparser) were not found. Install "
+                        "libnvinfer-dev and libnvonnxparsers-dev, or set TENSORRT_ROOT to the "
+                        "TensorRT directory, or build without it (-DIVIT_USE_TENSORRT=OFF).")
+            endif()
             message(WARNING "TensorRT not found, disabling TensorRT backend")
             set(IVIT_USE_TENSORRT OFF)
         endif()
     else()
+        if(IVIT_REQUIRE_BACKENDS)
+            message(FATAL_ERROR "TensorRT was requested but the CUDA toolkit was not found. "
+                    "Install cuda-nvcc and cuda-cudart-dev (NVIDIA apt repository) or set "
+                    "CUDAToolkit_ROOT, or build without TensorRT (-DIVIT_USE_TENSORRT=OFF).")
+        endif()
         message(WARNING "CUDA not found, disabling TensorRT backend")
         set(IVIT_USE_TENSORRT OFF)
     endif()
@@ -220,7 +239,9 @@ if(IVIT_USE_OPENVINO)
 endif()
 
 if(IVIT_USE_TENSORRT)
-    target_include_directories(ivit PRIVATE ${TENSORRT_INCLUDE_DIR})
+    # SYSTEM: NVIDIA's headers use their own deprecated interfaces (50 warnings per build) which
+    # would drown out real warnings from this project.
+    target_include_directories(ivit SYSTEM PRIVATE ${TENSORRT_INCLUDE_DIR})
     target_link_libraries(ivit PRIVATE
         ${TENSORRT_LIBRARY}
         ${NVONNXPARSER_LIBRARY}

@@ -108,6 +108,9 @@ void run_classification(const std::string& model_path,
 
         std::cout << "\nInference time: " << results.inference_time_ms << " ms\n";
         std::cout << "Device used: " << results.device_used << "\n";
+        std::cout << "\nNote: the model was loaded with the default input contract (no mean/std).\n"
+                     "For torchvision / ImageNet models (e.g. the Model Zoo's) use:\n"
+                     "  classification_demo <model> <image> <device> imagenet\n";
 
     } catch (const std::exception& e) {
         std::cerr << "Classification error: " << e.what() << "\n";
@@ -152,6 +155,14 @@ void run_detection(const std::string& model_path,
         // Print results
         std::cout << "\nDetected " << results.detections.size() << " object(s):\n";
         std::cout << "--------------------------------\n";
+        if (results.detections.empty()) {
+            // Most often a model that needs its own input/decoder settings (every Model Zoo
+            // YOLOX), not an image without objects: this command uses the default contract.
+            std::cout << "  (none) This command loads the model with the default input contract.\n"
+                         "  Model Zoo YOLOX files need their own decoder and preprocessing:\n"
+                         "    detection_demo <model> <image> <device> <conf> yolox\n"
+                         "  Other models: see the SDK manual, section 4.2.\n";
+        }
 
         for (size_t i = 0; i < results.detections.size(); i++) {
             const auto& det = results.detections[i];
@@ -424,12 +435,14 @@ void print_usage(const char* program) {
     std::cout << "  " << program << " detect detector.onnx image.jpg cuda:0 output.jpg\n";
     std::cout << "  " << program << " segment segmentor.onnx image.jpg gpu:0\n";
     std::cout << "  " << program << " benchmark detector.onnx cuda:0 100\n";
-    std::cout << "\nModels are loaded with the default input contract (RGB, pixel/255, no mean/std).\n"
-                 "Models exported differently need matching LoadConfig settings (SDK manual 4.2);\n"
-                 "for the Model Zoo YOLOX files use: detection_demo <model> <image> cpu 0.5 yolox\n";
     std::cout << "  " << program << " convert model.onnx model.engine cuda:0 fp16\n";
     std::cout << "  " << program << " convert model.onnx model.xml cpu fp32\n";
     std::cout << "  " << program << " clear-cache\n";
+    std::cout << "\nModels are loaded with the default input contract (RGB, pixel/255, no mean/std).\n"
+                 "Models exported differently need matching LoadConfig settings (SDK manual 4.2):\n"
+                 "  Model Zoo YOLOX:                 detection_demo <model> <image> cpu 0.5 yolox\n"
+                 "  torchvision / ImageNet classifiers (e.g. the Zoo's):\n"
+                 "                                   classification_demo <model> <image> cpu imagenet\n";
 }
 
 int main(int argc, char* argv[]) {
