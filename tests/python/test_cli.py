@@ -220,3 +220,34 @@ def test_info_reports_the_backends_the_sdk_loaded_not_pip_packages(monkeypatch, 
             assert versions[key] in line
         else:
             assert "Not available" in line
+
+
+def test_unknown_zoo_model_is_a_one_line_error_not_a_traceback(monkeypatch, capsys):
+    code, out, err = run(monkeypatch, capsys, "zoo", "download", "no-such-model")
+    assert code == 1
+    assert "Model not found: no-such-model" in err
+    assert "Traceback" not in err and "KeyError" not in err
+
+
+def test_network_and_missing_package_failures_are_reported_cleanly(monkeypatch, capsys):
+    import requests
+
+    for failure in (requests.ConnectionError("no route to host"), ImportError("No module named 'torch'")):
+        monkeypatch.setattr(cli, "cmd_zoo", lambda args, failure=failure: (_ for _ in ()).throw(failure))
+        code, out, err = run(monkeypatch, capsys, "zoo", "list")
+        assert code == 1 and err.startswith("Error:") and "Traceback" not in err
+
+
+@pytest.mark.parametrize(
+    "source, expected",
+    [
+        ("0", True), ("1", True),
+        ("clip.mp4", True), ("clip.WEBM", True), ("clip.m4v", True), ("dir/clip.mkv", True),
+        ("rtsp://192.0.2.1/stream", True), ("rtmp://example.com/live", True),
+        ("https://example.com/clip.mp4", True),
+        ("photo.jpg", False), ("image.png", False), ("https://example.com/photo.jpg", False),
+        ("http://example.com/stream", False),  # no video suffix: treated as an image URL
+    ],
+)
+def test_predict_source_kind_detection(source, expected):
+    assert cli._is_stream_source(source) is expected

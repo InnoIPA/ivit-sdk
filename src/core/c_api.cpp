@@ -323,9 +323,11 @@ ivit_status IVIT_C_CALL ivit_model_predict_bgr(ivit_model_handle model, const ui
     if (result)
         *result = 0;
     return guard([&]() -> ivit_status {
-        if (!pixels || !result || width <= 0 || height <= 0 || !std::isfinite(confidence) ||
-            confidence < 0 || confidence > 1 || !std::isfinite(iou) || iou < 0 || iou > 1 ||
-            max_detections <= 0)
+        // Exactly -1 means "task default" (0.5 detection, 0 classification), as everywhere else.
+        const bool task_default = confidence == -1.0f;
+        if (!pixels || !result || width <= 0 || height <= 0 ||
+            (!task_default && (!std::isfinite(confidence) || confidence < 0 || confidence > 1)) ||
+            !std::isfinite(iou) || iou < 0 || iou > 1 || max_detections <= 0)
             throw std::invalid_argument("Invalid image or inference arguments");
         cv::Mat image = wrap_image(pixels, bytes, width, height, stride, 3);
         auto owned = lookup(models, model);

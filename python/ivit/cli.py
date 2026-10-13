@@ -22,6 +22,7 @@ import argparse
 import sys
 import time
 from pathlib import Path
+from urllib.parse import urlparse
 
 
 def cmd_info(args):
@@ -257,8 +258,8 @@ def cmd_predict(args):
 
     # Check if source is video
     source_path = Path(source)
-    is_video = source_path.suffix.lower() in (".mp4", ".avi", ".mov", ".mkv")
     is_camera = source.isdigit()
+    is_video = _is_stream_source(source) and not is_camera
 
     if is_video or is_camera:
         import cv2
@@ -280,7 +281,12 @@ def cmd_predict(args):
                     drawn = results.visualize(item.frame)
                 if save:
                     if writer is None:
-                        stem = "camera" + source if is_camera else source_path.stem
+                        if is_camera:
+                            stem = "camera" + source
+                        elif "://" in source:
+                            stem = "stream"  # a URL has no usable file name
+                        else:
+                            stem = source_path.stem
                         output_path = f"{stem}_result.mp4"
                         height, width = drawn.shape[:2]
                         fps = item.fps if item.fps > 0 else 30.0
@@ -337,6 +343,22 @@ def cmd_predict(args):
                 cv2.destroyAllWindows()
 
     print()
+
+
+_VIDEO_SUFFIXES = (".mp4", ".avi", ".mov", ".mkv", ".webm", ".m4v", ".wmv", ".flv", ".mpg", ".mpeg", ".ts")
+_STREAM_SCHEMES = ("rtsp", "rtsps", "rtmp", "udp", "rtp", "srt", "tcp")
+
+
+def _is_stream_source(source: str) -> bool:
+    """True for a camera index, a network stream URL or a video file (anything else is an image)."""
+    if source.isdigit():
+        return True
+    parsed = urlparse(source)
+    if parsed.scheme.lower() in _STREAM_SCHEMES:
+        return True
+    # http(s) is only a stream when it points at a video file; a .jpg URL is an image.
+    path = parsed.path if parsed.scheme.lower() in ("http", "https") else source
+    return Path(path).suffix.lower() in _VIDEO_SUFFIXES
 
 
 def _summary(results):
@@ -748,7 +770,9 @@ Examples:
         "--target",
         default="auto",
         choices=["auto", "cpu", "intel_cpu", "intel_gpu", "intel_npu", "nvidia_gpu"],
-        help="Target platform (default: auto)",
+        help="Target platform (default: auto). It selects the output format: OpenVINO IR for "
+        "intel_*, a TensorRT engine for nvidia_gpu, an ONNX copy for cpu/auto. An OpenVINO IR "
+        "does not depend on the device, so intel_cpu/intel_gpu/intel_npu produce the same file.",
     )
     export_parser.add_argument(
         "-p",
@@ -795,8 +819,16 @@ Examples:
 
     try:
         args.func(args)
-    except (RuntimeError, ValueError, FileNotFoundError) as e:
-        # IVITError derives from RuntimeError
+    except KeyboardInterrupt:
+        print("Interrupted", file=sys.stderr)
+        sys.exit(130)
+    except KeyError as e:
+        # e.g. an unknown Zoo model name; str(KeyError) would add quotes around the message
+        print(f"Error: {e.args[0] if e.args else e}", file=sys.stderr)
+        sys.exit(1)
+    except (RuntimeError, ValueError, OSError, ImportError) as e:
+        # IVITError derives from RuntimeError; OSError covers FileNotFoundError, network
+        # failures (requests) and shutil.SameFileError; ImportError is a missing optional package.
         print(f"Error: {e}", file=sys.stderr)
         sys.exit(1)
 

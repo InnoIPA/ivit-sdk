@@ -155,7 +155,7 @@ public sealed class Model : IDisposable
         handle = new ModelHandle(id);
     }
     public Prediction Predict(byte[] bgr, int width, int height, int stride = 0,
-        float confidence = 0.5f, float iou = 0.45f, int maxDetections = 100)
+        float confidence = -1f, float iou = 0.45f, int maxDetections = 100)
     {
         ArgumentNullException.ThrowIfNull(bgr);
         if (stride == 0) stride = checked(width * 3);

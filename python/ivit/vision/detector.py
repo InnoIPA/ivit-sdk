@@ -158,6 +158,9 @@ class Detector:
         import cv2
 
         cap = cv2.VideoCapture(source)
+        if not cap.isOpened():
+            cap.release()
+            raise RuntimeError(f"Failed to open video source: {source}")
         try:
             while cap.isOpened():
                 ret, frame = cap.read()

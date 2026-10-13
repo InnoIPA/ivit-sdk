@@ -309,7 +309,11 @@ class DeviceManager:
         """
         target_id = f"gpu:{index}"
         for dev in self():
-            if dev.id == target_id or (dev.type == "gpu" and dev.backend == "openvino"):
+            if dev.type != "gpu" or dev.backend != "openvino":
+                continue
+            # A lone Intel GPU may be listed as plain "gpu"; any other index must match exactly
+            # (gpu(7) used to return gpu:0).
+            if dev.id == target_id or (index == 0 and dev.id == "gpu"):
                 return dev
         return None
 
@@ -354,6 +358,10 @@ class DeviceManager:
         # Same ranking as the C++ get_best_device (src/core/device_ranking.hpp) for
         # "latency"/"throughput" (= C++ "performance") and "efficiency"; keep them in
         # step. "balanced" exists only here.
+        if strategy not in ("latency", "throughput", "efficiency", "balanced"):
+            raise ValueError(
+                f"Unknown strategy '{strategy}'; use latency, throughput, efficiency or balanced"
+            )
         available = [d for d in self() if d.available]
 
         if not available:

@@ -20,6 +20,9 @@ Console.WriteLine(result.ToJson());
 var (maskWidth, maskHeight, classes) = result.ClassMask();
 ```
 
+`confidence` defaults to -1, the task default: 0.5 for detection and no filtering for
+classification (every class is returned). Pass 0–1 for a specific threshold.
+
 Use `ModelOptions` for decoder, labels file, layout, color, scale and mean/std.
 Defaults are RGB, NCHW, pixel/255 and no additional normalization. Use the
 normalization and label order from the model's training/export pipeline.

@@ -588,3 +588,26 @@ def test_default_confidence_returns_all_classes_but_an_explicit_one_filters(nati
             assert native.ivit_result_release(result.value) == 0
     finally:
         assert native.ivit_model_release(model) == 0
+
+
+def test_predict_bgr_accepts_minus_one_as_the_task_default(native, classifier):
+    """C# calls predict_bgr with -1 by default: a classifier then returns every class."""
+    model = load(native, classifier)
+    try:
+        for confidence, expected in ((-1.0, 3), (0.5, 0)):
+            image = c.create_string_buffer(32 * 32 * 3)
+            result = c.c_uint64()
+            assert native.ivit_model_predict_bgr(
+                model, image, 32 * 32 * 3, 32, 32, 32 * 3, confidence, 0.45, 100, c.byref(result)
+            ) == 0
+            found = json.loads(text(native.ivit_result_json, result.value))["classifications"]
+            assert len(found) == expected, confidence
+            assert native.ivit_result_release(result.value) == 0
+        result = c.c_uint64(999)
+        for bad in (-0.3, 1.5, float("nan")):
+            assert native.ivit_model_predict_bgr(
+                model, c.create_string_buffer(32 * 32 * 3), 32 * 32 * 3, 32, 32, 32 * 3,
+                bad, 0.45, 100, c.byref(result)
+            ) != 0
+    finally:
+        assert native.ivit_model_release(model) == 0

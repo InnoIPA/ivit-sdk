@@ -93,7 +93,8 @@ IVIT_C_API ivit_status IVIT_C_CALL ivit_model_load_ex(const char *path,
 IVIT_C_API ivit_status IVIT_C_CALL ivit_model_release(ivit_model_handle model);
 /* Input: uint8 BGR HWC; stride is bytes per row, including optional padding.
  * bytes must cover the final row. Caller owns input until this call returns.
- * result is zero on failure. Thresholds must be finite and within [0,1].
+ * result is zero on failure. Thresholds must be finite and within [0,1]; confidence may also be
+ * exactly -1 for the task default (0.5 detection, 0 classification, which returns every class).
  */
 IVIT_C_API ivit_status IVIT_C_CALL ivit_model_predict_bgr(ivit_model_handle model,
                                                           const uint8_t *pixels, uint64_t bytes,

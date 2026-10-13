@@ -13,6 +13,8 @@ import json
 import os
 import re
 import shutil
+import tempfile
+import uuid
 from urllib.parse import parse_qs, urlparse
 
 logger = logging.getLogger(__name__)
@@ -432,11 +434,33 @@ def download(
 
     # Route to appropriate exporter based on source
     if info.source == "megvii":
-        model_path = _export_yolox_onnx(name, model_path, info, force)
+        model_path = _export_atomically(_export_yolox_onnx, name, model_path, info, force)
     elif info.source == "torchvision":
-        model_path = _export_torchvision_onnx(name, model_path, info)
+        model_path = _export_atomically(_export_torchvision_onnx, name, model_path, info)
 
     return model_path
+
+
+def _export_atomically(exporter, name: str, final_path: Path, info: ModelInfo, *args) -> Path:
+    """Run an exporter in a private directory and publish its files only when it succeeded.
+
+    Exporters write the .onnx (plus labels and possibly weight files) as they go. Writing straight
+    into the cache left a half-written <name>.onnx behind when an export was interrupted or
+    failed, and download() then returned it as "cached". Here everything is built next to the
+    cache and moved in at the end, the .onnx last, so a visible .onnx is always complete.
+    """
+    final_path.parent.mkdir(parents=True, exist_ok=True)
+    staging = Path(tempfile.mkdtemp(prefix=f".{name}-export-", dir=final_path.parent))
+    try:
+        exporter(name, staging / final_path.name, info, *args)
+        produced = sorted(staging.iterdir(), key=lambda path: path.name == final_path.name)
+        if not any(path.name == final_path.name for path in produced):
+            raise RuntimeError(f"The exporter for '{name}' did not produce {final_path.name}")
+        for path in produced:
+            os.replace(path, final_path.parent / path.name)
+    finally:
+        shutil.rmtree(staging, ignore_errors=True)
+    return final_path
 
 
 _TORCHVISION_MODEL_MAP = {
@@ -736,14 +760,27 @@ def _download_file(url: str, dest_path: Path, desc: str = None) -> Path:
 
     total_size = int(response.headers.get('content-length', 0))
 
-    with open(dest_path, 'wb') as f:
-        with tqdm(total=total_size, unit='B', unit_scale=True, desc=desc) as pbar:
-            for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-                pbar.update(len(chunk))
+    # A private temporary name, moved into place only when complete: an interrupted download
+    # must not leave a truncated file that later calls take for a cached one.
+    partial = dest_path.with_name(f"{dest_path.name}.{_unique_suffix()}.part")
+    try:
+        with open(partial, 'wb') as f:
+            with tqdm(total=total_size, unit='B', unit_scale=True, desc=desc) as pbar:
+                for chunk in response.iter_content(chunk_size=8192):
+                    f.write(chunk)
+                    pbar.update(len(chunk))
+        os.replace(partial, dest_path)
+    except BaseException:
+        partial.unlink(missing_ok=True)
+        raise
 
     logger.info(f"Downloaded to: {dest_path}")
     return dest_path
+
+
+def _unique_suffix() -> str:
+    """Different for every call and process: concurrent downloads must not share a temp file."""
+    return f"{os.getpid()}-{uuid.uuid4().hex[:8]}"
 
 
 # Minimum expected ONNX file size (1 KB) to catch corrupted/empty downloads
@@ -865,7 +902,9 @@ def _download_onnx_direct(
         onnx_path.unlink()
 
     onnx_path.parent.mkdir(parents=True, exist_ok=True)
-    partial = onnx_path.with_name(onnx_path.name + ".part")
+    # Unique per call: two processes downloading the same model used to share one .part file and
+    # corrupted each other (a spurious SHA256 mismatch or FileNotFoundError).
+    partial = onnx_path.with_name(f"{onnx_path.name}.{_unique_suffix()}.part")
 
     sources = [src for src in (_mirror_source(f"{name}.onnx"), onnx_url) if src]
     used = onnx_url

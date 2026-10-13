@@ -1,9 +1,14 @@
 """Tests for Model Zoo ONNX direct download support."""
 
+import hashlib
+import os
+import threading
+
 import pytest
 from pathlib import Path
 from unittest.mock import patch
 
+from ivit.zoo import registry
 from ivit.zoo.registry import (
     ModelInfo,
     MODEL_REGISTRY,
@@ -107,26 +112,26 @@ class TestDownloadRouting:
 
     @patch("ivit.zoo.registry._export_yolox_onnx")
     @patch("ivit.zoo.registry._get_cache_dir")
-    def test_download_from_source_skips_direct(self, mock_cache_dir, mock_export):
+    def test_download_from_source_skips_direct(self, mock_cache_dir, mock_export, tmp_path):
         """download(from_source=True) should skip direct download and use exporter."""
-        tmp_dir = Path("/tmp/test_zoo_cache")
-        mock_cache_dir.return_value = tmp_dir
-        expected_path = tmp_dir / "yolox-s.onnx"
-        mock_export.return_value = expected_path
+        mock_cache_dir.return_value = tmp_path
+        expected_path = tmp_path / "yolox-s.onnx"
+        # exporters now write into a private staging directory and are handed that path
+        mock_export.side_effect = lambda name, onnx_path, info, force: onnx_path.write_bytes(b"onnx")
 
         result = download("yolox-s", from_source=True)
 
         mock_export.assert_called_once()
         assert result == expected_path
+        assert expected_path.read_bytes() == b"onnx"
 
     @patch("ivit.zoo.registry._export_torchvision_onnx")
     @patch("ivit.zoo.registry._get_cache_dir")
-    def test_download_torchvision_goes_to_exporter(self, mock_cache_dir, mock_export):
+    def test_download_torchvision_goes_to_exporter(self, mock_cache_dir, mock_export, tmp_path):
         """Torchvision models (no onnx_url) should go to torchvision exporter."""
-        tmp_dir = Path("/tmp/test_zoo_cache")
-        mock_cache_dir.return_value = tmp_dir
-        expected_path = tmp_dir / "resnet18.onnx"
-        mock_export.return_value = expected_path
+        mock_cache_dir.return_value = tmp_path
+        expected_path = tmp_path / "resnet18.onnx"
+        mock_export.side_effect = lambda name, onnx_path, info: onnx_path.write_bytes(b"onnx")
 
         result = download("resnet18")
 
@@ -204,3 +209,97 @@ def test_list_models_filters_by_zoo_task_and_rejects_unknown_names():
     # "classification" is the LoadConfig spelling, not a zoo task: say so instead of returning [].
     with pytest.raises(ValueError, match="classify"):
         list_models(task="classification")
+
+
+class TestAtomicCache:
+    """Exports and downloads must never leave a half-written file that looks cached."""
+
+    @pytest.fixture
+    def cache(self, tmp_path):
+        with patch("ivit.zoo.registry._get_cache_dir", return_value=tmp_path):
+            yield tmp_path
+
+    @pytest.mark.parametrize("failure", [RuntimeError("export failed"), KeyboardInterrupt()])
+    def test_failed_or_interrupted_export_leaves_nothing_in_the_cache(self, cache, failure):
+        def exporter(name, onnx_path, info):
+            onnx_path.write_bytes(b"half written")  # what an interrupted torch.onnx.export leaves
+            raise failure
+
+        with patch("ivit.zoo.registry._export_torchvision_onnx", side_effect=exporter):
+            with pytest.raises(type(failure)):
+                download("resnet18")
+        assert list(cache.iterdir()) == []  # no .onnx, no staging directory
+
+        def good(name, onnx_path, info):
+            onnx_path.write_bytes(b"complete")
+
+        with patch("ivit.zoo.registry._export_torchvision_onnx", side_effect=good) as exporter:
+            assert download("resnet18").read_bytes() == b"complete"  # re-exported, not "cached"
+            assert exporter.call_count == 1
+
+    def test_export_publishes_sidecars_before_the_onnx(self, cache):
+        order = []
+        real_replace = os.replace
+
+        def spy(src, dst):
+            order.append(Path(dst).name)
+            real_replace(src, dst)
+
+        def exporter(name, onnx_path, info):
+            onnx_path.write_bytes(b"onnx")
+            onnx_path.with_suffix(".labels.txt").write_text("a\nb\n")
+
+        with patch("ivit.zoo.registry._export_torchvision_onnx", side_effect=exporter), patch(
+            "ivit.zoo.registry.os.replace", side_effect=spy
+        ):
+            download("resnet18")
+        assert order == ["resnet18.labels.txt", "resnet18.onnx"]  # a visible .onnx is complete
+
+    def test_an_exporter_that_produces_nothing_is_an_error(self, cache):
+        with patch("ivit.zoo.registry._export_torchvision_onnx"):
+            with pytest.raises(RuntimeError, match="did not produce"):
+                download("resnet18")
+
+    def test_interrupted_weight_download_leaves_no_truncated_file(self, tmp_path):
+        class Response:
+            headers = {"content-length": "10"}
+            def raise_for_status(self): pass
+            def close(self): pass
+            def iter_content(self, chunk_size):
+                yield b"12345"
+                raise ConnectionError("connection dropped")
+
+        with patch("requests.get", return_value=Response()):
+            with pytest.raises(ConnectionError):
+                registry._download_file("https://example.invalid/w.pth", tmp_path / "w.pth")
+        assert list(tmp_path.iterdir()) == []
+
+    def test_concurrent_downloads_of_the_same_model_do_not_corrupt_each_other(self, tmp_path):
+        payload = bytes(range(256)) * 20
+        digest = hashlib.sha256(payload).hexdigest()
+        barrier = threading.Barrier(2)
+
+        def slow_fetch(source, partial, desc):
+            with open(partial, "wb") as f:
+                f.write(payload[:2500])
+                barrier.wait(timeout=10)  # both downloads are mid-file at the same time
+                f.write(payload[2500:])
+
+        results, errors = [], []
+
+        def run():
+            try:
+                results.append(registry._download_onnx_direct(
+                    "m", "https://example.invalid/m.onnx", tmp_path / "m.onnx", force=True, sha256=digest))
+            except BaseException as error:  # noqa: BLE001 - report every failure
+                errors.append(error)
+
+        with patch("ivit.zoo.registry._fetch_into", side_effect=slow_fetch), patch(
+            "ivit.zoo.registry._mirror_source", return_value=None
+        ):
+            threads = [threading.Thread(target=run) for _ in range(2)]
+            [t.start() for t in threads]
+            [t.join() for t in threads]
+        assert not errors, errors
+        assert hashlib.sha256((tmp_path / "m.onnx").read_bytes()).hexdigest() == digest
+        assert [p.name for p in tmp_path.iterdir()] == ["m.onnx"]  # no .part files left
