@@ -96,6 +96,35 @@ check_native() {
 
 # --tensorrt: the SDK only compiles the backend when CUDA and the TensorRT headers/libraries are
 # present, and pip would otherwise finish "successfully" without it. Check before the long build.
+# What to run when CUDA/TensorRT are missing: the same pinned packages as the release workflow
+# (an unpinned install picks CUDA 13 and a different libnvinfer, and apt then reports unmet
+# dependencies), so the user does not have to look it up.
+tensorrt_missing() {
+    local cuda='12-9' trt='11.4.0.106-1+cuda12.9' arch repo
+    arch="$(uname -m)"
+    repo="${ID}${VERSION_ID//./}"
+    printf '[iVIT] ERROR: --tensorrt needs %s.\n' "$1" >&2
+    if [[ "$arch" == x86_64 ]]; then
+        cat >&2 <<HELP
+[iVIT] Install the NVIDIA CUDA / TensorRT development packages (about 1.5 GB to download, 4 GB on disk):
+  wget https://developer.download.nvidia.com/compute/cuda/repos/${repo}/x86_64/cuda-keyring_1.1-1_all.deb
+  sudo dpkg -i cuda-keyring_1.1-1_all.deb
+  sudo apt-get update
+  sudo apt-get install -y --no-install-recommends \\
+    cuda-nvcc-${cuda} cuda-cudart-dev-${cuda} \\
+    libnvinfer11=${trt} libnvinfer-dev=${trt} \\
+    libnvinfer-headers-dev=${trt} libnvinfer-safe-headers-dev=${trt} \\
+    libnvonnxparsers11=${trt} libnvonnxparsers-dev=${trt}
+[iVIT] Keep every version pinned (SDK manual 3.4). Verified on Ubuntu 24.04.
+[iVIT] Installed somewhere else? Set CUDAToolkit_ROOT / TENSORRT_ROOT and run this script again.
+HELP
+        command -v nvidia-smi >/dev/null || echo '[iVIT] nvidia-smi was not found either: the NVIDIA driver must be installed as well.' >&2
+    else
+        echo '[iVIT] On Jetson (aarch64) JetPack provides CUDA and TensorRT; see SDK manual 3.4.' >&2
+    fi
+    exit 1
+}
+
 check_tensorrt() {
     local nvcc="" header="" dir
     if command -v nvcc >/dev/null; then nvcc="$(command -v nvcc)"
@@ -104,8 +133,8 @@ check_tensorrt() {
                /usr/include/aarch64-linux-gnu /usr/include /usr/local/tensorrt/include; do
         if [[ -n "$dir" && -f "$dir/NvInfer.h" ]]; then header="$dir"; break; fi
     done
-    [[ -n "$nvcc" ]] || die '--tensorrt needs the CUDA toolkit (nvcc not found). Install cuda-nvcc and cuda-cudart-dev from the NVIDIA apt repository (SDK manual 3.4) or set CUDAToolkit_ROOT'
-    [[ -n "$header" ]] || die '--tensorrt needs the TensorRT development files (NvInfer.h not found). Install libnvinfer-dev and libnvonnxparsers-dev (SDK manual 3.4) or set TENSORRT_ROOT'
+    [[ -n "$nvcc" ]] || tensorrt_missing 'the CUDA toolkit (nvcc not found)'
+    [[ -n "$header" ]] || tensorrt_missing 'the TensorRT development files (NvInfer.h not found)'
     log "CUDA compiler: $nvcc"
     log "TensorRT headers: $header"
 }

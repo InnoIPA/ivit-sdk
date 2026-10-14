@@ -317,6 +317,14 @@ and C++ applications must be rebuilt after a minor upgrade.
   - OpenVINO `get_devices` redirected process-wide stderr with `dup2`, which two concurrent loads
     could race and leave stderr pointing at /dev/null (the same hack was already removed from
     `DeviceManager`).
+  - `install_sdk.sh --tensorrt` stopped with "see the manual" when CUDA or TensorRT was missing.
+    It now prints the exact apt commands (the release workflow's pinned versions, the NVIDIA
+    repository for the running distribution) and mentions a missing NVIDIA driver.
+  - `02_classification.py` and `02_segmentation.py` (torchvision models are exported on first use)
+    ended in a chained traceback when PyTorch was not installed, which a fresh install never has.
+    They now print one line saying what to install; the message recommends the CPU build of
+    PyTorch (the default wheel includes CUDA and is several GB, for a one-time export), and the
+    manual lists which example needs what.
   - `install_sdk.sh` ignored an already-active virtual environment: run inside a fresh venv it
     created a separate `.venv` in the repository and left the active one without the SDK (the
     next `import ivit` failed with `ModuleNotFoundError`). It now installs into the active

@@ -44,7 +44,11 @@ def resolve_model(model):
     normalization, labels); with your own model file, pass the settings that match its export.
     """
     if model in ivit.zoo.list_models():
-        return str(ivit.zoo.download(model)), dict(ivit.zoo.get_model_info(model).load_options)
+        try:
+            return str(ivit.zoo.download(model)), dict(ivit.zoo.get_model_info(model).load_options)
+        except ImportError as error:
+            # torchvision models are exported on first use and need PyTorch; say how, no traceback
+            sys.exit(f"Error: {error}")
     return model, {}
 import cv2
 import numpy as np

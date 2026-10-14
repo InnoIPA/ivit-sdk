@@ -499,6 +499,8 @@ print("複製到部署設備：", path, path.with_suffix(".labels.txt"))
 print("部署端載入時傳入：", zoo.get_model_info("yolox-s").load_options)
 ```
 
+**Python 範例各需要什麼**：`01_quickstart.py` 與 `02_detection.py` 用 YOLOX（預先轉好的 ONNX，直接下載，不需 PyTorch）；`02_classification.py` 與 `02_segmentation.py` 用 torchvision 模型，**第一次使用時要在本機匯出**，需先安裝 PyTorch、torchvision、onnx、onnxscript（`pip install -e ".[zoo]"`）。PyTorch 只用來匯出一次，裝 CPU 版即可，比預設版本（含 CUDA，數 GB）小很多：`pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu`，再 `pip install onnx onnxscript`。匯出後的 ONNX 會留在快取，之後不再需要 PyTorch。缺少時範例會顯示一行說明並結束。
+
 Zoo 模型分兩種來源：
 
 - **預轉換 ONNX**（目前是 5 個 YOLOX）：直接下載，並以 SHA256 驗證（`ivit/zoo/checksums.json` 或 `download(..., sha256=...)`），驗證失敗的檔案會被丟棄，不會留在快取。下列鏡像與 SHA256 設定只作用在這類模型。

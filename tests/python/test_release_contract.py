@@ -154,6 +154,16 @@ def test_example_outputs_written_into_the_source_tree_are_ignored():
     assert "examples/data/**/output_*" in read(".gitignore")
 
 
+def test_install_script_prints_the_same_pinned_nvidia_packages_as_the_release():
+    script = read("scripts/install_sdk.sh")
+    release = read(".github/workflows/release.yml")
+    trt = re.search(r"TRT_VERSION: '([^']+)'", release).group(1)
+    cuda = re.search(r"CUDA_VERSION: '([^']+)'", release).group(1)
+    assert f"trt='{trt}'" in script and f"cuda='{cuda}'" in script
+    for package in ("libnvinfer-safe-headers-dev", "libnvonnxparsers-dev", "cuda-keyring_1.1-1_all.deb"):
+        assert package in script  # unpinned or incomplete, apt reports unmet dependencies
+
+
 def test_install_script_uses_the_active_virtual_environment():
     script = read("scripts/install_sdk.sh")
     # run inside a fresh venv it used to build a second .venv and leave the active one empty

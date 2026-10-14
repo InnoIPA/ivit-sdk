@@ -483,7 +483,9 @@ _TORCHVISION_MODEL_MAP = {
 
 _ZOO_EXTRAS_HINT = (
     "Install the Zoo export dependencies: pip install -e \".[zoo]\" (from the source tree), or "
-    "pip install torch torchvision onnx onnxscript"
+    "pip install torch torchvision onnx onnxscript. PyTorch is only used to export the model "
+    "once; the CPU build is enough and far smaller than the default one (which includes CUDA): "
+    "pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu"
 )
 
 
