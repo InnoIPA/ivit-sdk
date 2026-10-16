@@ -300,6 +300,14 @@ if(IVIT_BUILD_TESTS)
         add_executable(test_inference tests/cpp/test_inference.cpp)
         target_link_libraries(test_inference PRIVATE ivit GTest::gtest_main)
         add_test(NAME test_inference COMMAND test_inference)
+        if(IVIT_USE_TENSORRT)
+            # Regression: library load / device listing must not crash when no
+            # CUDA GPU is visible (TensorRT 11.x crashed destroying its runtime).
+            add_test(NAME test_inference_no_gpu
+                     COMMAND test_inference --gtest_filter=InferenceTest.DeviceManagerListDevices)
+            set_tests_properties(test_inference_no_gpu PROPERTIES
+                                 ENVIRONMENT "CUDA_VISIBLE_DEVICES=")
+        endif()
 
         add_executable(test_processing tests/cpp/test_processing.cpp)
         target_include_directories(test_processing PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)

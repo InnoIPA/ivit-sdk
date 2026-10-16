@@ -260,6 +260,16 @@ void TensorRTRuntime::initialize() {
     if (initialized_)
         return;
 
+    // Creating (and later destroying) an IRuntime without a visible CUDA
+    // device crashes in TensorRT 11.x, so refuse before touching TensorRT.
+    int device_count = 0;
+    cudaError_t cuda_err = cudaGetDeviceCount(&device_count);
+    if (cuda_err != cudaSuccess || device_count <= 0) {
+        // Clear the sticky error so later CUDA calls are not poisoned.
+        cudaGetLastError();
+        throw IVITError("No CUDA device available for TensorRT");
+    }
+
     runtime_.reset(nvinfer1::createInferRuntime(logger_), [](nvinfer1::IRuntime *r) { delete r; });
 
     if (!runtime_) {
