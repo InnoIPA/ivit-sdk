@@ -38,7 +38,6 @@ TEST_F(InferenceTest, DeviceManagerListDevices) {
     auto& manager = DeviceManager::instance();
     auto devices = manager.list_devices();
 
-    // Should have at least CPU
     bool has_cpu = false;
     for (const auto& device : devices) {
         if (device.type == "cpu") {
@@ -46,7 +45,21 @@ TEST_F(InferenceTest, DeviceManagerListDevices) {
             break;
         }
     }
+
+#if defined(IVIT_HAS_OPENVINO)
+    // The OpenVINO runtime provides the CPU device.
     EXPECT_TRUE(has_cpu);
+#elif defined(IVIT_HAS_TENSORRT)
+    // TensorRT-only build: no CPU runtime is compiled in, so a CPU device
+    // must not appear. Without a usable GPU the list may legitimately be
+    // empty, but every listed device must belong to the TensorRT backend.
+    EXPECT_FALSE(has_cpu);
+    for (const auto& device : devices) {
+        EXPECT_EQ(device.backend, "tensorrt") << "device " << device.id;
+    }
+#else
+    GTEST_SKIP() << "No inference backend compiled in";
+#endif
 }
 
 TEST_F(InferenceTest, InferConfigDefaults) {
