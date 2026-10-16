@@ -553,6 +553,7 @@ def _export_torchvision_onnx(name: str, onnx_path: Path, info: ModelInfo) -> Pat
             def forward(self, x):
                 return self.m(x)["out"]
         model = _SegWrapper(raw_model)
+        model.eval()
         output_names = ["output"]
 
     elif info.task == "detect":
