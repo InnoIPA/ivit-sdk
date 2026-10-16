@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 3.18)
+project(ivit_manual_matrix LANGUAGES C CXX)
+find_package(ivit 1.1 CONFIG REQUIRED)
+add_executable(matrix_app main.cpp)
+target_compile_features(matrix_app PRIVATE cxx_std_17)
+target_link_libraries(matrix_app PRIVATE ivit::ivit)
+add_executable(c_matrix c_matrix.c)
+target_link_libraries(c_matrix PRIVATE ivit::ivit)
